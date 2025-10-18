@@ -1,7 +1,18 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Plus } from "lucide-react";
+import { useState } from "react";
 
 interface Service {
   id: string;
@@ -20,6 +31,22 @@ interface ServicesListProps {
 }
 
 export const ServicesList = ({ services, onEdit, onDelete, onAdd }: ServicesListProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    setServiceToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (serviceToDelete && onDelete) {
+      onDelete(serviceToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setServiceToDelete(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -91,7 +118,7 @@ export const ServicesList = ({ services, onEdit, onDelete, onAdd }: ServicesList
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onDelete(service.id)}
+                    onClick={() => handleDeleteClick(service.id)}
                     className="text-destructive hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -102,6 +129,26 @@ export const ServicesList = ({ services, onEdit, onDelete, onAdd }: ServicesList
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить услугу?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Услуга будет удалена навсегда.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
