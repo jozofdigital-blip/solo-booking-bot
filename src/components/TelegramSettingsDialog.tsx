@@ -43,11 +43,6 @@ export const TelegramSettingsDialog = ({
     const botUsername = "looktime24_bot";
     const deeplink = `https://t.me/${botUsername}?start=notify_${notificationTime}`;
     window.open(deeplink, '_blank');
-    
-    // Show instructions to user
-    setTimeout(() => {
-      alert('После нажатия "Старт" в боте, уведомления будут активированы автоматически!');
-    }, 1000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

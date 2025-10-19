@@ -17,27 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Phone } from "lucide-react";
 
 interface Service {
   id: string;
   name: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
-  phone: string;
-}
-
-interface WorkingHour {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_working: boolean;
 }
 
 interface AppointmentDialogProps {
@@ -49,13 +33,11 @@ interface AppointmentDialogProps {
     appointment_time: string;
     client_name: string;
     client_phone: string;
+    client_telegram?: string;
     notes?: string;
   }) => void;
   services: Service[];
   selectedDate?: Date;
-  selectedTime?: string;
-  profileId: string;
-  workingHours?: WorkingHour[];
 }
 
 export const AppointmentDialog = ({
@@ -64,9 +46,6 @@ export const AppointmentDialog = ({
   onSave,
   services,
   selectedDate,
-  selectedTime,
-  profileId,
-  workingHours,
 }: AppointmentDialogProps) => {
   const [formData, setFormData] = useState({
     service_id: "",
@@ -74,41 +53,18 @@ export const AppointmentDialog = ({
     appointment_time: "10:00",
     client_name: "",
     client_phone: "",
+    client_telegram: "",
     notes: "",
   });
-
-  const [clients, setClients] = useState<Client[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
-  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
 
   useEffect(() => {
     if (selectedDate) {
       setFormData((prev) => ({
         ...prev,
         appointment_date: format(selectedDate, "yyyy-MM-dd"),
-        appointment_time: selectedTime || format(selectedDate, "HH:mm"),
       }));
     }
-  }, [selectedDate, selectedTime]);
-
-  useEffect(() => {
-    if (open && profileId) {
-      loadClients();
-    }
-  }, [open, profileId]);
-
-  useEffect(() => {
-    if (formData.client_name) {
-      const filtered = clients.filter(client =>
-        client.name.toLowerCase().includes(formData.client_name.toLowerCase())
-      );
-      setFilteredClients(filtered);
-      setShowClientSuggestions(filtered.length > 0 && formData.client_name.length > 0);
-    } else {
-      setFilteredClients([]);
-      setShowClientSuggestions(false);
-    }
-  }, [formData.client_name, clients]);
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!open) {
@@ -118,65 +74,16 @@ export const AppointmentDialog = ({
         appointment_time: "10:00",
         client_name: "",
         client_phone: "",
+        client_telegram: "",
         notes: "",
       });
-      setShowClientSuggestions(false);
     }
   }, [open]);
 
-  const loadClients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('profile_id', profileId)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error: any) {
-      console.error('Error loading clients:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Save client if new
-    if (formData.client_name && formData.client_phone) {
-      const existingClient = clients.find(c => c.phone === formData.client_phone);
-      if (!existingClient) {
-        try {
-          await supabase
-            .from('clients')
-            .insert({
-              profile_id: profileId,
-              name: formData.client_name.trim(),
-              phone: formData.client_phone.trim(),
-            });
-        } catch (error) {
-          console.error('Error saving client:', error);
-        }
-      }
-    }
-    
     onSave(formData);
     onOpenChange(false);
-  };
-
-  const handleSelectClient = (client: Client) => {
-    setFormData({
-      ...formData,
-      client_name: client.name,
-      client_phone: client.phone,
-    });
-    setShowClientSuggestions(false);
-  };
-
-  const getWorkingHoursForDate = (date: string) => {
-    const selectedDate = new Date(date);
-    const dayOfWeek = (selectedDate.getDay() + 6) % 7; // Convert to Monday = 0
-    return workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
   };
 
   return (
@@ -232,18 +139,11 @@ export const AppointmentDialog = ({
                   setFormData({ ...formData, appointment_time: e.target.value })
                 }
                 required
-                min={getWorkingHoursForDate(formData.appointment_date)?.start_time}
-                max={getWorkingHoursForDate(formData.appointment_date)?.end_time}
               />
-              {getWorkingHoursForDate(formData.appointment_date) && (
-                <p className="text-xs text-muted-foreground">
-                  Рабочие часы: {getWorkingHoursForDate(formData.appointment_date)?.start_time} - {getWorkingHoursForDate(formData.appointment_date)?.end_time}
-                </p>
-              )}
             </div>
           </div>
 
-          <div className="space-y-2 relative">
+          <div className="space-y-2">
             <Label htmlFor="client_name">Имя клиента *</Label>
             <Input
               id="client_name"
@@ -253,38 +153,7 @@ export const AppointmentDialog = ({
               }
               required
               placeholder="Введите имя"
-              onFocus={() => {
-                if (filteredClients.length > 0) {
-                  setShowClientSuggestions(true);
-                }
-              }}
             />
-            
-            {/* Client suggestions dropdown */}
-            {showClientSuggestions && filteredClients.length > 0 && (
-              <Card className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto border shadow-lg">
-                <div className="p-2">
-                  {filteredClients.map((client) => (
-                    <div
-                      key={client.id}
-                      className="p-2 hover:bg-muted rounded cursor-pointer"
-                      onClick={() => handleSelectClient(client)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{client.name}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {client.phone}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -301,6 +170,17 @@ export const AppointmentDialog = ({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="client_telegram">Telegram</Label>
+            <Input
+              id="client_telegram"
+              value={formData.client_telegram}
+              onChange={(e) =>
+                setFormData({ ...formData, client_telegram: e.target.value })
+              }
+              placeholder="@username"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Примечания</Label>

@@ -88,25 +88,7 @@ export const WeekCalendar = ({
       const aptDate = new Date(apt.appointment_time);
       const aptHour = aptDate.getHours();
       const aptMinute = aptDate.getMinutes();
-      
-      // Check if this time slot is the start time of the appointment
       return isSameDay(aptDate, date) && aptHour === hour && aptMinute === minute;
-    });
-  };
-
-  const isSlotOccupiedByAppointment = (date: Date, hour: number, minute: number) => {
-    return appointments.some((apt) => {
-      const aptDate = new Date(apt.appointment_time);
-      const aptHour = aptDate.getHours();
-      const aptMinute = aptDate.getMinutes();
-      
-      if (!isSameDay(aptDate, date)) return false;
-      
-      const slotTime = hour * 60 + minute;
-      const aptStartTime = aptHour * 60 + aptMinute;
-      const aptEndTime = aptStartTime + (apt.duration_minutes || 60);
-      
-      return slotTime >= aptStartTime && slotTime < aptEndTime;
     });
   };
 
@@ -202,21 +184,16 @@ export const WeekCalendar = ({
                   const dayOfWeek = (day.getDay() + 6) % 7;
                   const inWorkingHours = isSlotInWorkingHours(day, hour, minute);
                   
-                  const isOccupied = isSlotOccupiedByAppointment(day, hour, minute);
-                  const isClickable = inWorkingHours && !isOccupied;
-                  
                   return (
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
                       className={`p-1 border-r last:border-r-0 relative group ${
                         inWorkingHours 
-                          ? isOccupied 
-                            ? "bg-telegram/5" 
-                            : "hover:bg-muted/50 cursor-pointer bg-background"
+                          ? "hover:bg-muted/50 cursor-pointer bg-background" 
                           : "bg-muted/20"
                       }`}
                       onClick={() => {
-                        if (isClickable) {
+                        if (inWorkingHours) {
                           const slotDate = new Date(day);
                           slotDate.setHours(hour, minute, 0, 0);
                           onDateClick?.(slotDate);
@@ -232,16 +209,9 @@ export const WeekCalendar = ({
                             return (
                               <div
                                 key={apt.id}
-                                className={`p-1 md:p-2 rounded text-[10px] md:text-xs cursor-pointer hover:bg-telegram/20 ${getStatusColor(apt.status)} ${
-                                  apt.status === 'completed' ? 'bg-muted text-muted-foreground' : 'bg-telegram/10 border border-telegram/20'
-                                }`}
+                                className="p-1 md:p-2 rounded text-[10px] md:text-xs bg-telegram/10 border border-telegram/20 cursor-pointer hover:bg-telegram/20"
                                 style={{ 
                                   minHeight: `${slotsNeeded * 60 - 8}px`,
-                                  position: 'absolute',
-                                  top: '4px',
-                                  left: '4px',
-                                  right: '4px',
-                                  zIndex: 10
                                 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -256,18 +226,21 @@ export const WeekCalendar = ({
                                     {apt.service_name}
                                   </div>
                                 )}
-                                <div className="text-[8px] md:text-[10px] mt-1">
-                                  {apt.status === "pending" && "Ожидает"}
-                                  {apt.status === "confirmed" && "Подтверждено"}
-                                  {apt.status === "cancelled" && "Отменено"}
-                                  {apt.status === "completed" && "Завершено"}
-                                </div>
+                                <Badge
+                                  className={`${getStatusColor(apt.status)} text-[8px] md:text-[10px] mt-1`}
+                                  variant="secondary"
+                                >
+                                  {apt.status === "pending" && "Ожид."}
+                                  {apt.status === "confirmed" && "Подтв."}
+                                  {apt.status === "cancelled" && "Отм."}
+                                  {apt.status === "completed" && "Зав."}
+                                </Badge>
                               </div>
                             );
                           })}
                         </div>
                       ) : (
-                        isClickable && (
+                        inWorkingHours && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                             <Button
                               variant="ghost"

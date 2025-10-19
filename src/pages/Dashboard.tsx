@@ -3,20 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { BookingCalendar } from "@/components/BookingCalendar";
 import { ServicesList } from "@/components/ServicesList";
 import { ServiceDialog } from "@/components/ServiceDialog";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
-import { EditAppointmentDialog } from "@/components/EditAppointmentDialog";
 import { WorkingHoursDialog } from "@/components/WorkingHoursDialog";
 import { TelegramSettingsDialog } from "@/components/TelegramSettingsDialog";
-import { ClientsDialog } from "@/components/ClientsDialog";
 import { WeekCalendar } from "@/components/WeekCalendar";
-import { Calendar, ClipboardList, LogOut, Share2, Settings, Clock, Bell, Edit2, Check, X, Users } from "lucide-react";
+import { Calendar, ClipboardList, LogOut, Share2, Settings, Clock, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format } from "date-fns";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -25,20 +21,13 @@ export default function Dashboard() {
   const [services, setServices] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
   const [telegramDialogOpen, setTelegramDialogOpen] = useState(false);
-  const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
-  const [editAppointmentDialogOpen, setEditAppointmentDialogOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [calendarView, setCalendarView] = useState<"month" | "week">("week");
-  const [editingBusinessName, setEditingBusinessName] = useState(false);
-  const [businessNameValue, setBusinessNameValue] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -87,7 +76,6 @@ export default function Dashboard() {
         setProfile(newProfile);
       } else {
         setProfile(profileData);
-        setBusinessNameValue(profileData.business_name);
       }
 
       // Load services
@@ -120,15 +108,6 @@ export default function Dashboard() {
           .order('day_of_week', { ascending: true });
 
         setWorkingHours(workingHoursData || []);
-
-        // Load clients
-        const { data: clientsData } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .order('name', { ascending: true });
-
-        setClients(clientsData || []);
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -217,51 +196,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleUpdateAppointment = async (appointmentData: any) => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          service_id: appointmentData.service_id,
-          appointment_date: appointmentData.appointment_date,
-          appointment_time: appointmentData.appointment_time,
-          client_name: appointmentData.client_name,
-          client_phone: appointmentData.client_phone,
-          notes: appointmentData.notes,
-          status: appointmentData.status,
-        })
-        .eq('id', appointmentData.id);
-
-      if (error) throw error;
-      toast.success('Запись обновлена');
-      loadData();
-    } catch (error: any) {
-      toast.error('Ошибка обновления записи');
-      console.error(error);
-    }
-  };
-
-  const handleDeleteAppointment = async (appointmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .delete()
-        .eq('id', appointmentId);
-
-      if (error) throw error;
-      toast.success('Запись удалена');
-      loadData();
-    } catch (error: any) {
-      toast.error('Ошибка удаления записи');
-      console.error(error);
-    }
-  };
-
-  const handleAppointmentClick = (appointment: any) => {
-    setEditingAppointment(appointment);
-    setEditAppointmentDialogOpen(true);
-  };
-
   const handleSaveWorkingHours = async (hours: any[]) => {
     try {
       // Delete existing working hours
@@ -298,33 +232,6 @@ export default function Dashboard() {
       toast.error('Ошибка настройки Telegram');
       console.error(error);
     }
-  };
-
-  const handleSaveBusinessName = async () => {
-    if (!businessNameValue.trim()) {
-      toast.error('Название компании не может быть пустым');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ business_name: businessNameValue.trim() })
-        .eq('id', profile.id);
-
-      if (error) throw error;
-      toast.success('Название компании обновлено');
-      setEditingBusinessName(false);
-      loadData();
-    } catch (error: any) {
-      toast.error('Ошибка обновления названия');
-      console.error(error);
-    }
-  };
-
-  const handleCancelEditBusinessName = () => {
-    setBusinessNameValue(profile?.business_name || '');
-    setEditingBusinessName(false);
   };
 
   if (loading) {
@@ -372,16 +279,6 @@ export default function Dashboard() {
         setEditingService(null);
         setServiceDialogOpen(true);
       }
-    },
-    {
-      title: 'Мои клиенты',
-      value: clients.length,
-      icon: Users,
-      color: 'text-info',
-      clickable: true,
-      onClick: () => {
-        setClientsDialogOpen(true);
-      }
     }
   ];
 
@@ -390,50 +287,8 @@ export default function Dashboard() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex-1">
-              {editingBusinessName ? (
-                <div className="flex items-center gap-2 max-w-md">
-                  <Input
-                    value={businessNameValue}
-                    onChange={(e) => setBusinessNameValue(e.target.value)}
-                    className="text-xl font-bold"
-                    placeholder="Название компании"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveBusinessName();
-                      if (e.key === 'Escape') handleCancelEditBusinessName();
-                    }}
-                    autoFocus
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleSaveBusinessName}
-                    className="text-success hover:bg-success/10"
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleCancelEditBusinessName}
-                    className="text-destructive hover:bg-destructive/10"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{profile?.business_name}</h1>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingBusinessName(true)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+            <div>
+              <h1 className="text-2xl font-bold">{profile?.business_name}</h1>
               <p className="text-sm text-muted-foreground">Панель управления</p>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -460,7 +315,7 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
@@ -512,15 +367,13 @@ export default function Dashboard() {
                   Месяц
                 </Button>
               </div>
-              {calendarView === "month" && (
-                <Button
-                  onClick={() => setAppointmentDialogOpen(true)}
-                  className="bg-telegram hover:bg-telegram/90"
-                  size="sm"
-                >
-                  Создать запись
-                </Button>
-              )}
+              <Button
+                onClick={() => setAppointmentDialogOpen(true)}
+                className="bg-telegram hover:bg-telegram/90"
+                size="sm"
+              >
+                Создать запись
+              </Button>
             </div>
 
             {calendarView === "week" ? (
@@ -537,10 +390,8 @@ export default function Dashboard() {
                 workingHours={workingHours}
                 onCreateAppointment={(date) => {
                   setSelectedDate(date);
-                  setSelectedTime(format(date, "HH:mm"));
                   setAppointmentDialogOpen(true);
                 }}
-                onAppointmentClick={handleAppointmentClick}
               />
             ) : (
               <BookingCalendar 
@@ -549,13 +400,10 @@ export default function Dashboard() {
                   appointment_time: `${a.appointment_date}T${a.appointment_time}`,
                   service_name: a.services?.name
                 }))}
-                workingHours={workingHours}
                 onDateSelect={(date) => {
                   setSelectedDate(date);
-                  setSelectedTime(undefined);
                   setAppointmentDialogOpen(true);
                 }}
-                onAppointmentClick={handleAppointmentClick}
               />
             )}
           </TabsContent>
@@ -590,9 +438,6 @@ export default function Dashboard() {
           onSave={handleSaveAppointment}
           services={services.filter(s => s.is_active)}
           selectedDate={selectedDate}
-          selectedTime={selectedTime}
-          profileId={profile?.id || ""}
-          workingHours={workingHours}
         />
 
         <WorkingHoursDialog
@@ -607,23 +452,6 @@ export default function Dashboard() {
           onOpenChange={setTelegramDialogOpen}
           onSave={handleSaveTelegramChatId}
           currentChatId={profile?.telegram_chat_id}
-        />
-
-        <ClientsDialog
-          open={clientsDialogOpen}
-          onOpenChange={setClientsDialogOpen}
-          profileId={profile?.id}
-        />
-
-        <EditAppointmentDialog
-          open={editAppointmentDialogOpen}
-          onOpenChange={setEditAppointmentDialogOpen}
-          onSave={handleUpdateAppointment}
-          onDelete={handleDeleteAppointment}
-          services={services.filter(s => s.is_active)}
-          appointment={editingAppointment}
-          profileId={profile?.id || ""}
-          workingHours={workingHours}
         />
       </main>
     </div>

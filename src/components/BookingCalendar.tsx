@@ -15,21 +15,12 @@ interface Appointment {
   status: string;
 }
 
-interface WorkingHour {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_working: boolean;
-}
-
 interface BookingCalendarProps {
   appointments: Appointment[];
-  workingHours?: WorkingHour[];
   onDateSelect?: (date: Date) => void;
-  onAppointmentClick?: (appointment: Appointment) => void;
 }
 
-export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAppointmentClick }: BookingCalendarProps) => {
+export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -52,12 +43,6 @@ export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAp
     }
   };
 
-  const isWorkingDay = (date: Date) => {
-    const dayOfWeek = (date.getDay() + 6) % 7; // Convert to Monday = 0
-    const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
-    return !!workingDay;
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="p-4 md:p-6">
@@ -68,7 +53,6 @@ export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAp
           onSelect={handleDateSelect}
           locale={ru}
           className="rounded-md border w-full"
-          disabled={(date) => !isWorkingDay(date)}
         />
       </Card>
 
@@ -77,7 +61,7 @@ export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAp
           <h3 className="text-base md:text-lg font-semibold">
             {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: ru }) : 'Выберите дату'}
           </h3>
-          {selectedDate && onDateSelect && isWorkingDay(selectedDate) && (
+          {selectedDate && onDateSelect && (
             <Button
               size="sm"
               onClick={() => onDateSelect(selectedDate)}
@@ -89,11 +73,7 @@ export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAp
           )}
         </div>
         
-        {!isWorkingDay(selectedDate) ? (
-          <p className="text-muted-foreground text-center py-8 text-sm">
-            Выходной день
-          </p>
-        ) : selectedDayAppointments.length === 0 ? (
+        {selectedDayAppointments.length === 0 ? (
           <p className="text-muted-foreground text-center py-8 text-sm">
             На этот день нет записей
           </p>
@@ -102,8 +82,7 @@ export const BookingCalendar = ({ appointments, workingHours, onDateSelect, onAp
             {selectedDayAppointments.map((apt) => (
               <div
                 key={apt.id}
-                className="p-3 md:p-4 rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onAppointmentClick?.(apt)}
+                className="p-3 md:p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
