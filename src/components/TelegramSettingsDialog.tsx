@@ -8,10 +8,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, ExternalLink } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TelegramSettingsDialogProps {
   open: boolean;
@@ -26,60 +32,79 @@ export const TelegramSettingsDialog = ({
   onSave,
   currentChatId,
 }: TelegramSettingsDialogProps) => {
-  const [chatId, setChatId] = useState("");
+  const [notificationTime, setNotificationTime] = useState("60");
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    setChatId(currentChatId || "");
+    setIsConnected(!!currentChatId);
   }, [currentChatId, open]);
+
+  const handleEnableNotifications = () => {
+    const botUsername = "YOUR_BOT_USERNAME"; // Replace with actual bot username
+    const deeplink = `https://t.me/${botUsername}?start=notify_${notificationTime}`;
+    window.open(deeplink, '_blank');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(chatId);
-    onOpenChange(false);
+    handleEnableNotifications();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Настройки Telegram</DialogTitle>
+          <DialogTitle>Уведомления в Telegram</DialogTitle>
           <DialogDescription>
-            Настройте уведомления о новых записях в Telegram
+            Настройте автоматические уведомления о записях
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              <ol className="list-decimal list-inside space-y-1 mt-2">
-                <li>Найдите бота @userinfobot в Telegram</li>
-                <li>Отправьте ему команду /start</li>
-                <li>Скопируйте ваш Chat ID (Id) и вставьте сюда</li>
-              </ol>
+              Бот будет отправлять уведомления клиентам о предстоящих записях
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="chat_id">Telegram Chat ID</Label>
-            <Input
-              id="chat_id"
-              value={chatId}
-              onChange={(e) => setChatId(e.target.value)}
-              placeholder="123456789"
-              required
-            />
+            <Label htmlFor="notification_time">Когда отправлять уведомление</Label>
+            <Select value={notificationTime} onValueChange={setNotificationTime}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите время" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="60">За 1 час</SelectItem>
+                <SelectItem value="120">За 2 часа</SelectItem>
+                <SelectItem value="1440">За 24 часа</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <DialogFooter>
+          {isConnected && (
+            <Alert className="bg-success/10 border-success">
+              <Info className="h-4 w-4 text-success" />
+              <AlertDescription className="text-xs text-success">
+                Уведомления подключены и работают
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
             >
               Отмена
             </Button>
-            <Button type="submit" className="bg-telegram hover:bg-telegram/90">
-              Сохранить
+            <Button 
+              type="submit" 
+              className="bg-telegram hover:bg-telegram/90 w-full sm:w-auto"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Включить уведомления
             </Button>
           </DialogFooter>
         </form>

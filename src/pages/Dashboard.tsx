@@ -242,6 +242,15 @@ export default function Dashboard() {
     );
   }
 
+  const calculateEarnings = () => {
+    return appointments
+      .filter(a => a.status === 'confirmed' || a.status === 'completed')
+      .reduce((total, apt) => {
+        const service = services.find(s => s.id === apt.service_id);
+        return total + (service?.price || 0);
+      }, 0);
+  };
+
   const stats = [
     {
       title: 'Записей сегодня',
@@ -250,19 +259,26 @@ export default function Dashboard() {
         return a.appointment_date === today;
       }).length,
       icon: Calendar,
-      color: 'text-telegram'
+      color: 'text-telegram',
+      clickable: false
     },
     {
-      title: 'Всего записей',
-      value: appointments.length,
+      title: 'Заработано',
+      value: `${calculateEarnings().toLocaleString('ru-RU')} ₽`,
       icon: ClipboardList,
-      color: 'text-success'
+      color: 'text-success',
+      clickable: false
     },
     {
       title: 'Активных услуг',
       value: services.filter(s => s.is_active).length,
       icon: Settings,
-      color: 'text-warning'
+      color: 'text-warning',
+      clickable: true,
+      onClick: () => {
+        setEditingService(null);
+        setServiceDialogOpen(true);
+      }
     }
   ];
 
@@ -299,17 +315,25 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.title} className="p-6 hover:shadow-lg transition-all">
+              <Card 
+                key={stat.title} 
+                className={`p-4 md:p-6 transition-all ${
+                  stat.clickable 
+                    ? 'hover:shadow-lg cursor-pointer hover:scale-105' 
+                    : 'hover:shadow-lg'
+                }`}
+                onClick={stat.clickable ? stat.onClick : undefined}
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-3xl font-bold mt-2">{stat.value}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl md:text-3xl font-bold mt-2">{stat.value}</p>
                   </div>
-                  <Icon className={`w-12 h-12 ${stat.color} opacity-50`} />
+                  <Icon className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} opacity-50`} />
                 </div>
               </Card>
             );
@@ -354,11 +378,16 @@ export default function Dashboard() {
 
             {calendarView === "week" ? (
               <WeekCalendar
-                appointments={appointments.map(a => ({
-                  ...a,
-                  appointment_time: `${a.appointment_date}T${a.appointment_time}`,
-                  service_name: a.services?.name
-                }))}
+                appointments={appointments.map(a => {
+                  const service = services.find(s => s.id === a.service_id);
+                  return {
+                    ...a,
+                    appointment_time: `${a.appointment_date}T${a.appointment_time}`,
+                    service_name: a.services?.name,
+                    duration_minutes: service?.duration_minutes
+                  };
+                })}
+                workingHours={workingHours}
                 onCreateAppointment={(date) => {
                   setSelectedDate(date);
                   setAppointmentDialogOpen(true);
