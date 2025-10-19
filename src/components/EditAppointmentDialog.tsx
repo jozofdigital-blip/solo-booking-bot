@@ -20,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Phone } from "lucide-react";
+import { User, Phone, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Service {
   id: string;
@@ -40,34 +41,47 @@ interface WorkingHour {
   is_working: boolean;
 }
 
-interface AppointmentDialogProps {
+interface Appointment {
+  id: string;
+  service_id: string;
+  appointment_date: string;
+  appointment_time: string;
+  client_name: string;
+  client_phone: string;
+  notes?: string;
+  status: string;
+}
+
+interface EditAppointmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (appointment: {
+    id: string;
     service_id: string;
     appointment_date: string;
     appointment_time: string;
     client_name: string;
     client_phone: string;
     notes?: string;
+    status: string;
   }) => void;
+  onDelete: (appointmentId: string) => void;
   services: Service[];
-  selectedDate?: Date;
-  selectedTime?: string;
+  appointment: Appointment | null;
   profileId: string;
   workingHours?: WorkingHour[];
 }
 
-export const AppointmentDialog = ({
+export const EditAppointmentDialog = ({
   open,
   onOpenChange,
   onSave,
+  onDelete,
   services,
-  selectedDate,
-  selectedTime,
+  appointment,
   profileId,
   workingHours,
-}: AppointmentDialogProps) => {
+}: EditAppointmentDialogProps) => {
   const [formData, setFormData] = useState({
     service_id: "",
     appointment_date: format(new Date(), "yyyy-MM-dd"),
@@ -75,6 +89,7 @@ export const AppointmentDialog = ({
     client_name: "",
     client_phone: "",
     notes: "",
+    status: "confirmed",
   });
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -82,14 +97,18 @@ export const AppointmentDialog = ({
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
 
   useEffect(() => {
-    if (selectedDate) {
-      setFormData((prev) => ({
-        ...prev,
-        appointment_date: format(selectedDate, "yyyy-MM-dd"),
-        appointment_time: selectedTime || format(selectedDate, "HH:mm"),
-      }));
+    if (appointment) {
+      setFormData({
+        service_id: appointment.service_id,
+        appointment_date: appointment.appointment_date,
+        appointment_time: appointment.appointment_time,
+        client_name: appointment.client_name,
+        client_phone: appointment.client_phone,
+        notes: appointment.notes || "",
+        status: appointment.status,
+      });
     }
-  }, [selectedDate, selectedTime]);
+  }, [appointment]);
 
   useEffect(() => {
     if (open && profileId) {
@@ -110,20 +129,6 @@ export const AppointmentDialog = ({
     }
   }, [formData.client_name, clients]);
 
-  useEffect(() => {
-    if (!open) {
-      setFormData({
-        service_id: "",
-        appointment_date: format(new Date(), "yyyy-MM-dd"),
-        appointment_time: "10:00",
-        client_name: "",
-        client_phone: "",
-        notes: "",
-      });
-      setShowClientSuggestions(false);
-    }
-  }, [open]);
-
   const loadClients = async () => {
     try {
       const { data, error } = await supabase
@@ -142,6 +147,8 @@ export const AppointmentDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!appointment) return;
+
     // Save client if new
     if (formData.client_name && formData.client_phone) {
       const existingClient = clients.find(c => c.phone === formData.client_phone);
@@ -160,8 +167,20 @@ export const AppointmentDialog = ({
       }
     }
     
-    onSave(formData);
+    onSave({
+      id: appointment.id,
+      ...formData,
+    });
     onOpenChange(false);
+  };
+
+  const handleDelete = () => {
+    if (!appointment) return;
+    
+    if (confirm('Удалить запись?')) {
+      onDelete(appointment.id);
+      onOpenChange(false);
+    }
   };
 
   const handleSelectClient = (client: Client) => {
@@ -179,11 +198,13 @@ export const AppointmentDialog = ({
     return workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
   };
 
+  if (!appointment) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Создать запись</DialogTitle>
+          <DialogTitle>Редактировать запись</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -301,6 +322,25 @@ export const AppointmentDialog = ({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="status">Статус</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) =>
+                setFormData({ ...formData, status: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Ожидает</SelectItem>
+                <SelectItem value="confirmed">Подтверждено</SelectItem>
+                <SelectItem value="completed">Завершено</SelectItem>
+                <SelectItem value="cancelled">Отменено</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Примечания</Label>
@@ -315,20 +355,35 @@ export const AppointmentDialog = ({
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
+              variant="destructive"
+              onClick={handleDelete}
+              className="w-full sm:w-auto"
             >
-              Отмена
+              <Trash2 className="w-4 h-4 mr-2" />
+              Удалить
             </Button>
-            <Button type="submit" className="bg-telegram hover:bg-telegram/90">
-              Создать запись
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="flex-1 sm:flex-none"
+              >
+                Отмена
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-telegram hover:bg-telegram/90 flex-1 sm:flex-none"
+              >
+                Сохранить
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};
