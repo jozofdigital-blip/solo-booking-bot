@@ -77,6 +77,25 @@ export default function BookingPage() {
 
       if (error) throw error;
 
+      // Send telegram notification if chat_id is configured
+      if (profile?.telegram_chat_id) {
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              chatId: profile.telegram_chat_id,
+              clientName: clientName,
+              serviceName: selectedServiceData?.name || '',
+              date: format(selectedDate, 'dd.MM.yyyy', { locale: ru }),
+              time: selectedTime,
+              phone: clientPhone,
+            },
+          });
+        } catch (notificationError) {
+          console.error('Failed to send telegram notification:', notificationError);
+          // Don't fail the booking if notification fails
+        }
+      }
+
       toast.success('Запись успешно создана!');
       
       // Reset form
