@@ -40,7 +40,7 @@ export const TelegramSettingsDialog = ({
   }, [currentChatId, open]);
 
   const handleEnableNotifications = () => {
-    const botUsername = "YOUR_BOT_USERNAME"; // Replace with actual bot username
+    const botUsername = "looktime24_bot";
     const deeplink = `https://t.me/${botUsername}?start=notify_${notificationTime}`;
     window.open(deeplink, '_blank');
   };
