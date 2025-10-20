@@ -27,7 +27,7 @@ interface WeekCalendarProps {
   workingHours?: WorkingHour[];
   onDateClick?: (date: Date) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
-  onCreateAppointment?: (date: Date) => void;
+  onCreateAppointment?: (date: string, time: string) => void;
 }
 
 export const WeekCalendar = ({
@@ -194,9 +194,9 @@ export const WeekCalendar = ({
                       }`}
                       onClick={() => {
                         if (inWorkingHours) {
-                          const slotDate = new Date(day);
-                          slotDate.setHours(hour, minute, 0, 0);
-                          onDateClick?.(slotDate);
+                          const dateStr = format(day, "yyyy-MM-dd");
+                          const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                          onDateClick?.(new Date(day));
                         }
                       }}
                     >
@@ -242,19 +242,15 @@ export const WeekCalendar = ({
                       ) : (
                         inWorkingHours && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2"
+                            <Plus 
+                              className="w-4 h-4 text-muted-foreground cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const slotDate = new Date(day);
-                                slotDate.setHours(hour, minute, 0, 0);
-                                onCreateAppointment?.(slotDate);
+                                const dateStr = format(day, "yyyy-MM-dd");
+                                const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                                onCreateAppointment?.(dateStr, timeStr);
                               }}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
+                            />
                           </div>
                         )
                       )}

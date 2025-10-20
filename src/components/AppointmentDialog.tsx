@@ -18,10 +18,32 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Service {
   id: string;
   name: string;
+  duration_minutes?: number;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface Appointment {
+  id: string;
+  service_id: string;
+  appointment_date: string;
+  appointment_time: string;
+  client_name: string;
+  client_phone: string;
+  notes?: string;
 }
 
 interface AppointmentDialogProps {
@@ -33,19 +55,28 @@ interface AppointmentDialogProps {
     appointment_time: string;
     client_name: string;
     client_phone: string;
-    client_telegram?: string;
     notes?: string;
   }) => void;
+  onUpdate?: (id: string, updates: any) => void;
+  onDelete?: (id: string) => void;
   services: Service[];
   selectedDate?: Date;
+  selectedTime?: string;
+  appointment?: Appointment | null;
+  profileId?: string;
 }
 
 export const AppointmentDialog = ({
   open,
   onOpenChange,
   onSave,
+  onUpdate,
+  onDelete,
   services,
   selectedDate,
+  selectedTime,
+  appointment,
+  profileId,
 }: AppointmentDialogProps) => {
   const [formData, setFormData] = useState({
     service_id: "",
@@ -53,44 +84,118 @@ export const AppointmentDialog = ({
     appointment_time: "10:00",
     client_name: "",
     client_phone: "",
-    client_telegram: "",
     notes: "",
   });
 
-  useEffect(() => {
-    if (selectedDate) {
-      setFormData((prev) => ({
-        ...prev,
-        appointment_date: format(selectedDate, "yyyy-MM-dd"),
-      }));
-    }
-  }, [selectedDate]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientsOpen, setClientsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!open) {
+    if (open && profileId) {
+      loadClients();
+    }
+  }, [open, profileId]);
+
+  useEffect(() => {
+    if (appointment) {
+      setFormData({
+        service_id: appointment.service_id,
+        appointment_date: appointment.appointment_date,
+        appointment_time: appointment.appointment_time.substring(0, 5),
+        client_name: appointment.client_name,
+        client_phone: appointment.client_phone,
+        notes: appointment.notes || "",
+      });
+    } else {
+      const date = selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      const time = selectedTime || "10:00";
+      
       setFormData({
         service_id: "",
-        appointment_date: format(new Date(), "yyyy-MM-dd"),
-        appointment_time: "10:00",
+        appointment_date: date,
+        appointment_time: time,
         client_name: "",
         client_phone: "",
-        client_telegram: "",
         notes: "",
       });
     }
-  }, [open]);
+  }, [selectedDate, selectedTime, appointment, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const loadClients = async () => {
+    if (!profileId) return;
+    
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("name");
+
+    if (!error && data) {
+      setClients(data);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    if (appointment && onUpdate) {
+      onUpdate(appointment.id, formData);
+    } else {
+      // Save client if new
+      if (profileId && formData.client_name && formData.client_phone) {
+        const existingClient = clients.find(c => c.phone === formData.client_phone);
+        
+        if (!existingClient) {
+          await supabase.from("clients").insert({
+            profile_id: profileId,
+            name: formData.client_name,
+            phone: formData.client_phone,
+          });
+        }
+      }
+      
+      onSave(formData);
+    }
+    
     onOpenChange(false);
   };
+
+  const handleDelete = () => {
+    if (appointment && onDelete) {
+      onDelete(appointment.id);
+      onOpenChange(false);
+    }
+  };
+
+  const handleClientSelect = (client: Client) => {
+    setFormData({
+      ...formData,
+      client_name: client.name,
+      client_phone: client.phone,
+    });
+    setClientsOpen(false);
+    setSearchQuery("");
+  };
+
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.phone.includes(searchQuery)
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Создать запись</DialogTitle>
+          <DialogTitle>
+            {appointment ? "Редактировать запись" : "Создать запись"}
+          </DialogTitle>
+          {selectedDate && selectedTime && !appointment && (
+            <p className="text-sm text-muted-foreground">
+              {format(selectedDate, "d MMMM", { locale: require("date-fns/locale/ru").ru })} {selectedTime}
+            </p>
+          )}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -145,15 +250,56 @@ export const AppointmentDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="client_name">Имя клиента *</Label>
-            <Input
-              id="client_name"
-              value={formData.client_name}
-              onChange={(e) =>
-                setFormData({ ...formData, client_name: e.target.value })
-              }
-              required
-              placeholder="Введите имя"
-            />
+            <Popover open={clientsOpen} onOpenChange={setClientsOpen}>
+              <PopoverTrigger asChild>
+                <Input
+                  id="client_name"
+                  value={formData.client_name}
+                  onChange={(e) => {
+                    setFormData({ ...formData, client_name: e.target.value });
+                    setSearchQuery(e.target.value);
+                    if (e.target.value && !clientsOpen) {
+                      setClientsOpen(true);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (formData.client_name) {
+                      setSearchQuery(formData.client_name);
+                      setClientsOpen(true);
+                    }
+                  }}
+                  required
+                  placeholder="Введите имя"
+                  autoComplete="off"
+                />
+              </PopoverTrigger>
+              {filteredClients.length > 0 && (
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandGroup>
+                      {filteredClients.map((client) => (
+                        <CommandItem
+                          key={client.id}
+                          onSelect={() => handleClientSelect(client)}
+                          className="cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.client_phone === client.phone ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div>
+                            <div>{client.name}</div>
+                            <div className="text-xs text-muted-foreground">{client.phone}</div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              )}
+            </Popover>
           </div>
 
           <div className="space-y-2">
@@ -171,19 +317,7 @@ export const AppointmentDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="client_telegram">Telegram</Label>
-            <Input
-              id="client_telegram"
-              value={formData.client_telegram}
-              onChange={(e) =>
-                setFormData({ ...formData, client_telegram: e.target.value })
-              }
-              placeholder="@username"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Примечания</Label>
+            <Label htmlFor="notes">Комментарий</Label>
             <Textarea
               id="notes"
               value={formData.notes}
@@ -195,7 +329,16 @@ export const AppointmentDialog = ({
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
+            {appointment && onDelete && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+              >
+                Удалить
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -203,12 +346,12 @@ export const AppointmentDialog = ({
             >
               Отмена
             </Button>
-            <Button type="submit" className="bg-telegram hover:bg-telegram/90">
-              Создать запись
+            <Button type="submit">
+              {appointment ? "Сохранить" : "Создать запись"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

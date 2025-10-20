@@ -20,7 +20,6 @@ export type Database = {
           appointment_time: string
           client_name: string
           client_phone: string
-          client_telegram: string | null
           created_at: string
           id: string
           notes: string | null
@@ -34,7 +33,6 @@ export type Database = {
           appointment_time: string
           client_name: string
           client_phone: string
-          client_telegram?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -48,7 +46,6 @@ export type Database = {
           appointment_time?: string
           client_name?: string
           client_phone?: string
-          client_telegram?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -74,8 +71,47 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          created_at: string
+          id: string
+          last_visit: string | null
+          name: string
+          phone: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_visit?: string | null
+          name: string
+          phone: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_visit?: string | null
+          name?: string
+          phone?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           business_name: string
           created_at: string
@@ -87,6 +123,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           business_name: string
           created_at?: string
@@ -98,6 +135,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           business_name?: string
           created_at?: string

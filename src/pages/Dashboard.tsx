@@ -7,10 +7,14 @@ import { BookingCalendar } from "@/components/BookingCalendar";
 import { ServicesList } from "@/components/ServicesList";
 import { ServiceDialog } from "@/components/ServiceDialog";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
-import { WorkingHoursDialog } from "@/components/WorkingHoursDialog";
-import { TelegramSettingsDialog } from "@/components/TelegramSettingsDialog";
+import { AddressDialog } from "@/components/AddressDialog";
+import { ClientsDialog } from "@/components/ClientsDialog";
 import { WeekCalendar } from "@/components/WeekCalendar";
-import { Calendar, ClipboardList, LogOut, Share2, Settings, Clock, Bell } from "lucide-react";
+import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
+import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format, addDays, startOfDay } from "date-fns";
+import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -23,11 +27,17 @@ export default function Dashboard() {
   const [workingHours, setWorkingHours] = useState<any[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
-  const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
-  const [telegramDialogOpen, setTelegramDialogOpen] = useState(false);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [calendarView, setCalendarView] = useState<"month" | "week">("week");
+  const [selectedTime, setSelectedTime] = useState<string | undefined>();
+  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">("3days");
+  const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
+  const [tomorrowAppointmentsOpen, setTomorrowAppointmentsOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
+  const [businessName, setBusinessName] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -74,8 +84,10 @@ export default function Dashboard() {
 
         if (createError) throw createError;
         setProfile(newProfile);
+        setBusinessName(newProfile.business_name);
       } else {
         setProfile(profileData);
+        setBusinessName(profileData.business_name);
       }
 
       // Load services
@@ -218,18 +230,72 @@ export default function Dashboard() {
     }
   };
 
-  const handleSaveTelegramChatId = async (chatId: string) => {
+  const handleSaveAddress = async (address: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ telegram_chat_id: chatId })
+        .update({ address })
         .eq('id', profile.id);
 
       if (error) throw error;
-      toast.success('Telegram настроен');
+      toast.success('Адрес сохранен');
       loadData();
     } catch (error: any) {
-      toast.error('Ошибка настройки Telegram');
+      toast.error('Ошибка сохранения адреса');
+      console.error(error);
+    }
+  };
+
+  const handleSaveBusinessName = async () => {
+    if (!businessName.trim()) {
+      toast.error('Название не может быть пустым');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ business_name: businessName })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+      toast.success('Название обновлено');
+      setIsEditingBusinessName(false);
+      loadData();
+    } catch (error: any) {
+      toast.error('Ошибка сохранения названия');
+      console.error(error);
+    }
+  };
+
+  const handleUpdateAppointment = async (appointmentId: string, updates: any) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update(updates)
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+      toast.success('Запись обновлена');
+      loadData();
+    } catch (error: any) {
+      toast.error('Ошибка обновления записи');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+      toast.success('Запись удалена');
+      loadData();
+    } catch (error: any) {
+      toast.error('Ошибка удаления записи');
       console.error(error);
     }
   };
@@ -251,34 +317,39 @@ export default function Dashboard() {
       }, 0);
   };
 
+  const todayAppointments = appointments.filter(a => {
+    const today = new Date().toISOString().split('T')[0];
+    return a.appointment_date === today;
+  });
+
+  const tomorrowAppointments = appointments.filter(a => {
+    const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
+    return a.appointment_date === tomorrow;
+  });
+
   const stats = [
     {
       title: 'Записей сегодня',
-      value: appointments.filter(a => {
-        const today = new Date().toISOString().split('T')[0];
-        return a.appointment_date === today;
-      }).length,
+      value: todayAppointments.length,
       icon: Calendar,
       color: 'text-telegram',
-      clickable: false
+      clickable: true,
+      onClick: () => setTodayAppointmentsOpen(true)
+    },
+    {
+      title: 'Записи на завтра',
+      value: tomorrowAppointments.length,
+      icon: Calendar,
+      color: 'text-blue-500',
+      clickable: true,
+      onClick: () => setTomorrowAppointmentsOpen(true)
     },
     {
       title: 'Заработано',
       value: `${calculateEarnings().toLocaleString('ru-RU')} ₽`,
-      icon: ClipboardList,
+      icon: TrendingUp,
       color: 'text-success',
       clickable: false
-    },
-    {
-      title: 'Активных услуг',
-      value: services.filter(s => s.is_active).length,
-      icon: Settings,
-      color: 'text-warning',
-      clickable: true,
-      onClick: () => {
-        setEditingService(null);
-        setServiceDialogOpen(true);
-      }
     }
   ];
 
@@ -287,26 +358,57 @@ export default function Dashboard() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">{profile?.business_name}</h1>
-              <p className="text-sm text-muted-foreground">Панель управления</p>
+            <div className="flex items-center gap-2">
+              {isEditingBusinessName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className="text-2xl font-bold border-b-2 border-primary bg-transparent outline-none"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveBusinessName();
+                      if (e.key === 'Escape') {
+                        setIsEditingBusinessName(false);
+                        setBusinessName(profile?.business_name);
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={handleSaveBusinessName}>✓</Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => {
+                      setIsEditingBusinessName(false);
+                      setBusinessName(profile?.business_name);
+                    }}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ) : (
+                <h1 
+                  className="text-2xl font-bold cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => setIsEditingBusinessName(true)}
+                  title="Нажмите для редактирования"
+                >
+                  {profile?.business_name}
+                </h1>
+              )}
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={copyBookingLink}>
                 <Share2 className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Ссылка</span>
+                <span className="hidden sm:inline">Поделиться ссылкой</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setWorkingHoursDialogOpen(true)}>
-                <Clock className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">График</span>
+              <Button variant="outline" size="sm" onClick={() => setAddressDialogOpen(true)}>
+                <MapPin className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Ваш адрес</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setTelegramDialogOpen(true)}>
-                <Bell className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Telegram</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Выйти</span>
+              <Button variant="outline" size="sm" onClick={() => setClientsDialogOpen(true)}>
+                <Users className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Мои клиенты</span>
               </Button>
             </div>
           </div>
@@ -348,48 +450,71 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="calendar" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <Button
-                  variant={calendarView === "week" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCalendarView("week")}
-                  className={calendarView === "week" ? "bg-telegram hover:bg-telegram/90" : ""}
-                >
-                  Неделя
-                </Button>
-                <Button
-                  variant={calendarView === "month" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCalendarView("month")}
-                  className={calendarView === "month" ? "bg-telegram hover:bg-telegram/90" : ""}
-                >
-                  Месяц
-                </Button>
-              </div>
+            <div className="flex gap-2 flex-wrap">
               <Button
-                onClick={() => setAppointmentDialogOpen(true)}
-                className="bg-telegram hover:bg-telegram/90"
+                variant={calendarView === "3days" ? "default" : "outline"}
                 size="sm"
+                onClick={() => setCalendarView("3days")}
               >
-                Создать запись
+                3 дня
+              </Button>
+              <Button
+                variant={calendarView === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCalendarView("week")}
+              >
+                Неделя
+              </Button>
+              <Button
+                variant={calendarView === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCalendarView("month")}
+              >
+                Месяц
               </Button>
             </div>
 
-            {calendarView === "week" ? (
-              <WeekCalendar
+            {calendarView === "3days" ? (
+              <ThreeDayCalendar
                 appointments={appointments.map(a => {
                   const service = services.find(s => s.id === a.service_id);
                   return {
                     ...a,
-                    appointment_time: `${a.appointment_date}T${a.appointment_time}`,
                     service_name: a.services?.name,
                     duration_minutes: service?.duration_minutes
                   };
                 })}
                 workingHours={workingHours}
-                onCreateAppointment={(date) => {
-                  setSelectedDate(date);
+                onCreateAppointment={(date, time) => {
+                  setSelectedDate(new Date(date));
+                  setSelectedTime(time);
+                  setEditingAppointment(null);
+                  setAppointmentDialogOpen(true);
+                }}
+                onAppointmentClick={(apt) => {
+                  setEditingAppointment(apt);
+                  setAppointmentDialogOpen(true);
+                }}
+              />
+            ) : calendarView === "week" ? (
+              <WeekCalendar
+                appointments={appointments.map(a => {
+                  const service = services.find(s => s.id === a.service_id);
+                  return {
+                    ...a,
+                    service_name: a.services?.name,
+                    duration_minutes: service?.duration_minutes
+                  };
+                })}
+                workingHours={workingHours}
+                onCreateAppointment={(date, time) => {
+                  setSelectedDate(new Date(date));
+                  setSelectedTime(time);
+                  setEditingAppointment(null);
+                  setAppointmentDialogOpen(true);
+                }}
+                onAppointmentClick={(apt) => {
+                  setEditingAppointment(apt);
                   setAppointmentDialogOpen(true);
                 }}
               />
@@ -397,12 +522,12 @@ export default function Dashboard() {
               <BookingCalendar 
                 appointments={appointments.map(a => ({
                   ...a,
-                  appointment_time: `${a.appointment_date}T${a.appointment_time}`,
                   service_name: a.services?.name
                 }))}
                 onDateSelect={(date) => {
                   setSelectedDate(date);
-                  setAppointmentDialogOpen(true);
+                  setSelectedTime(undefined);
+                  setEditingAppointment(null);
                 }}
               />
             )}
@@ -434,25 +559,90 @@ export default function Dashboard() {
 
         <AppointmentDialog
           open={appointmentDialogOpen}
-          onOpenChange={setAppointmentDialogOpen}
+          onOpenChange={(open) => {
+            setAppointmentDialogOpen(open);
+            if (!open) {
+              setEditingAppointment(null);
+              setSelectedDate(undefined);
+              setSelectedTime(undefined);
+            }
+          }}
           onSave={handleSaveAppointment}
+          onUpdate={handleUpdateAppointment}
+          onDelete={handleDeleteAppointment}
           services={services.filter(s => s.is_active)}
           selectedDate={selectedDate}
+          selectedTime={selectedTime}
+          appointment={editingAppointment}
+          profileId={profile?.id}
         />
 
-        <WorkingHoursDialog
-          open={workingHoursDialogOpen}
-          onOpenChange={setWorkingHoursDialogOpen}
-          onSave={handleSaveWorkingHours}
-          workingHours={workingHours}
+        <AddressDialog
+          open={addressDialogOpen}
+          onOpenChange={setAddressDialogOpen}
+          currentAddress={profile?.address}
+          onSave={handleSaveAddress}
         />
 
-        <TelegramSettingsDialog
-          open={telegramDialogOpen}
-          onOpenChange={setTelegramDialogOpen}
-          onSave={handleSaveTelegramChatId}
-          currentChatId={profile?.telegram_chat_id}
+        <ClientsDialog
+          open={clientsDialogOpen}
+          onOpenChange={setClientsDialogOpen}
+          profileId={profile?.id}
         />
+
+        <Dialog open={todayAppointmentsOpen} onOpenChange={setTodayAppointmentsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Записи на сегодня</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {todayAppointments.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">Записей нет</p>
+              ) : (
+                todayAppointments.map((apt) => (
+                  <div key={apt.id} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{apt.client_name}</p>
+                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {apt.appointment_time.substring(0, 5)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={tomorrowAppointmentsOpen} onOpenChange={setTomorrowAppointmentsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>Записи на завтра</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {tomorrowAppointments.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">Записей нет</p>
+              ) : (
+                tomorrowAppointments.map((apt) => (
+                  <div key={apt.id} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{apt.client_name}</p>
+                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {apt.appointment_time.substring(0, 5)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
