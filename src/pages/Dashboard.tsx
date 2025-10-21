@@ -8,7 +8,7 @@ import { ServicesList } from "@/components/ServicesList";
 import { ServiceDialog } from "@/components/ServiceDialog";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
 import { AddressDialog } from "@/components/AddressDialog";
-import { ClientsDialog } from "@/components/ClientsDialog";
+import { ClientsList } from "@/components/ClientsList";
 import { NotificationsSection } from "@/components/NotificationsSection";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
@@ -42,7 +42,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
-  const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
@@ -588,13 +587,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               )}
 
               {currentSection === "clients" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4">Мои клиенты</h2>
-                  <Button onClick={() => setClientsDialogOpen(true)}>
-                    <Users className="w-4 h-4 mr-2" />
-                    Управление клиентами
-                  </Button>
-                </div>
+                <ClientsList profileId={profile?.id} />
               )}
 
               {currentSection === "notifications" && (
@@ -704,11 +697,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           </DialogContent>
         </Dialog>
 
-        <ClientsDialog
-          open={clientsDialogOpen}
-          onOpenChange={setClientsDialogOpen}
-          profileId={profile?.id}
-        />
 
         <Dialog open={todayAppointmentsOpen} onOpenChange={setTodayAppointmentsOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
