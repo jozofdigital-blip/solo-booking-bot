@@ -135,6 +135,8 @@ export const WeekCalendar = ({
     });
   };
 
+  const getSlotHeight = () => 50; // Fixed height for each 30-minute slot
+
   const isSlotInWorkingHours = (date: Date, hour: number, minute: number) => {
     const dayOfWeek = date.getDay();
     const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
@@ -218,13 +220,13 @@ export const WeekCalendar = ({
           </div>
 
           {/* Time slots */}
-          <div className="divide-y">
+          <div className="divide-y relative">
             {timeSlots.map(({ hour, minute }) => (
-              <div key={`${hour}-${minute}`} className="grid grid-cols-8 min-h-[50px] md:min-h-[60px]">
+              <div key={`${hour}-${minute}`} className="grid grid-cols-8 min-h-[50px] relative">
                 <div className="p-1 md:p-2 text-[10px] md:text-xs text-muted-foreground border-r flex items-start justify-center min-w-[50px]">
                   {String(hour).padStart(2, "0")}:{String(minute).padStart(2, "0")}
                 </div>
-                {weekDays.map((day) => {
+                {weekDays.map((day, dayIndex) => {
                   const slotAppointments = getAppointmentsForTimeSlot(day, hour, minute);
                   const inWorkingHours = isSlotInWorkingHours(day, hour, minute);
                   const isPast = isSlotPast(day, hour, minute);
@@ -234,7 +236,7 @@ export const WeekCalendar = ({
                   return (
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
-                      className={`p-1 border-r last:border-r-0 relative group flex-1 ${
+                      className={`p-1 border-r last:border-r-0 relative flex-1 ${
                         !inWorkingHours 
                           ? "bg-muted/20" 
                           : isPast || dayFull
@@ -255,67 +257,86 @@ export const WeekCalendar = ({
                         </div>
                       )}
 
-                      {/* Occupied continuation slots shading */}
-                      {inWorkingHours && !isPast && isOccupied && slotAppointments.length === 0 && (
-                        <div className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-sm" />
-                      )}
-
-                      {slotAppointments.length > 0 ? (
-                        <div className="space-y-1">
-                          {slotAppointments.map((apt) => {
-                            const durationMinutes = apt.duration_minutes || 60;
-                            const slotsNeeded = Math.ceil(durationMinutes / 30);
-                            
-                            return (
-                              <div
-                                key={apt.id}
-                                className={`p-1 md:p-2 rounded text-[10px] md:text-xs cursor-pointer ${
-                                  isPast
-                                    ? "bg-gray-200 border border-gray-300 text-gray-500"
-                                    : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
-                                 }`}
-                                 style={{ 
-                                   minHeight: `${slotsNeeded * 50 - 8}px`,
-                                 }}
-                                 onClick={(e) => {
-                                  e.stopPropagation();
-                                  onAppointmentClick?.(apt);
-                                }}
-                              >
-                                <div className={`font-medium ${isPast ? "text-gray-500" : ""} break-words`}>
-                                  {apt.client_name}
-                                </div>
-                                {apt.service_name && (
-                                  <div className={`truncate text-[9px] md:text-[10px] ${
-                                    isPast ? "text-gray-400" : "text-muted-foreground"
-                                  }`}>
-                                    {apt.service_name}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                      {inWorkingHours && !isPast && !isOccupied && (
+                        <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
+                          <Plus 
+                            className="w-4 h-4 text-muted-foreground cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const dateStr = format(day, "yyyy-MM-dd");
+                              const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                              onCreateAppointment?.(dateStr, timeStr);
+                            }}
+                          />
                         </div>
-                      ) : (
-                        inWorkingHours && !isPast && !dayFull && !isOccupied && (
-                          <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
-                            <Plus 
-                              className="w-4 h-4 text-muted-foreground cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const dateStr = format(day, "yyyy-MM-dd");
-                                const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-                                onCreateAppointment?.(dateStr, timeStr);
-                              }}
-                            />
-                          </div>
-                        )
                       )}
                     </div>
                   );
                 })}
               </div>
             ))}
+
+            {/* Appointment overlays */}
+            {weekDays.map((day, dayIndex) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
+              
+              return dayAppointments.map((apt) => {
+                const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
+                const aptStartTime = aptHour * 60 + aptMinute;
+                const firstSlotTime = timeSlots[0].hour * 60 + timeSlots[0].minute;
+                const slotHeight = getSlotHeight();
+                
+                // Calculate position and height
+                const startSlotIndex = timeSlots.findIndex(slot => 
+                  (slot.hour * 60 + slot.minute) === aptStartTime
+                );
+                
+                if (startSlotIndex === -1) return null;
+                
+                const topOffset = startSlotIndex * slotHeight;
+                const duration = apt.duration_minutes || 60;
+                const height = (duration / 30) * slotHeight;
+                const isPast = isSlotPast(day, aptHour, aptMinute);
+                
+                // Calculate left position (skip time column)
+                const leftOffset = `calc(${((dayIndex + 1) / 8) * 100}% + 1px)`;
+                const width = `calc(${(1 / 8) * 100}% - 2px)`;
+                
+                return (
+                  <div
+                    key={apt.id}
+                    className={`absolute p-1 rounded text-[10px] md:text-xs cursor-pointer z-10 ${
+                      isPast
+                        ? "bg-gray-200 border border-gray-300 text-gray-500"
+                        : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
+                    }`}
+                    style={{
+                      top: topOffset,
+                      left: leftOffset,
+                      width: width,
+                      height: height,
+                      minHeight: '40px'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAppointmentClick?.(apt);
+                    }}
+                  >
+                    <div className={`font-medium ${isPast ? "text-gray-500" : ""} break-words text-xs`}>
+                      {apt.client_name}
+                    </div>
+                    {apt.service_name && (
+                      <div className={`text-[9px] md:text-[10px] ${
+                        isPast ? "text-gray-400" : "text-muted-foreground"
+                      }`}>
+                        {apt.service_name}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })}
           </div>
         </div>
       </Card>

@@ -159,41 +159,34 @@ export const ThreeDayCalendar = ({
           ))}
         </div>
 
-        <div className="overflow-auto max-h-[600px]">
+        <div className="overflow-auto max-h-[600px] relative">
           {timeSlots.map((time, idx) => (
-            <div key={time} className="grid grid-cols-[60px_1fr_1fr_1fr] border-t">
+            <div key={time} className="grid grid-cols-[60px_1fr_1fr_1fr] border-t min-h-[60px]">
               <div className="p-2 text-xs text-muted-foreground border-r flex items-start">
                 {time}
               </div>
-                {threeDays.map((day) => {
-                  const dayAppointments = getAppointmentsForTimeSlot(day, time);
-                  const isWorking = isSlotInWorkingHours(day, time);
-                  const isPast = isSlotPast(day, time);
-                  const isFirstSlotOfAppointment = dayAppointments.length > 0 && 
-                    dayAppointments[0].appointment_time.substring(0, 5) === time;
-                  const isOccupied = dayAppointments.length > 0;
+              {threeDays.map((day) => {
+                const dayAppointments = getAppointmentsForTimeSlot(day, time);
+                const isWorking = isSlotInWorkingHours(day, time);
+                const isPast = isSlotPast(day, time);
+                const isOccupied = dayAppointments.length > 0;
 
-                  return (
-                    <div
-                      key={`${day.toISOString()}-${time}`}
-                      className={`relative min-h-[60px] p-2 border-r last:border-r-0 ${
-                        !isWorking ? "bg-muted" : isPast ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
-                      } ${idx % 2 === 1 ? "border-t-dashed" : ""}`}
-                      onClick={() => {
-                        if (isWorking && !isPast && !isOccupied && onCreateAppointment) {
-                          onCreateAppointment(format(day, "yyyy-MM-dd"), time);
-                        }
-                      }}
-                    >
+                return (
+                  <div
+                    key={`${day.toISOString()}-${time}`}
+                    className={`relative p-2 border-r last:border-r-0 ${
+                      !isWorking ? "bg-muted" : isPast ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
+                    } ${idx % 2 === 1 ? "border-t-dashed" : ""}`}
+                    onClick={() => {
+                      if (isWorking && !isPast && !isOccupied && onCreateAppointment) {
+                        onCreateAppointment(format(day, "yyyy-MM-dd"), time);
+                      }
+                    }}
+                  >
                     {!isWorking && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Lock className="h-4 w-4 text-muted-foreground" />
                       </div>
-                    )}
-                    
-                    {/* Occupied continuation slots shading */}
-                    {isWorking && !isPast && dayAppointments.length > 0 && !isFirstSlotOfAppointment && (
-                      <div className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-sm" />
                     )}
                     
                     {isWorking && !isPast && !isOccupied && (
@@ -201,45 +194,66 @@ export const ThreeDayCalendar = ({
                         <Plus className="h-5 w-5 text-muted-foreground" />
                       </div>
                     )}
-
-                    {isFirstSlotOfAppointment && dayAppointments[0] && (
-                      <div
-                        className="absolute inset-0 p-1 text-xs overflow-hidden cursor-pointer"
-                        style={{
-                          height: dayAppointments[0].duration_minutes 
-                            ? `${(dayAppointments[0].duration_minutes / 30) * 60}px`
-                            : "60px",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onAppointmentClick) {
-                            onAppointmentClick(dayAppointments[0]);
-                          }
-                        }}
-                      >
-                        <div className={`h-full rounded p-1 flex flex-col justify-between ${
-                          isPast 
-                            ? "bg-gray-200 border-l-4 border-gray-400" 
-                            : "bg-primary/10 border-l-4 border-primary"
-                        }`}>
-                          <div>
-                            <div className={`font-medium truncate text-xs ${isPast ? "text-gray-500" : ""}`}>
-                              {dayAppointments[0].client_name}
-                            </div>
-                            {dayAppointments[0].service_name && (
-                              <div className={`text-xs truncate ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
-                                {dayAppointments[0].service_name}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
           ))}
+
+          {/* Appointment overlays */}
+          {threeDays.map((day, dayIndex) => {
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
+            
+            return dayAppointments.map((apt) => {
+              const aptTime = apt.appointment_time.substring(0, 5);
+              const slotIndex = timeSlots.findIndex(slot => slot === aptTime);
+              
+              if (slotIndex === -1) return null;
+              
+              const topOffset = slotIndex * 60; // 60px per slot
+              const duration = apt.duration_minutes || 60;
+              const height = (duration / 30) * 60; // 60px per 30-minute slot
+              const isPast = isSlotPast(day, aptTime);
+              
+              // Calculate left position (skip time column)
+              const leftOffset = `calc(${((dayIndex + 1) / 4) * 100}% + 1px)`;
+              const width = `calc(${(1 / 4) * 100}% - 2px)`;
+              
+              return (
+                <div
+                  key={apt.id}
+                  className={`absolute p-2 rounded text-xs cursor-pointer z-10 ${
+                    isPast 
+                      ? "bg-gray-200 border-l-4 border-gray-400" 
+                      : "bg-primary/10 border-l-4 border-primary"
+                  }`}
+                  style={{
+                    top: topOffset,
+                    left: leftOffset,
+                    width: width,
+                    height: height,
+                    minHeight: '50px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onAppointmentClick) {
+                      onAppointmentClick(apt);
+                    }
+                  }}
+                >
+                  <div className={`font-medium text-xs ${isPast ? "text-gray-500" : ""}`}>
+                    {apt.client_name}
+                  </div>
+                  {apt.service_name && (
+                    <div className={`text-xs ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
+                      {apt.service_name}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })}
         </div>
       </div>
     </div>
