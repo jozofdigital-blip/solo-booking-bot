@@ -14,6 +14,7 @@ interface ClientNotificationRequest {
   time: string;
   businessName: string;
   address?: string;
+  cancellationReason?: string;
 }
 
 serve(async (req) => {
@@ -35,7 +36,8 @@ serve(async (req) => {
       date, 
       time, 
       businessName,
-      address 
+      address,
+      cancellationReason
     }: ClientNotificationRequest = await req.json();
 
     let message = '';
@@ -79,6 +81,9 @@ serve(async (req) => {
         message += `📅 ${date}, ${time}\n`;
         message += `💅 ${serviceName}\n`;
         message += `🏢 ${businessName}\n`;
+        if (cancellationReason) {
+          message += `\n📝 Причина: ${cancellationReason}\n`;
+        }
         message += `\nПриносим извинения за неудобства.`;
         break;
 

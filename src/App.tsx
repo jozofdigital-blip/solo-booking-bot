@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import BookingPage from "./pages/BookingPage";
+import MyAppointments from "./pages/MyAppointments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/dashboard/calendar" element={<Dashboard mode="calendar" />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/book/:slug" element={<BookingPage />} />
+          <Route path="/my-appointments" element={<MyAppointments />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

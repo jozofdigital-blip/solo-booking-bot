@@ -6,7 +6,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Bell } from "lucide-react";
+import { CheckCircle, Bell, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface BookingSuccessDialogProps {
   open: boolean;
@@ -21,10 +22,17 @@ export const BookingSuccessDialog = ({
   clientPhone,
   botUsername,
 }: BookingSuccessDialogProps) => {
+  const navigate = useNavigate();
+
   const handleConnectTelegram = () => {
     // Create deep link for client
     const deepLink = `https://t.me/${botUsername}?start=client_${clientPhone}`;
     window.open(deepLink, '_blank');
+  };
+
+  const handleViewAppointments = () => {
+    onOpenChange(false);
+    navigate('/my-appointments');
   };
 
   return (
@@ -44,19 +52,28 @@ export const BookingSuccessDialog = ({
         
         <div className="flex flex-col gap-3 mt-4">
           <Button
-            onClick={handleConnectTelegram}
+            onClick={handleViewAppointments}
             className="w-full h-12 bg-telegram hover:bg-telegram/90"
+          >
+            <Calendar className="w-5 h-5 mr-2" />
+            Посмотреть мои записи
+          </Button>
+
+          <Button
+            onClick={handleConnectTelegram}
+            variant="outline"
+            className="w-full h-12"
           >
             <Bell className="w-5 h-5 mr-2" />
             Подключить уведомления
           </Button>
           
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             className="w-full"
           >
-            Позже
+            Закрыть
           </Button>
         </div>
       </DialogContent>

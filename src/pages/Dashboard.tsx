@@ -13,6 +13,7 @@ import { NotificationsSection } from "@/components/NotificationsSection";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
 import {
   DEFAULT_WORKING_HOURS,
   WorkingHour,
@@ -56,6 +57,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(null);
   const [highlightColor, setHighlightColor] = useState<'green' | 'red' | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -428,31 +432,79 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {
+    setCancellingAppointmentId(appointmentId);
+    setCancelDialogOpen(true);
+  };
+
+  const handleConfirmCancel = async (reason?: string) => {
+    if (!cancellingAppointmentId) return;
+
+    setCancelLoading(true);
     try {
-      // Get appointment data before deletion for notification
+      // Get appointment and service data before cancellation
       const { data: appointment } = await supabase
         .from('appointments')
-        .select('*')
-        .eq('id', appointmentId)
+        .select(`
+          *,
+          services (name)
+        `)
+        .eq('id', cancellingAppointmentId)
         .single();
 
+      // Update status to cancelled instead of deleting
       const { error } = await supabase
         .from('appointments')
-        .delete()
-        .eq('id', appointmentId);
+        .update({ 
+          status: 'cancelled',
+          cancellation_reason: reason
+        })
+        .eq('id', cancellingAppointmentId);
 
       if (error) throw error;
       
-      // Send cancellation notification
+      // Send cancellation notification to client if they have telegram
+      if (appointment?.client_phone) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('telegram_chat_id')
+          .eq('phone', appointment.client_phone)
+          .maybeSingle();
+
+        if (clientData?.telegram_chat_id) {
+          try {
+            await supabase.functions.invoke('send-client-notification', {
+              body: {
+                chatId: clientData.telegram_chat_id,
+                type: 'cancellation',
+                clientName: appointment.client_name,
+                serviceName: (appointment.services as any)?.name || '',
+                date: format(new Date(appointment.appointment_date), 'dd MMMM yyyy', { locale: ru }),
+                time: appointment.appointment_time,
+                businessName: profile.business_name,
+                address: profile.address,
+                cancellationReason: reason,
+              },
+            });
+          } catch (notificationError) {
+            console.error('Failed to send cancellation notification:', notificationError);
+          }
+        }
+      }
+
+      // Send cancellation notification to owner (existing notification)
       if (appointment) {
         await sendTelegramNotification(appointment, 'cancelled');
       }
       
-      toast.success('Запись удалена');
+      toast.success('Запись отменена');
       loadData();
     } catch (error: any) {
-      toast.error('Ошибка удаления записи');
+      toast.error('Ошибка отмены записи');
       console.error(error);
+    } finally {
+      setCancelLoading(false);
+      setCancelDialogOpen(false);
+      setCancellingAppointmentId(null);
     }
   };
 
@@ -757,6 +809,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onOpenChange={setWorkingHoursDialogOpen}
           workingHours={workingHours}
           onSave={handleSaveWorkingHours}
+        />
+
+        <CancelAppointmentDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleConfirmCancel}
+          loading={cancelLoading}
         />
 
         <Dialog open={businessNameDialogOpen} onOpenChange={setBusinessNameDialogOpen}>

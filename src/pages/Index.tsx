@@ -39,10 +39,10 @@ const Index = () => {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/my-appointments')}
               className="text-lg h-14 px-8"
             >
-              Войти
+              Мои записи
             </Button>
           </div>
         </div>
