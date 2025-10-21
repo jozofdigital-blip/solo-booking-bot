@@ -15,6 +15,7 @@ interface ClientNotificationRequest {
   businessName: string;
   address?: string;
   cancellationReason?: string;
+  myAppointmentsUrl?: string;
 }
 
 serve(async (req) => {
@@ -37,7 +38,8 @@ serve(async (req) => {
       time, 
       businessName,
       address,
-      cancellationReason
+      cancellationReason,
+      myAppointmentsUrl
     }: ClientNotificationRequest = await req.json();
 
     let message = '';
@@ -107,6 +109,19 @@ serve(async (req) => {
 
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     
+    // Add inline keyboard button for "My Appointments" page if URL is provided
+    let keyboard = undefined;
+    if (myAppointmentsUrl) {
+      keyboard = {
+        inline_keyboard: [[
+          {
+            text: '📅 Мои записи',
+            url: myAppointmentsUrl
+          }
+        ]]
+      };
+    }
+    
     const response = await fetch(telegramUrl, {
       method: 'POST',
       headers: {
@@ -116,6 +131,7 @@ serve(async (req) => {
         chat_id: chatId,
         text: message,
         parse_mode: 'Markdown',
+        ...(keyboard && { reply_markup: keyboard }),
       }),
     });
 

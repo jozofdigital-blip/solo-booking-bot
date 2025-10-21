@@ -52,17 +52,8 @@ export const BookingSuccessDialog = ({
         
         <div className="flex flex-col gap-3 mt-4">
           <Button
-            onClick={handleViewAppointments}
-            className="w-full h-12 bg-telegram hover:bg-telegram/90"
-          >
-            <Calendar className="w-5 h-5 mr-2" />
-            Посмотреть мои записи
-          </Button>
-
-          <Button
             onClick={handleConnectTelegram}
-            variant="outline"
-            className="w-full h-12"
+            className="w-full h-12 bg-telegram hover:bg-telegram/90"
           >
             <Bell className="w-5 h-5 mr-2" />
             Подключить уведомления

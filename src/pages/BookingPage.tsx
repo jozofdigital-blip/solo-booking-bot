@@ -281,6 +281,7 @@ export default function BookingPage() {
               time: selectedTime,
               businessName: profile.business_name,
               address: profile.address,
+              myAppointmentsUrl: `${window.location.origin}/my-appointments`,
             },
           });
         } catch (notificationError) {
@@ -320,9 +321,9 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Card className="p-6 mb-6 bg-gradient-to-br from-telegram/5 to-telegram-light/10 border-telegram/20">
+        <Card className="p-6 mb-6 bg-telegram/5 border-telegram/20">
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-telegram to-telegram-dark bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold mb-2 text-foreground">
               {profile.business_name}
             </h1>
             {profile.description && (
