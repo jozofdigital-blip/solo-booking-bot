@@ -360,16 +360,10 @@ export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar 
-          currentSection={currentSection}
-          onSectionChange={setCurrentSection}
-          onLogout={handleLogout}
-        />
-
+        {/* Main content first so the sidebar appears on the right */}
         <div className="flex-1 flex flex-col">
           <header className="h-14 border-b bg-card flex items-center px-4">
-            <SidebarTrigger className="mr-4" />
-            <div className="flex-1 flex justify-between items-center">
+            <div className="flex-1 flex justify-between items-center w-full">
               <div className="flex items-center gap-2">
                 {isEditingBusinessName ? (
                   <div className="flex items-center gap-2">
@@ -409,10 +403,14 @@ export default function Dashboard() {
                   </h1>
                 )}
               </div>
-              <Button variant="outline" size="sm" onClick={copyBookingLink}>
-                <Share2 className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Поделиться ссылкой</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={copyBookingLink}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Поделиться ссылкой</span>
+                </Button>
+                {/* Hamburger on the right */}
+                <SidebarTrigger className="ml-2" />
+              </div>
             </div>
           </header>
 
@@ -578,7 +576,12 @@ export default function Dashboard() {
             </div>
           </main>
         </div>
-
+        {/* Sidebar on the right */}
+        <AppSidebar 
+          currentSection={currentSection}
+          onSectionChange={setCurrentSection}
+          onLogout={handleLogout}
+        />
         {/* Dialogs */}
         <ServiceDialog
           open={serviceDialogOpen}
