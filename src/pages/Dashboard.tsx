@@ -19,8 +19,9 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
+import { Calendar, Share2, MapPin, Users, TrendingUp, CalendarCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 type DashboardMode = "main" | "calendar";
 
@@ -53,12 +54,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
-  const isCalendarPage = mode === "calendar";
-
-  useEffect(() => {
-    setCalendarView(mode === "calendar" ? "week" : "3days");
-    setCurrentSection("calendar");
-  }, [mode]);
 
   const mergeWithDefaultWorkingHours = (hours?: any[]): WorkingHour[] => {
     const ensureTimeFormat = (time: string, fallback: string) => {
@@ -504,62 +499,39 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </div>
 
                   <div className="space-y-4">
-                    {isCalendarPage ? (
-                      <>
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={calendarView === "week" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("week")}
-                          >
-                            Неделя
-                          </Button>
-                          <Button
-                            variant={calendarView === "month" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("month")}
-                          >
-                            Месяц
-                          </Button>
-                        </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant={calendarView === "3days" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("3days")}
+                      >
+                        3 дня
+                      </Button>
+                      <Button
+                        variant={calendarView === "week" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("week")}
+                      >
+                        Неделя
+                      </Button>
+                      <Button
+                        variant={calendarView === "month" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("month")}
+                      >
+                        Месяц
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWorkingHoursDialogOpen(true)}
+                      >
+                        <CalendarCog className="w-4 h-4 mr-2" />
+                        Настроить график
+                      </Button>
+                    </div>
 
-                        {calendarView === "week" ? (
-                          <WeekCalendar
-                            appointments={appointments.map(a => {
-                              const service = services.find(s => s.id === a.service_id);
-                              return {
-                                ...a,
-                                service_name: a.services?.name,
-                                duration_minutes: service?.duration_minutes
-                              };
-                            })}
-                            workingHours={workingHours}
-                            onCreateAppointment={(date, time) => {
-                              setSelectedDate(new Date(date));
-                              setSelectedTime(time);
-                              setEditingAppointment(null);
-                              setAppointmentDialogOpen(true);
-                            }}
-                            onAppointmentClick={(apt) => {
-                              setEditingAppointment(apt);
-                              setAppointmentDialogOpen(true);
-                            }}
-                          />
-                        ) : (
-                          <BookingCalendar
-                            appointments={appointments.map(a => ({
-                              ...a,
-                              service_name: a.services?.name
-                            }))}
-                            onDateSelect={(date) => {
-                              setSelectedDate(date);
-                              setSelectedTime(undefined);
-                              setEditingAppointment(null);
-                            }}
-                          />
-                        )}
-                      </>
-                    ) : (
+                    {calendarView === "3days" ? (
                       <ThreeDayCalendar
                         appointments={appointments.map(a => {
                           const service = services.find(s => s.id === a.service_id);
