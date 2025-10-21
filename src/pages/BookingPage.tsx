@@ -27,6 +27,7 @@ export default function BookingPage() {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [botUsername, setBotUsername] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
+  const [clientHasTelegram, setClientHasTelegram] = useState(false);
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
@@ -268,7 +269,10 @@ export default function BookingPage() {
         .eq('id', clientId)
         .maybeSingle();
 
-      if (clientData?.telegram_chat_id) {
+      const hasTelegram = !!clientData?.telegram_chat_id;
+      setClientHasTelegram(hasTelegram);
+
+      if (hasTelegram) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
           await supabase.functions.invoke('send-client-notification', {
@@ -456,6 +460,7 @@ export default function BookingPage() {
         onOpenChange={setSuccessDialogOpen}
         clientId={clientId}
         botUsername={botUsername}
+        hasTelegram={clientHasTelegram}
       />
     </div>
   );

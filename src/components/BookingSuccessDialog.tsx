@@ -14,6 +14,7 @@ interface BookingSuccessDialogProps {
   onOpenChange: (open: boolean) => void;
   clientId: string;
   botUsername: string;
+  hasTelegram?: boolean;
 }
 
 export const BookingSuccessDialog = ({
@@ -21,6 +22,7 @@ export const BookingSuccessDialog = ({
   onOpenChange,
   clientId,
   botUsername,
+  hasTelegram = false,
 }: BookingSuccessDialogProps) => {
   const navigate = useNavigate();
 
@@ -45,19 +47,23 @@ export const BookingSuccessDialog = ({
           <DialogTitle className="text-center text-2xl">
             Запись успешно создана!
           </DialogTitle>
-          <DialogDescription className="text-center text-base pt-2">
-            Пожалуйста, подключите уведомления в Telegram, чтобы мы напоминали о записях 😊
-          </DialogDescription>
+          {!hasTelegram && (
+            <DialogDescription className="text-center text-base pt-2">
+              Пожалуйста, подключите уведомления в Telegram, чтобы мы напоминали о записях 😊
+            </DialogDescription>
+          )}
         </DialogHeader>
         
         <div className="flex flex-col gap-3 mt-4">
-          <Button
-            onClick={handleConnectTelegram}
-            className="w-full h-12 bg-telegram hover:bg-telegram/90"
-          >
-            <Bell className="w-5 h-5 mr-2" />
-            Подключить уведомления
-          </Button>
+          {!hasTelegram && (
+            <Button
+              onClick={handleConnectTelegram}
+              className="w-full h-12 bg-telegram hover:bg-telegram/90"
+            >
+              <Bell className="w-5 h-5 mr-2" />
+              Подключить уведомления
+            </Button>
+          )}
           
           <Button
             variant="ghost"
