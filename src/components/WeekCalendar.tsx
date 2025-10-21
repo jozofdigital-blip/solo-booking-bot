@@ -255,7 +255,7 @@ export const WeekCalendar = ({
                                   onAppointmentClick?.(apt);
                                 }}
                               >
-                                <div className={`font-medium truncate ${isPast ? "text-gray-500" : ""}`}>
+                                <div className={`font-medium ${isPast ? "text-gray-500" : ""} break-words`}>
                                   {apt.client_name}
                                 </div>
                                 {apt.service_name && (
