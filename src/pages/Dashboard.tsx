@@ -9,8 +9,11 @@ import { ServiceDialog } from "@/components/ServiceDialog";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
 import { AddressDialog } from "@/components/AddressDialog";
 import { ClientsDialog } from "@/components/ClientsDialog";
+import { NotificationsSection } from "@/components/NotificationsSection";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, addDays, startOfDay } from "date-fns";
@@ -38,6 +41,7 @@ export default function Dashboard() {
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
   const [businessName, setBusinessName] = useState("");
+  const [currentSection, setCurrentSection] = useState("calendar");
 
   useEffect(() => {
     checkAuth();
@@ -354,200 +358,226 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              {isEditingBusinessName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    className="text-2xl font-bold border-b-2 border-primary bg-transparent outline-none"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveBusinessName();
-                      if (e.key === 'Escape') {
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar 
+          currentSection={currentSection}
+          onSectionChange={setCurrentSection}
+          onLogout={handleLogout}
+        />
+
+        <div className="flex-1 flex flex-col">
+          <header className="h-14 border-b bg-card flex items-center px-4">
+            <SidebarTrigger className="mr-4" />
+            <div className="flex-1 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {isEditingBusinessName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      className="text-xl font-bold border-b-2 border-primary bg-transparent outline-none"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveBusinessName();
+                        if (e.key === 'Escape') {
+                          setIsEditingBusinessName(false);
+                          setBusinessName(profile?.business_name);
+                        }
+                      }}
+                    />
+                    <Button size="sm" onClick={handleSaveBusinessName}>✓</Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => {
                         setIsEditingBusinessName(false);
                         setBusinessName(profile?.business_name);
-                      }
-                    }}
-                  />
-                  <Button size="sm" onClick={handleSaveBusinessName}>✓</Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => {
-                      setIsEditingBusinessName(false);
-                      setBusinessName(profile?.business_name);
-                    }}
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ) : (
+                  <h1 
+                    className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => setIsEditingBusinessName(true)}
+                    title="Нажмите для редактирования"
                   >
-                    ✕
-                  </Button>
-                </div>
-              ) : (
-                <h1 
-                  className="text-2xl font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => setIsEditingBusinessName(true)}
-                  title="Нажмите для редактирования"
-                >
-                  {profile?.business_name}
-                </h1>
-              )}
-            </div>
-            <div className="flex gap-2 flex-wrap">
+                    {profile?.business_name}
+                  </h1>
+                )}
+              </div>
               <Button variant="outline" size="sm" onClick={copyBookingLink}>
                 <Share2 className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Поделиться ссылкой</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setAddressDialogOpen(true)}>
-                <MapPin className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Ваш адрес</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setClientsDialogOpen(true)}>
-                <Users className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Мои клиенты</span>
-              </Button>
             </div>
-          </div>
-        </div>
-      </header>
+          </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card 
-                key={stat.title} 
-                className={`p-4 md:p-6 transition-all ${
-                  stat.clickable 
-                    ? 'hover:shadow-lg cursor-pointer hover:scale-105' 
-                    : 'hover:shadow-lg'
-                }`}
-                onClick={stat.clickable ? stat.onClick : undefined}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs md:text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl md:text-3xl font-bold mt-2">{stat.value}</p>
+          <main className="flex-1 overflow-auto">
+            <div className="container mx-auto px-4 py-8">
+              {currentSection === "calendar" && (
+                <>
+                  {/* Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                    {stats.map((stat) => {
+                      const Icon = stat.icon;
+                      return (
+                        <Card 
+                          key={stat.title} 
+                          className={`p-4 md:p-6 transition-all ${
+                            stat.clickable 
+                              ? 'hover:shadow-lg cursor-pointer hover:scale-105' 
+                              : 'hover:shadow-lg'
+                          }`}
+                          onClick={stat.clickable ? stat.onClick : undefined}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs md:text-sm text-muted-foreground">{stat.title}</p>
+                              <p className="text-2xl md:text-3xl font-bold mt-2">{stat.value}</p>
+                            </div>
+                            <Icon className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} opacity-50`} />
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                  <Icon className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} opacity-50`} />
+
+                  <div className="space-y-4">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant={calendarView === "3days" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("3days")}
+                      >
+                        3 дня
+                      </Button>
+                      <Button
+                        variant={calendarView === "week" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("week")}
+                      >
+                        Неделя
+                      </Button>
+                      <Button
+                        variant={calendarView === "month" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("month")}
+                      >
+                        Месяц
+                      </Button>
+                    </div>
+
+                    {calendarView === "3days" ? (
+                      <ThreeDayCalendar
+                        appointments={appointments.map(a => {
+                          const service = services.find(s => s.id === a.service_id);
+                          return {
+                            ...a,
+                            service_name: a.services?.name,
+                            duration_minutes: service?.duration_minutes
+                          };
+                        })}
+                        workingHours={workingHours}
+                        onCreateAppointment={(date, time) => {
+                          setSelectedDate(new Date(date));
+                          setSelectedTime(time);
+                          setEditingAppointment(null);
+                          setAppointmentDialogOpen(true);
+                        }}
+                        onAppointmentClick={(apt) => {
+                          setEditingAppointment(apt);
+                          setAppointmentDialogOpen(true);
+                        }}
+                      />
+                    ) : calendarView === "week" ? (
+                      <WeekCalendar
+                        appointments={appointments.map(a => {
+                          const service = services.find(s => s.id === a.service_id);
+                          return {
+                            ...a,
+                            service_name: a.services?.name,
+                            duration_minutes: service?.duration_minutes
+                          };
+                        })}
+                        workingHours={workingHours}
+                        onCreateAppointment={(date, time) => {
+                          setSelectedDate(new Date(date));
+                          setSelectedTime(time);
+                          setEditingAppointment(null);
+                          setAppointmentDialogOpen(true);
+                        }}
+                        onAppointmentClick={(apt) => {
+                          setEditingAppointment(apt);
+                          setAppointmentDialogOpen(true);
+                        }}
+                      />
+                    ) : (
+                      <BookingCalendar 
+                        appointments={appointments.map(a => ({
+                          ...a,
+                          service_name: a.services?.name
+                        }))}
+                        onDateSelect={(date) => {
+                          setSelectedDate(date);
+                          setSelectedTime(undefined);
+                          setEditingAppointment(null);
+                        }}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
+
+              {currentSection === "services" && (
+                <ServicesList
+                  services={services}
+                  onAdd={() => {
+                    setEditingService(null);
+                    setServiceDialogOpen(true);
+                  }}
+                  onEdit={(service) => {
+                    setEditingService(service);
+                    setServiceDialogOpen(true);
+                  }}
+                  onDelete={handleDeleteService}
+                />
+              )}
+
+              {currentSection === "clients" && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Мои клиенты</h2>
+                  <Button onClick={() => setClientsDialogOpen(true)}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Управление клиентами
+                  </Button>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
+              )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="calendar">Календарь</TabsTrigger>
-            <TabsTrigger value="services">Услуги</TabsTrigger>
-          </TabsList>
+              {currentSection === "notifications" && (
+                <NotificationsSection />
+              )}
 
-          <TabsContent value="calendar" className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={calendarView === "3days" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCalendarView("3days")}
-              >
-                3 дня
-              </Button>
-              <Button
-                variant={calendarView === "week" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCalendarView("week")}
-              >
-                Неделя
-              </Button>
-              <Button
-                variant={calendarView === "month" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCalendarView("month")}
-              >
-                Месяц
-              </Button>
+              {currentSection === "address" && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
+                  <Card className="p-6">
+                    <p className="text-muted-foreground mb-4">
+                      {profile?.address || "Адрес не указан"}
+                    </p>
+                    <Button onClick={() => setAddressDialogOpen(true)}>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Изменить адрес
+                    </Button>
+                  </Card>
+                </div>
+              )}
             </div>
-
-            {calendarView === "3days" ? (
-              <ThreeDayCalendar
-                appointments={appointments.map(a => {
-                  const service = services.find(s => s.id === a.service_id);
-                  return {
-                    ...a,
-                    service_name: a.services?.name,
-                    duration_minutes: service?.duration_minutes
-                  };
-                })}
-                workingHours={workingHours}
-                onCreateAppointment={(date, time) => {
-                  setSelectedDate(new Date(date));
-                  setSelectedTime(time);
-                  setEditingAppointment(null);
-                  setAppointmentDialogOpen(true);
-                }}
-                onAppointmentClick={(apt) => {
-                  setEditingAppointment(apt);
-                  setAppointmentDialogOpen(true);
-                }}
-              />
-            ) : calendarView === "week" ? (
-              <WeekCalendar
-                appointments={appointments.map(a => {
-                  const service = services.find(s => s.id === a.service_id);
-                  return {
-                    ...a,
-                    service_name: a.services?.name,
-                    duration_minutes: service?.duration_minutes
-                  };
-                })}
-                workingHours={workingHours}
-                onCreateAppointment={(date, time) => {
-                  setSelectedDate(new Date(date));
-                  setSelectedTime(time);
-                  setEditingAppointment(null);
-                  setAppointmentDialogOpen(true);
-                }}
-                onAppointmentClick={(apt) => {
-                  setEditingAppointment(apt);
-                  setAppointmentDialogOpen(true);
-                }}
-              />
-            ) : (
-              <BookingCalendar 
-                appointments={appointments.map(a => ({
-                  ...a,
-                  service_name: a.services?.name
-                }))}
-                onDateSelect={(date) => {
-                  setSelectedDate(date);
-                  setSelectedTime(undefined);
-                  setEditingAppointment(null);
-                }}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="services">
-            <ServicesList
-              services={services}
-              onAdd={() => {
-                setEditingService(null);
-                setServiceDialogOpen(true);
-              }}
-              onEdit={(service) => {
-                setEditingService(service);
-                setServiceDialogOpen(true);
-              }}
-              onDelete={handleDeleteService}
-            />
-          </TabsContent>
-        </Tabs>
+          </main>
+        </div>
 
         {/* Dialogs */}
         <ServiceDialog
@@ -643,7 +673,7 @@ export default function Dashboard() {
             </div>
           </DialogContent>
         </Dialog>
-      </main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
