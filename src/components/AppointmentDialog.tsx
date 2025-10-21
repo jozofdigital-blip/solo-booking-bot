@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Users } from "lucide-react";
 
 interface Service {
   id: string;
@@ -89,9 +86,7 @@ export const AppointmentDialog = ({
   });
 
   const [clients, setClients] = useState<Client[]>([]);
-  const [clientsOpen, setClientsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const clientNameInputRef = useRef<HTMLInputElement>(null);
+  const [selectClientDialogOpen, setSelectClientDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open && profileId) {
@@ -176,15 +171,8 @@ export const AppointmentDialog = ({
       client_name: client.name,
       client_phone: client.phone,
     });
-    setClientsOpen(false);
-    setSearchQuery("");
+    setSelectClientDialogOpen(false);
   };
-
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.phone.includes(searchQuery)
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -252,73 +240,27 @@ export const AppointmentDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="client_name">Имя клиента *</Label>
-            <Popover open={clientsOpen} onOpenChange={setClientsOpen}>
-              <PopoverTrigger asChild>
-                <Input
-                  ref={clientNameInputRef}
-                  id="client_name"
-                  value={formData.client_name}
-                  onChange={(e) => {
-                    setFormData({ ...formData, client_name: e.target.value });
-                    setSearchQuery(e.target.value);
-                    if (e.target.value && !clientsOpen) {
-                      setClientsOpen(true);
-                    }
-                  }}
-                  onFocus={() => {
-                    if (formData.client_name) {
-                      setSearchQuery(formData.client_name);
-                      setClientsOpen(true);
-                    }
-                  }}
-                  required
-                  placeholder="Введите имя клиента"
-                  autoComplete="off"
-                />
-              </PopoverTrigger>
-              {filteredClients.length > 0 && (
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setFormData({ ...formData, client_name: "", client_phone: "" });
-                          setClientsOpen(false);
-                          setSearchQuery("");
-                          setTimeout(() => {
-                            clientNameInputRef.current?.focus();
-                          }, 100);
-                        }}
-                        className="cursor-pointer font-medium text-primary"
-                      >
-                        + Новый клиент
-                      </CommandItem>
-                      {filteredClients.map((client) => (
-                        <CommandItem
-                          key={client.id}
-                          onSelect={() => handleClientSelect(client)}
-                          className="cursor-pointer"
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              formData.client_phone === client.phone ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div>
-                            <div>{client.name}</div>
-                            <div className="text-xs text-muted-foreground">{client.phone}</div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              )}
-            </Popover>
-            <p className="text-xs text-muted-foreground">
-              Можно выбрать существующего клиента или ввести нового
-            </p>
+            <div className="flex gap-2">
+              <Input
+                id="client_name"
+                value={formData.client_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, client_name: e.target.value })
+                }
+                required
+                placeholder="Введите имя клиента"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setSelectClientDialogOpen(true)}
+                title="Выбрать из списка"
+              >
+                <Users className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -370,6 +312,44 @@ export const AppointmentDialog = ({
             </Button>
           </DialogFooter>
         </form>
+
+        {/* Client Selection Dialog */}
+        <Dialog open={selectClientDialogOpen} onOpenChange={setSelectClientDialogOpen}>
+          <DialogContent className="max-w-md max-h-[70vh]">
+            <DialogHeader>
+              <DialogTitle>Выбрать клиента</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[50vh]">
+              {clients.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Нет сохраненных клиентов
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {clients.map((client) => (
+                    <div
+                      key={client.id}
+                      className="p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => handleClientSelect(client)}
+                    >
+                      <div className="font-medium">{client.name}</div>
+                      <div className="text-sm text-muted-foreground">{client.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectClientDialogOpen(false)}
+              >
+                Отмена
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
