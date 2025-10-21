@@ -21,7 +21,6 @@ import {
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, Share2, MapPin, Users, TrendingUp, CalendarCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { format, addDays, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,7 +43,6 @@ export default function Dashboard() {
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
   const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">("3days");
   const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
-  const [tomorrowAppointmentsOpen, setTomorrowAppointmentsOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
   const [businessName, setBusinessName] = useState("");
@@ -355,24 +353,18 @@ export default function Dashboard() {
     );
   }
 
-  const calculateEarnings = () => {
-    return appointments
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  const todayAppointments = appointments.filter(a => a.appointment_date === todayDate);
+
+  const calculateTodayEarnings = () => {
+    return todayAppointments
       .filter(a => a.status === 'confirmed' || a.status === 'completed')
       .reduce((total, apt) => {
         const service = services.find(s => s.id === apt.service_id);
         return total + (service?.price || 0);
       }, 0);
   };
-
-  const todayAppointments = appointments.filter(a => {
-    const today = new Date().toISOString().split('T')[0];
-    return a.appointment_date === today;
-  });
-
-  const tomorrowAppointments = appointments.filter(a => {
-    const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
-    return a.appointment_date === tomorrow;
-  });
 
   const stats = [
     {
@@ -384,16 +376,8 @@ export default function Dashboard() {
       onClick: () => setTodayAppointmentsOpen(true)
     },
     {
-      title: 'Записи на завтра',
-      value: tomorrowAppointments.length,
-      icon: Calendar,
-      color: 'text-blue-500',
-      clickable: true,
-      onClick: () => setTomorrowAppointmentsOpen(true)
-    },
-    {
-      title: 'Заработано',
-      value: `${calculateEarnings().toLocaleString('ru-RU')} ₽`,
+      title: 'Заработок сегодня',
+      value: `${calculateTodayEarnings().toLocaleString('ru-RU')} ₽`,
       icon: TrendingUp,
       color: 'text-success',
       clickable: false
@@ -462,7 +446,7 @@ export default function Dashboard() {
               {currentSection === "calendar" && (
                 <>
                   {/* Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
                     {stats.map((stat) => {
                       const Icon = stat.icon;
                       return (
@@ -628,10 +612,11 @@ export default function Dashboard() {
           </main>
         </div>
         {/* Sidebar on the right */}
-        <AppSidebar 
+        <AppSidebar
           currentSection={currentSection}
           onSectionChange={setCurrentSection}
           onLogout={handleLogout}
+          onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
         />
         {/* Dialogs */}
         <ServiceDialog
@@ -708,32 +693,6 @@ export default function Dashboard() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={tomorrowAppointmentsOpen} onOpenChange={setTomorrowAppointmentsOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>Записи на завтра</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
-              {tomorrowAppointments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">Записей нет</p>
-              ) : (
-                tomorrowAppointments.map((apt) => (
-                  <div key={apt.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{apt.client_name}</p>
-                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.appointment_time.substring(0, 5)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </SidebarProvider>
   );
