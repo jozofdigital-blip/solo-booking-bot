@@ -44,6 +44,20 @@ export default function MyAppointments() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string>("");
+  const [botUsername, setBotUsername] = useState<string>("");
+  const [hasTelegram, setHasTelegram] = useState(false);
+
+  const loadBotUsername = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('get-bot-info');
+      if (data?.username) {
+        setBotUsername(data.username);
+      }
+    } catch (error) {
+      console.error('Error loading bot info:', error);
+    }
+  };
 
   const searchAppointments = async () => {
     if (!phone.trim()) {
@@ -53,6 +67,8 @@ export default function MyAppointments() {
 
     setLoading(true);
     try {
+      await loadBotUsername();
+
       const { data, error } = await supabase
         .from("appointments")
         .select(`
@@ -75,6 +91,20 @@ export default function MyAppointments() {
 
       setAppointments(upcomingAppointments);
       setSearched(true);
+
+      // Check if client has telegram connected
+      if (upcomingAppointments.length > 0) {
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("id, telegram_chat_id")
+          .eq("phone", phone.trim())
+          .maybeSingle();
+
+        if (clientData) {
+          setClientId(clientData.id);
+          setHasTelegram(!!clientData.telegram_chat_id);
+        }
+      }
 
       if (upcomingAppointments.length === 0) {
         toast.info("У вас нет активных записей");
@@ -133,6 +163,13 @@ export default function MyAppointments() {
     }
   };
 
+  const handleConnectTelegram = () => {
+    if (clientId && botUsername) {
+      const deepLink = `https://t.me/${botUsername}?start=client_${clientId}`;
+      window.open(deepLink, '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-telegram-light to-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -160,6 +197,25 @@ export default function MyAppointments() {
             </Button>
           </div>
         </Card>
+
+        {searched && appointments.length > 0 && !hasTelegram && clientId && botUsername && (
+          <Card className="p-6 mb-6 bg-telegram/5 border-telegram/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold mb-1">Подключите уведомления в Telegram</h3>
+                <p className="text-sm text-muted-foreground">
+                  Получайте напоминания о записях и уведомления об изменениях
+                </p>
+              </div>
+              <Button
+                onClick={handleConnectTelegram}
+                className="bg-telegram hover:bg-telegram/90"
+              >
+                Подключить
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {searched && (
           <div className="space-y-4">

@@ -26,6 +26,7 @@ export default function BookingPage() {
   const [workingHours, setWorkingHours] = useState<any[]>([]);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [botUsername, setBotUsername] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("");
 
   useEffect(() => {
     loadProfile();
@@ -190,22 +191,28 @@ export default function BookingPage() {
         .eq('profile_id', profile.id)
         .maybeSingle();
 
+      let clientId: string;
+
       if (existingClient) {
         // Update last_visit for existing client
         await supabase
           .from('clients')
           .update({ last_visit: new Date().toISOString(), name: clientName })
           .eq('id', existingClient.id);
+        clientId = existingClient.id;
       } else {
         // Create new client
-        await supabase
+        const { data: newClient } = await supabase
           .from('clients')
           .insert({
             profile_id: profile.id,
             name: clientName,
             phone: clientPhone,
             last_visit: new Date().toISOString()
-          });
+          })
+          .select('id')
+          .single();
+        clientId = newClient!.id;
       }
 
       // Send telegram notification to owner if chat_id is configured
@@ -261,7 +268,8 @@ export default function BookingPage() {
 
       toast.success('Запись успешно создана!');
       
-      // Open success dialog
+      // Open success dialog with client ID
+      setClientId(clientId);
       setSuccessDialogOpen(true);
       
       // Reset form
@@ -424,7 +432,7 @@ export default function BookingPage() {
       <BookingSuccessDialog
         open={successDialogOpen}
         onOpenChange={setSuccessDialogOpen}
-        clientPhone={clientPhone}
+        clientId={clientId}
         botUsername={botUsername}
       />
     </div>

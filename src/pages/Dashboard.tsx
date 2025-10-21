@@ -465,19 +465,14 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       
       // Send cancellation notification to client if they have telegram
       if (appointment?.client_phone) {
-        console.log('Checking client telegram for phone:', appointment.client_phone);
-        
-        const { data: clientData, error: clientError } = await supabase
+        const { data: clientData } = await supabase
           .from('clients')
           .select('telegram_chat_id')
           .eq('phone', appointment.client_phone)
           .eq('profile_id', profile.id)
           .maybeSingle();
 
-        console.log('Client data:', clientData, 'Error:', clientError);
-
         if (clientData?.telegram_chat_id) {
-          console.log('Sending cancellation notification to client:', clientData.telegram_chat_id);
           try {
             const response = await supabase.functions.invoke('send-client-notification', {
               body: {
@@ -492,12 +487,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                 cancellationReason: reason,
               },
             });
-            console.log('Client notification response:', response);
           } catch (notificationError) {
             console.error('Failed to send cancellation notification:', notificationError);
           }
-        } else {
-          console.log('Client does not have telegram connected');
         }
       }
 

@@ -59,13 +59,13 @@ serve(async (req) => {
             });
           }
         } else if (param.startsWith('client_')) {
-          // Client connection
-          const phone = param.replace('client_', '');
+          // Client connection using client ID
+          const clientId = param.replace('client_', '');
 
           const { error } = await supabase
             .from('clients')
             .update({ telegram_chat_id: chatId.toString() })
-            .eq('phone', phone);
+            .eq('id', clientId);
 
           if (error) {
             console.error('Error updating client:', error);

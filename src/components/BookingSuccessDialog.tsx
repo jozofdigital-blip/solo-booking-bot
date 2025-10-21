@@ -12,21 +12,21 @@ import { useNavigate } from "react-router-dom";
 interface BookingSuccessDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientPhone: string;
+  clientId: string;
   botUsername: string;
 }
 
 export const BookingSuccessDialog = ({
   open,
   onOpenChange,
-  clientPhone,
+  clientId,
   botUsername,
 }: BookingSuccessDialogProps) => {
   const navigate = useNavigate();
 
   const handleConnectTelegram = () => {
-    // Create deep link for client
-    const deepLink = `https://t.me/${botUsername}?start=client_${clientPhone}`;
+    // Create deep link for client using client ID
+    const deepLink = `https://t.me/${botUsername}?start=client_${clientId}`;
     window.open(deepLink, '_blank');
   };
 
