@@ -3,6 +3,7 @@ import { format, addDays, startOfDay, isBefore, isToday, isSameDay, parse } from
 import { ru } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
+import { hasEnoughContinuousTime } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -27,6 +28,7 @@ interface ThreeDayCalendarProps {
   onDateClick?: (date: Date) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
   onCreateAppointment?: (date: string, time: string) => void;
+  minServiceDuration?: number; // Minimum service duration to check for available slots
 }
 
 export const ThreeDayCalendar = ({
@@ -34,6 +36,7 @@ export const ThreeDayCalendar = ({
   workingHours,
   onAppointmentClick,
   onCreateAppointment,
+  minServiceDuration = 60,
 }: ThreeDayCalendarProps) => {
   const [currentDayStart, setCurrentDayStart] = useState(startOfDay(new Date()));
 
@@ -180,15 +183,25 @@ export const ThreeDayCalendar = ({
                 const isWorking = isSlotInWorkingHours(day, time);
                 const isPast = isSlotPast(day, time);
                 const isOccupied = dayAppointments.length > 0;
+                
+                const wh = getWorkingHoursForDay(day);
+                const workingEndTime = wh?.end_time?.substring(0, 5);
+                const hasEnoughTime = hasEnoughContinuousTime(
+                  format(day, "yyyy-MM-dd"),
+                  time,
+                  minServiceDuration,
+                  appointments,
+                  workingEndTime
+                );
 
                 return (
                   <div
                     key={`${day.toISOString()}-${time}`}
                     className={`relative p-2 border-r last:border-r-0 ${
-                      !isWorking ? "bg-muted" : isPast ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
+                      !isWorking ? "bg-muted" : isPast || !hasEnoughTime ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
                     } ${idx % 2 === 1 ? "border-t-dashed" : ""}`}
                     onClick={() => {
-                      if (isWorking && !isPast && !isOccupied && onCreateAppointment) {
+                      if (isWorking && !isPast && !isOccupied && hasEnoughTime && onCreateAppointment) {
                         onCreateAppointment(format(day, "yyyy-MM-dd"), time);
                       }
                     }}
@@ -233,7 +246,7 @@ export const ThreeDayCalendar = ({
                       );
                     })}
                     
-                    {isWorking && !isPast && !isOccupied && (
+                    {isWorking && !isPast && !isOccupied && hasEnoughTime && (
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <Plus className="h-5 w-5 text-muted-foreground" />
                       </div>

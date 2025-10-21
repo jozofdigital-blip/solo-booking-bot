@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ru } from "date-fns/locale";
 import { format } from "date-fns";
 import { Clock, Send } from "lucide-react";
+import { hasEnoughContinuousTime } from "@/lib/utils";
 
 export default function BookingPage() {
   const { slug } = useParams();
@@ -21,6 +22,8 @@ export default function BookingPage() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientTelegram, setClientTelegram] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [workingHours, setWorkingHours] = useState<any[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -44,15 +47,81 @@ export default function BookingPage() {
         .eq('is_active', true);
 
       setServices(servicesData || []);
+
+      // Load working hours
+      const { data: workingData } = await supabase
+        .from('working_hours')
+        .select('*')
+        .eq('profile_id', profileData.id);
+      
+      setWorkingHours(workingData || []);
     } catch (error) {
       toast.error('Профиль не найден');
     }
   };
 
-  const timeSlots = [
-    '09:00', '10:00', '11:00', '12:00', '13:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00'
-  ];
+  const loadAppointments = async (date: Date) => {
+    if (!profile) return;
+    
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('appointments')
+      .select('*, services(duration_minutes)')
+      .eq('profile_id', profile.id)
+      .eq('appointment_date', dateStr)
+      .neq('status', 'cancelled');
+
+    const appointmentsWithDuration = data?.map(apt => ({
+      ...apt,
+      duration_minutes: (apt.services as any)?.duration_minutes || 60
+    })) || [];
+
+    setAppointments(appointmentsWithDuration);
+  };
+
+  useEffect(() => {
+    if (selectedDate) {
+      loadAppointments(selectedDate);
+    }
+  }, [selectedDate, profile]);
+
+  const getAvailableTimeSlots = () => {
+    if (!selectedDate || !selectedService) return [];
+
+    const dayOfWeek = selectedDate.getDay();
+    const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
+    
+    if (!workingDay) return [];
+
+    const selectedServiceData = services.find(s => s.id === selectedService);
+    const serviceDuration = selectedServiceData?.duration_minutes || 60;
+
+    const startHour = parseInt(workingDay.start_time.split(':')[0]);
+    const endHour = parseInt(workingDay.end_time.split(':')[0]);
+    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+
+    const slots: string[] = [];
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        
+        // Check if slot has enough continuous time for the service
+        if (hasEnoughContinuousTime(
+          format(selectedDate, 'yyyy-MM-dd'),
+          time,
+          serviceDuration,
+          appointments,
+          workingDay.end_time.substring(0, 5)
+        )) {
+          slots.push(time);
+        }
+      }
+    }
+
+    return slots;
+  };
+
+  const availableTimeSlots = getAvailableTimeSlots();
 
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !clientName || !clientPhone) {
@@ -187,18 +256,24 @@ export default function BookingPage() {
                 {selectedDate && (
                   <div>
                     <h3 className="font-medium mb-3">Доступное время</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {timeSlots.map((time) => (
-                        <Button
-                          key={time}
-                          variant={selectedTime === time ? "default" : "outline"}
-                          onClick={() => setSelectedTime(time)}
-                          className={selectedTime === time ? "bg-telegram hover:bg-telegram/90" : ""}
-                        >
-                          {time}
-                        </Button>
-                      ))}
-                    </div>
+                    {availableTimeSlots.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {availableTimeSlots.map((time) => (
+                          <Button
+                            key={time}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            onClick={() => setSelectedTime(time)}
+                            className={selectedTime === time ? "bg-telegram hover:bg-telegram/90" : ""}
+                          >
+                            {time}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        На выбранную дату нет доступных слотов для этой услуги
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

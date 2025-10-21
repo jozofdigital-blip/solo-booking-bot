@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, isBefore, parse } from "date-fns";
 import { ru } from "date-fns/locale";
+import { hasEnoughContinuousTime } from "@/lib/utils";
 
 interface Appointment {
   id: string;
@@ -28,6 +29,7 @@ interface WeekCalendarProps {
   onDateClick?: (date: Date) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
   onCreateAppointment?: (date: string, time: string) => void;
+  minServiceDuration?: number;
 }
 
 export const WeekCalendar = ({
@@ -36,6 +38,7 @@ export const WeekCalendar = ({
   onDateClick,
   onAppointmentClick,
   onCreateAppointment,
+  minServiceDuration = 60,
 }: WeekCalendarProps) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -230,18 +233,30 @@ export const WeekCalendar = ({
                   const dayFull = isDayFull(day);
                   const isOccupied = slotAppointments.length > 0;
                   
+                  const dayOfWeek = day.getDay();
+                  const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
+                  const workingEndTime = workingDay?.end_time?.substring(0, 5);
+                  const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                  const hasEnoughTime = hasEnoughContinuousTime(
+                    format(day, "yyyy-MM-dd"),
+                    timeStr,
+                    minServiceDuration,
+                    appointments,
+                    workingEndTime
+                  );
+                  
                   return (
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
                       className={`p-1 border-r last:border-r-0 relative flex-1 ${
                         !inWorkingHours 
                           ? "bg-muted/20" 
-                          : isPast || dayFull
+                          : isPast || dayFull || !hasEnoughTime
                             ? "bg-muted/40" 
                             : "hover:bg-muted/50 cursor-pointer bg-background"
                       }`}
                       onClick={() => {
-                        if (inWorkingHours && !isPast && !dayFull && !isOccupied) {
+                        if (inWorkingHours && !isPast && !dayFull && !isOccupied && hasEnoughTime) {
                           const dateStr = format(day, "yyyy-MM-dd");
                           const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
                           onCreateAppointment?.(dateStr, timeStr);
@@ -288,7 +303,7 @@ export const WeekCalendar = ({
                         );
                       })}
 
-                      {inWorkingHours && !isPast && !isOccupied && (
+                      {inWorkingHours && !isPast && !isOccupied && hasEnoughTime && (
                         <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                           <Plus 
                             className="w-4 h-4 text-muted-foreground cursor-pointer"

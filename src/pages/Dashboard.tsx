@@ -151,12 +151,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
         setServices(servicesData || []);
 
-        // Load appointments
+        // Load appointments with service duration
         const { data: appointmentsData } = await supabase
           .from('appointments')
           .select(`
             *,
-            services (name)
+            services (name, duration_minutes)
           `)
           .eq('profile_id', profileData.id)
           .order('appointment_date', { ascending: true });
@@ -391,6 +391,15 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const todayAppointments = appointments.filter(a => a.appointment_date === todayDate);
 
+  // Calculate minimum service duration from active services
+  const getMinServiceDuration = () => {
+    const activeServices = services.filter(s => s.is_active);
+    if (activeServices.length === 0) return 60;
+    return Math.min(...activeServices.map(s => s.duration_minutes || 60));
+  };
+
+  const minServiceDuration = getMinServiceDuration();
+
   const calculateTodayEarnings = () => {
     return todayAppointments
       .filter(a => a.status === 'confirmed' || a.status === 'completed')
@@ -513,11 +522,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                               const service = services.find(s => s.id === a.service_id);
                               return {
                                 ...a,
-                                service_name: a.services?.name,
-                                duration_minutes: service?.duration_minutes
+                                service_name: a.services?.name || service?.name,
+                                duration_minutes: a.services?.duration_minutes || service?.duration_minutes
                               };
                             })}
                             workingHours={workingHours}
+                            minServiceDuration={minServiceDuration}
                             onCreateAppointment={(date, time) => {
                               setSelectedDate(new Date(date));
                               setSelectedTime(time);
@@ -550,11 +560,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                           const service = services.find(s => s.id === a.service_id);
                           return {
                             ...a,
-                            service_name: a.services?.name,
-                            duration_minutes: service?.duration_minutes
+                            service_name: a.services?.name || service?.name,
+                            duration_minutes: a.services?.duration_minutes || service?.duration_minutes
                           };
                         })}
                         workingHours={workingHours}
+                        minServiceDuration={minServiceDuration}
                         onCreateAppointment={(date, time) => {
                           setSelectedDate(new Date(date));
                           setSelectedTime(time);

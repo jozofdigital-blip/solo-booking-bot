@@ -22,6 +22,7 @@ import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
+import { hasAppointmentOverlap } from "@/lib/utils";
 
 interface Service {
   id: string;
@@ -144,6 +145,45 @@ export const AppointmentDialog = ({
     if (!formData.client_name.trim() || !formData.client_phone.trim()) {
       toast.error("Укажите имя и телефон клиента");
       return;
+    }
+
+    // Check for appointment overlaps
+    if (profileId) {
+      const selectedService = services.find(s => s.id === formData.service_id);
+      const serviceDuration = selectedService?.duration_minutes || 60;
+
+      // Fetch all appointments for the selected date
+      const { data: existingAppointments, error } = await supabase
+        .from("appointments")
+        .select("id, appointment_date, appointment_time, service_id, services(duration_minutes)")
+        .eq("profile_id", profileId)
+        .eq("appointment_date", formData.appointment_date)
+        .neq("status", "cancelled");
+
+      if (error) {
+        toast.error("Ошибка проверки доступности времени");
+        return;
+      }
+
+      const appointmentsWithDuration = existingAppointments?.map(apt => ({
+        id: apt.id,
+        appointment_date: apt.appointment_date,
+        appointment_time: apt.appointment_time,
+        duration_minutes: (apt.services as any)?.duration_minutes || 60
+      })) || [];
+
+      const hasOverlap = hasAppointmentOverlap(
+        formData.appointment_date,
+        formData.appointment_time,
+        serviceDuration,
+        appointmentsWithDuration,
+        appointment?.id // Exclude current appointment if editing
+      );
+
+      if (hasOverlap) {
+        toast.error("Это время пересекается с другой записью");
+        return;
+      }
     }
     
     if (appointment && onUpdate) {
