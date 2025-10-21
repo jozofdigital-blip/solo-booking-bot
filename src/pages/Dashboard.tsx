@@ -13,8 +13,13 @@ import { NotificationsSection } from "@/components/NotificationsSection";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
+import {
+  DEFAULT_WORKING_HOURS,
+  WorkingHour,
+  WorkingHoursDialog,
+} from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
+import { Calendar, Share2, MapPin, Users, TrendingUp, CalendarCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, addDays, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -27,7 +32,9 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [workingHours, setWorkingHours] = useState<any[]>([]);
+  const [workingHours, setWorkingHours] = useState<WorkingHour[]>(() =>
+    DEFAULT_WORKING_HOURS.map((hour) => ({ ...hour }))
+  );
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -42,6 +49,36 @@ export default function Dashboard() {
   const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
+  const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
+
+  const mergeWithDefaultWorkingHours = (hours?: any[]): WorkingHour[] => {
+    const ensureTimeFormat = (time: string, fallback: string) => {
+      if (!time) return fallback;
+      return time.length > 5 ? time.substring(0, 5) : time;
+    };
+
+    const providedHours = Array.isArray(hours) ? hours : [];
+
+    return DEFAULT_WORKING_HOURS.map((defaultHour) => {
+      const existing = providedHours.find(
+        (hour) => hour.day_of_week === defaultHour.day_of_week
+      );
+
+      if (!existing) {
+        return { ...defaultHour };
+      }
+
+      return {
+        day_of_week: existing.day_of_week,
+        start_time: ensureTimeFormat(existing.start_time, defaultHour.start_time),
+        end_time: ensureTimeFormat(existing.end_time, defaultHour.end_time),
+        is_working:
+          typeof existing.is_working === "boolean"
+            ? existing.is_working
+            : defaultHour.is_working,
+      };
+    });
+  };
 
   useEffect(() => {
     checkAuth();
@@ -123,7 +160,7 @@ export default function Dashboard() {
           .eq('profile_id', profileData.id)
           .order('day_of_week', { ascending: true });
 
-        setWorkingHours(workingHoursData || []);
+        setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -212,7 +249,12 @@ export default function Dashboard() {
     }
   };
 
-  const handleSaveWorkingHours = async (hours: any[]) => {
+  const handleSaveWorkingHours = async (hours: WorkingHour[]) => {
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
+
     try {
       // Delete existing working hours
       await supabase
@@ -227,6 +269,7 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('График работы сохранен');
+      setWorkingHours(mergeWithDefaultWorkingHours(hours));
       loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения графика');
@@ -467,6 +510,14 @@ export default function Dashboard() {
                       >
                         Месяц
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWorkingHoursDialogOpen(true)}
+                      >
+                        <CalendarCog className="w-4 h-4 mr-2" />
+                        Настроить график
+                      </Button>
                     </div>
 
                     {calendarView === "3days" ? (
@@ -615,6 +666,13 @@ export default function Dashboard() {
           onOpenChange={setAddressDialogOpen}
           currentAddress={profile?.address}
           onSave={handleSaveAddress}
+        />
+
+        <WorkingHoursDialog
+          open={workingHoursDialogOpen}
+          onOpenChange={setWorkingHoursDialogOpen}
+          workingHours={workingHours}
+          onSave={handleSaveWorkingHours}
         />
 
         <ClientsDialog
