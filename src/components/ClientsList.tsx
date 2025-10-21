@@ -87,10 +87,23 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
       .order("appointment_date", { ascending: true })
       .order("appointment_time", { ascending: true });
 
+    // Filter out past appointments for today
+    const now = new Date();
+    const todayDate = now.toISOString().split("T")[0];
+    const currentTime = now.toTimeString().substring(0, 8);
+    
+    const futureAppointments = appointmentsData?.filter((apt) => {
+      if (apt.appointment_date > todayDate) return true;
+      if (apt.appointment_date === todayDate) {
+        return apt.appointment_time > currentTime;
+      }
+      return false;
+    });
+
     // Merge clients with their next appointments
     const clientsWithAppointments: ClientWithAppointment[] = (data || []).map((client) => {
       // Find the earliest upcoming appointment for this client
-      const nextAppointment = appointmentsData?.find((apt) => apt.client_phone === client.phone);
+      const nextAppointment = futureAppointments?.find((apt) => apt.client_phone === client.phone);
       return {
         ...client,
         next_appointment: nextAppointment
