@@ -123,11 +123,11 @@ export const ThreeDayCalendar = ({
   };
 
   const handlePrevDay = () => {
-    setCurrentDayStart(addDays(currentDayStart, -1));
+    setCurrentDayStart(addDays(currentDayStart, -3));
   };
 
   const handleNextDay = () => {
-    setCurrentDayStart(addDays(currentDayStart, 1));
+    setCurrentDayStart(addDays(currentDayStart, 3));
   };
 
   const handleToday = () => {
@@ -247,7 +247,7 @@ export const ThreeDayCalendar = ({
                     })}
                     
                     {isWorking && !isPast && !isOccupied && hasEnoughTime && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity">
                         <Plus className="h-5 w-5 text-muted-foreground" />
                       </div>
                     )}
