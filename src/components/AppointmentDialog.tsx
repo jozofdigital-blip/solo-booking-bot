@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Users } from "lucide-react";
+import { toast } from "sonner";
 
 interface Service {
   id: string;
@@ -135,6 +136,15 @@ export const AppointmentDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.service_id) {
+      toast.error("Выберите услугу");
+      return;
+    }
+    if (!formData.client_name.trim() || !formData.client_phone.trim()) {
+      toast.error("Укажите имя и телефон клиента");
+      return;
+    }
     
     if (appointment && onUpdate) {
       onUpdate(appointment.id, formData);
