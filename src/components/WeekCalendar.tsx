@@ -173,8 +173,8 @@ export const WeekCalendar = ({
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <h3 className="text-sm md:text-lg font-semibold">
-          {format(currentWeekStart, "d MMM", { locale: ru })} -{" "}
-          {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: ru })}
+          {format(currentWeekStart, "d MMMM", { locale: ru })} -{" "}
+          {format(addDays(currentWeekStart, 6), "d MMMM yyyy", { locale: ru })}
         </h3>
         <Button
           variant="outline"

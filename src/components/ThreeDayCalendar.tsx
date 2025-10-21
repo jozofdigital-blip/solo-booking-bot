@@ -142,8 +142,8 @@ export const ThreeDayCalendar = ({
         </Button>
         <div className="flex items-center gap-2">
           <span className="font-semibold">
-            {format(currentDayStart, "d MMM", { locale: ru })} -{" "}
-            {format(threeDays[2], "d MMM yyyy", { locale: ru })}
+            {format(currentDayStart, "d MMMM", { locale: ru })} -{" "}
+            {format(threeDays[2], "d MMMM yyyy", { locale: ru })}
           </span>
           {!isToday(currentDayStart) && (
             <Button variant="outline" size="sm" onClick={handleToday}>
