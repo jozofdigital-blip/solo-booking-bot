@@ -98,21 +98,28 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         navigate('/auth');
         return;
       }
 
       // Load profile
-      const { data: profileData, error: profileError } = await supabase
+      const {
+        data: profileData,
+        error: profileError,
+      } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (profileError) throw profileError;
+
+      let activeProfile = profileData;
 
       if (!profileData) {
         // Create profile if doesn't exist
@@ -122,25 +129,26 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           .insert({
             user_id: user.id,
             business_name: 'Мой бизнес',
-            unique_slug: slug
+            unique_slug: slug,
           })
           .select()
           .single();
 
         if (createError) throw createError;
-        setProfile(newProfile);
-        setBusinessName(newProfile.business_name);
-      } else {
-        setProfile(profileData);
-        setBusinessName(profileData.business_name);
+        activeProfile = newProfile;
+      }
+
+      if (activeProfile) {
+        setProfile(activeProfile);
+        setBusinessName(activeProfile.business_name);
       }
 
       // Load services
-      if (profileData?.id) {
+      if (activeProfile?.id) {
         const { data: servicesData } = await supabase
           .from('services')
           .select('*')
-          .eq('profile_id', profileData.id)
+          .eq('profile_id', activeProfile.id)
           .order('created_at', { ascending: false });
 
         setServices(servicesData || []);
@@ -152,7 +160,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
             *,
             services (name)
           `)
-          .eq('profile_id', profileData.id)
+          .eq('profile_id', activeProfile.id)
           .order('appointment_date', { ascending: true });
 
         setAppointments(appointmentsData || []);
@@ -161,7 +169,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         const { data: workingHoursData } = await supabase
           .from('working_hours')
           .select('*')
-          .eq('profile_id', profileData.id)
+          .eq('profile_id', activeProfile.id)
           .order('day_of_week', { ascending: true });
 
         setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
@@ -660,19 +668,23 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               {todayAppointments.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">Записей нет</p>
               ) : (
-                todayAppointments.map((apt) => (
-                  <div key={apt.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{apt.client_name}</p>
-                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.appointment_time.substring(0, 5)}
-                        </p>
+                todayAppointments.map((apt) => {
+                  const appointmentTime = apt.appointment_time
+                    ? apt.appointment_time.substring(0, 5)
+                    : '—';
+
+                  return (
+                    <div key={apt.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{apt.client_name}</p>
+                          <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
+                          <p className="text-sm text-muted-foreground">{appointmentTime}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </DialogContent>

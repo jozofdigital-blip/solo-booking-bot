@@ -11,7 +11,7 @@ interface Appointment {
   id: string;
   client_name: string;
   appointment_date: string;
-  appointment_time: string;
+  appointment_time?: string;
   service_name?: string;
   status: string;
 }
@@ -33,7 +33,9 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
     return apt.appointment_date === format(selectedDate, 'yyyy-MM-dd');
   });
 
-  const isAppointmentPast = (aptDate: string, aptTime: string) => {
+  const isAppointmentPast = (aptDate: string, aptTime?: string) => {
+    if (!aptTime) return false;
+
     const now = new Date();
     const appointmentDateTime = new Date(`${aptDate}T${aptTime}`);
     return isBefore(appointmentDateTime, now);
@@ -120,7 +122,7 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
                     </Badge>
                   </div>
                   <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
-                    {apt.appointment_time.substring(0, 5)}
+                    {apt.appointment_time ? apt.appointment_time.substring(0, 5) : '—'}
                   </p>
                 </div>
               );
