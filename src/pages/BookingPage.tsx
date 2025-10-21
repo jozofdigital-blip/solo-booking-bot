@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -28,11 +28,33 @@ export default function BookingPage() {
   const [botUsername, setBotUsername] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
 
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const timeRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     loadProfile();
     loadBotUsername();
     loadClientDataFromLocalStorage();
   }, [slug]);
+
+  useEffect(() => {
+    if (selectedService && calendarRef.current) {
+      calendarRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedService]);
+
+  useEffect(() => {
+    if (selectedDate && timeRef.current) {
+      timeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedTime && contactRef.current) {
+      contactRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedTime]);
 
   const loadClientDataFromLocalStorage = () => {
     const savedData = localStorage.getItem('client_booking_data');
@@ -296,103 +318,100 @@ export default function BookingPage() {
   const selectedServiceData = services.find(s => s.id === selectedService);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-telegram-light to-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="p-8 mb-6">
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        <Card className="p-6 mb-6 bg-gradient-to-br from-telegram/5 to-telegram-light/10 border-telegram/20">
           <div className="text-center">
-            <h1 className="text-xl font-bold mb-2">{profile.business_name}</h1>
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-telegram to-telegram-dark bg-clip-text text-transparent">
+              {profile.business_name}
+            </h1>
             {profile.description && (
-              <p className="text-muted-foreground">{profile.description}</p>
+              <p className="text-muted-foreground text-sm">{profile.description}</p>
             )}
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Services Selection */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Выберите услугу</h2>
-            <div className="space-y-3">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedService(service.id)}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                    selectedService === service.id
-                      ? 'border-telegram bg-telegram/5'
-                      : 'border-border hover:border-telegram/50'
-                  }`}
-                >
-                  <div className="font-medium mb-1">{service.name}</div>
-                  {service.description && (
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {service.description}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {service.duration_minutes} мин
-                    </span>
-                    <span className="font-semibold text-telegram">
-                      {service.price} ₽
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          {/* Date & Time Selection */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Выберите дату и время</h2>
-            
-            {selectedService ? (
-              <div className="space-y-4">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  locale={ru}
-                  disabled={(date) => date < new Date()}
-                  className="rounded-md border w-full"
-                />
-
-                {selectedDate && (
-                  <div>
-                    <h3 className="font-medium mb-3">Доступное время</h3>
-                    {availableTimeSlots.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {availableTimeSlots.map((time) => (
-                          <Button
-                            key={time}
-                            variant={selectedTime === time ? "default" : "outline"}
-                            onClick={() => setSelectedTime(time)}
-                            className={selectedTime === time ? "bg-telegram hover:bg-telegram/90" : ""}
-                          >
-                            {time}
-                          </Button>
-                        ))}
+        {/* Services Selection */}
+        <Card className="p-5 mb-6">
+          <h2 className="text-lg font-semibold mb-3">Выберите услугу</h2>
+          <div className="space-y-2">
+            {services.map((service) => (
+              <button
+                key={service.id}
+                onClick={() => setSelectedService(service.id)}
+                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                  selectedService === service.id
+                    ? 'border-telegram bg-telegram/5'
+                    : 'border-border hover:border-telegram/30'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-medium mb-1">{service.name}</div>
+                    {service.description && (
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {service.description}
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        На выбранную дату нет доступных слотов для этой услуги
-                      </p>
                     )}
                   </div>
-                )}
+                  <div className="text-right ml-3">
+                    <div className="font-semibold text-telegram">{service.price} ₽</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {service.duration_minutes} мин
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Date Selection */}
+        {selectedService && (
+          <Card className="p-5 mb-6" ref={calendarRef}>
+            <h2 className="text-lg font-semibold mb-3">Выберите дату</h2>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              locale={ru}
+              disabled={(date) => date < new Date()}
+              className="rounded-md border w-full"
+            />
+          </Card>
+        )}
+
+        {/* Time Selection */}
+        {selectedDate && (
+          <Card className="p-5 mb-6" ref={timeRef}>
+            <h2 className="text-lg font-semibold mb-3">Выберите время</h2>
+            {availableTimeSlots.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2">
+                {availableTimeSlots.map((time) => (
+                  <Button
+                    key={time}
+                    variant={selectedTime === time ? "default" : "outline"}
+                    onClick={() => setSelectedTime(time)}
+                    className={selectedTime === time ? "bg-telegram hover:bg-telegram/90" : ""}
+                    size="sm"
+                  >
+                    {time}
+                  </Button>
+                ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                Сначала выберите услугу
-              </div>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                На выбранную дату нет доступных слотов для этой услуги
+              </p>
             )}
           </Card>
-        </div>
+        )}
 
         {/* Client Info */}
         {selectedService && selectedDate && selectedTime && (
-          <Card className="p-6 mt-6">
-            <h2 className="text-xl font-semibold mb-4">Ваши контактные данные</h2>
+          <Card className="p-5 mb-6" ref={contactRef}>
+            <h2 className="text-lg font-semibold mb-3">Ваши контактные данные</h2>
             <div className="space-y-4">
               <Input
                 placeholder="Ваше имя *"
@@ -407,19 +426,21 @@ export default function BookingPage() {
                 required
               />
 
-              <div className="border-t pt-4 mt-4">
-                <div className="bg-muted p-4 rounded-lg mb-4">
-                  <h3 className="font-semibold mb-2">Детали записи:</h3>
-                  <p className="text-sm"><strong>Услуга:</strong> {selectedServiceData?.name}</p>
-                  <p className="text-sm"><strong>Дата:</strong> {format(selectedDate, 'd MMMM yyyy', { locale: ru })}</p>
-                  <p className="text-sm"><strong>Время:</strong> {selectedTime}</p>
-                  <p className="text-sm"><strong>Цена:</strong> {selectedServiceData?.price} ₽</p>
+              <div className="border-t pt-3 mt-3">
+                <div className="bg-telegram/5 p-3 rounded-lg mb-3 border border-telegram/20">
+                  <h3 className="font-semibold mb-2 text-sm">Детали записи:</h3>
+                  <div className="space-y-1">
+                    <p className="text-sm"><strong>Услуга:</strong> {selectedServiceData?.name}</p>
+                    <p className="text-sm"><strong>Дата:</strong> {format(selectedDate, 'd MMMM yyyy', { locale: ru })}</p>
+                    <p className="text-sm"><strong>Время:</strong> {selectedTime}</p>
+                    <p className="text-sm"><strong>Цена:</strong> {selectedServiceData?.price} ₽</p>
+                  </div>
                 </div>
 
                 <Button
                   onClick={handleBooking}
                   disabled={loading}
-                  className="w-full h-12 bg-telegram hover:bg-telegram/90"
+                  className="w-full h-11 bg-telegram hover:bg-telegram/90 font-semibold"
                 >
                   {loading ? 'Отправка...' : 'Записаться'}
                 </Button>
