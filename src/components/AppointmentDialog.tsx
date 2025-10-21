@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -193,7 +194,7 @@ export const AppointmentDialog = ({
           </DialogTitle>
           {selectedDate && selectedTime && !appointment && (
             <p className="text-sm text-muted-foreground">
-              {format(selectedDate, "d MMMM", { locale: require("date-fns/locale/ru").ru })} {selectedTime}
+              {format(selectedDate, "d MMMM", { locale: ru })} {selectedTime}
             </p>
           )}
         </DialogHeader>
