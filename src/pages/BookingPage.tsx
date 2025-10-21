@@ -130,7 +130,7 @@ export default function BookingPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data: newAppointment, error } = await supabase
         .from('appointments')
         .insert({
           service_id: selectedService,
@@ -140,12 +140,14 @@ export default function BookingPage() {
           appointment_date: format(selectedDate, 'yyyy-MM-dd'),
           appointment_time: selectedTime,
           status: 'pending'
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Send telegram notification if chat_id is configured
-      if (profile?.telegram_chat_id) {
+      if (profile?.telegram_chat_id && newAppointment) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
           await supabase.functions.invoke('send-telegram-notification', {
@@ -156,6 +158,9 @@ export default function BookingPage() {
               date: format(selectedDate, 'dd.MM.yyyy', { locale: ru }),
               time: selectedTime,
               phone: clientPhone,
+              appointmentId: newAppointment.id,
+              type: 'new',
+              bookingUrl: window.location.origin + '/dashboard',
             },
           });
         } catch (notificationError) {
