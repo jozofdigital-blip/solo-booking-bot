@@ -10,6 +10,7 @@ import { ru } from "date-fns/locale";
 import { format } from "date-fns";
 import { Clock } from "lucide-react";
 import { hasEnoughContinuousTime } from "@/lib/utils";
+import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
 
 export default function BookingPage() {
   const { slug } = useParams();
@@ -23,10 +24,24 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<any[]>([]);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [botUsername, setBotUsername] = useState<string>("");
 
   useEffect(() => {
     loadProfile();
+    loadBotUsername();
   }, [slug]);
+
+  const loadBotUsername = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('get-bot-info');
+      if (data?.username) {
+        setBotUsername(data.username);
+      }
+    } catch (error) {
+      console.error('Error loading bot info:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -146,7 +161,7 @@ export default function BookingPage() {
 
       if (error) throw error;
 
-      // Send telegram notification if chat_id is configured
+      // Send telegram notification to owner if chat_id is configured
       if (profile?.telegram_chat_id && newAppointment) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
@@ -165,11 +180,40 @@ export default function BookingPage() {
           });
         } catch (notificationError) {
           console.error('Failed to send telegram notification:', notificationError);
-          // Don't fail the booking if notification fails
+        }
+      }
+
+      // Check if client has telegram and send confirmation
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('telegram_chat_id')
+        .eq('phone', clientPhone)
+        .maybeSingle();
+
+      if (clientData?.telegram_chat_id) {
+        try {
+          const serviceData = services.find(s => s.id === selectedService);
+          await supabase.functions.invoke('send-client-notification', {
+            body: {
+              chatId: clientData.telegram_chat_id,
+              type: 'confirmation',
+              clientName: clientName,
+              serviceName: serviceData?.name || '',
+              date: format(selectedDate, 'dd MMMM yyyy', { locale: ru }),
+              time: selectedTime,
+              businessName: profile.business_name,
+              address: profile.address,
+            },
+          });
+        } catch (notificationError) {
+          console.error('Failed to send client notification:', notificationError);
         }
       }
 
       toast.success('Запись успешно создана!');
+      
+      // Open success dialog
+      setSuccessDialogOpen(true);
       
       // Reset form
       setSelectedService(null);
@@ -327,6 +371,13 @@ export default function BookingPage() {
           </Card>
         )}
       </div>
+
+      <BookingSuccessDialog
+        open={successDialogOpen}
+        onOpenChange={setSuccessDialogOpen}
+        clientPhone={clientPhone}
+        botUsername={botUsername}
+      />
     </div>
   );
 }
