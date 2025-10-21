@@ -38,7 +38,13 @@ export const WeekCalendar = ({
   onAppointmentClick,
   onCreateAppointment,
 }: WeekCalendarProps) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+
+  const weekDays = Array.from({ length: 7 }, (_, i) =>
+    addDays(currentWeekStart, i)
+  );
 
   const isDayFull = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -60,10 +66,6 @@ export const WeekCalendar = ({
     
     return bookedSlots >= totalSlots;
   };
-
-  const weekDays = Array.from({ length: 7 }, (_, i) =>
-    addDays(currentWeekStart, i)
-  );
 
   // Get working hours range
   const getWorkingHoursForDay = (dayOfWeek: number) => {
@@ -177,14 +179,16 @@ export const WeekCalendar = ({
       </div>
 
       <Card className="overflow-x-auto">
-        <div className="min-w-[600px] md:min-w-[800px]">
+        <div className="min-w-full">
           {/* Header with days */}
           <div className="grid grid-cols-8 border-b bg-muted/50 sticky top-0 z-10">
-            <div className="p-2 text-xs md:text-sm font-medium border-r bg-muted/50">Время</div>
+            <div className="p-1 md:p-2 text-xs md:text-sm font-medium border-r bg-muted/50 min-w-[50px] flex items-center justify-center">
+              Время
+            </div>
             {weekDays.map((day) => (
               <div
                 key={day.toISOString()}
-                className={`p-1 md:p-2 text-center border-r last:border-r-0 ${
+                className={`p-1 md:p-2 text-center border-r last:border-r-0 flex-1 ${
                   isDayFull(day) && !isBefore(day, new Date()) 
                     ? "bg-muted/70" 
                     : "bg-muted/50"
@@ -211,8 +215,8 @@ export const WeekCalendar = ({
           {/* Time slots */}
           <div className="divide-y">
             {timeSlots.map(({ hour, minute }) => (
-              <div key={`${hour}-${minute}`} className="grid grid-cols-8 min-h-[60px]">
-                <div className="p-1 md:p-2 text-[10px] md:text-xs text-muted-foreground border-r flex items-start">
+              <div key={`${hour}-${minute}`} className="grid grid-cols-8 min-h-[50px] md:min-h-[60px]">
+                <div className="p-1 md:p-2 text-[10px] md:text-xs text-muted-foreground border-r flex items-start justify-center min-w-[50px]">
                   {String(hour).padStart(2, "0")}:{String(minute).padStart(2, "0")}
                 </div>
                 {weekDays.map((day) => {
@@ -224,7 +228,7 @@ export const WeekCalendar = ({
                   return (
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
-                      className={`p-1 border-r last:border-r-0 relative group ${
+                      className={`p-1 border-r last:border-r-0 relative group flex-1 ${
                         !inWorkingHours 
                           ? "bg-muted/20" 
                           : isPast || dayFull
