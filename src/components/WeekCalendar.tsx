@@ -266,7 +266,7 @@ export const WeekCalendar = ({
                             className={`absolute inset-0 p-1 md:p-2 rounded cursor-pointer z-10 overflow-hidden ${
                               isPast
                                 ? "bg-gray-200 border-l-4 border-gray-400"
-                                : "bg-telegram/10 border-l-4 border-telegram hover:bg-telegram/20"
+                                : "bg-telegram border-l-4 border-telegram-dark hover:bg-telegram/90"
                             }`}
                             style={{ height: `${height}px` }}
                             onClick={(e) => {
@@ -274,12 +274,12 @@ export const WeekCalendar = ({
                               onAppointmentClick?.(apt);
                             }}
                           >
-                            <div className={`font-medium text-[10px] md:text-xs leading-tight ${isPast ? "text-gray-500" : ""}`}>
+                            <div className={`font-medium text-[10px] md:text-xs leading-tight ${isPast ? "text-gray-500" : "text-white"}`}>
                               {apt.client_name}
                             </div>
                             {apt.service_name && (
                               <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 ${
-                                isPast ? "text-gray-400" : "text-muted-foreground"
+                                isPast ? "text-gray-400" : "text-white/90"
                               }`}>
                                 {apt.service_name}
                               </div>
