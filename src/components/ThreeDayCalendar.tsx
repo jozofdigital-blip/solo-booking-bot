@@ -211,29 +211,27 @@ export const ThreeDayCalendar = ({
               
               if (slotIndex === -1) return null;
               
-              const topOffset = slotIndex * 60; // 60px per slot
+              const topOffset = slotIndex * 60 + 41; // 60px per slot + header height
               const duration = apt.duration_minutes || 60;
-              const height = (duration / 30) * 60; // 60px per 30-minute slot
+              const height = (duration / 30) * 60 - 2; // 60px per 30-minute slot, minus border
               const isPast = isSlotPast(day, aptTime);
-              
-              // Calculate left position (skip time column)
-              const leftOffset = `calc(${((dayIndex + 1) / 4) * 100}% + 1px)`;
-              const width = `calc(${(1 / 4) * 100}% - 2px)`;
               
               return (
                 <div
                   key={apt.id}
-                  className={`absolute p-2 rounded text-xs cursor-pointer z-10 ${
+                  className={`absolute p-2 rounded cursor-pointer z-10 overflow-hidden ${
                     isPast 
                       ? "bg-gray-200 border-l-4 border-gray-400" 
                       : "bg-primary/10 border-l-4 border-primary"
                   }`}
                   style={{
-                    top: topOffset,
-                    left: leftOffset,
-                    width: width,
-                    height: height,
-                    minHeight: '50px'
+                    top: `${topOffset}px`,
+                    left: `calc(${60 + ((dayIndex) * (100 - 60 / window.innerWidth * 100) / 3)}% + ${dayIndex + 1}px)`,
+                    width: `calc(${(100 - 60 / window.innerWidth * 100) / 3}% - ${2}px)`,
+                    height: `${height}px`,
+                    minHeight: '50px',
+                    gridColumn: `${dayIndex + 2} / span 1`,
+                    gridRow: `${slotIndex + 1} / span ${Math.ceil(duration / 30)}`
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -242,11 +240,11 @@ export const ThreeDayCalendar = ({
                     }
                   }}
                 >
-                  <div className={`font-medium text-xs ${isPast ? "text-gray-500" : ""}`}>
+                  <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : ""}`}>
                     {apt.client_name}
                   </div>
                   {apt.service_name && (
-                    <div className={`text-xs ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
+                    <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
                       {apt.service_name}
                     </div>
                   )}

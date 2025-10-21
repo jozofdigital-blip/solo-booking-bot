@@ -277,66 +277,63 @@ export const WeekCalendar = ({
             ))}
 
             {/* Appointment overlays */}
-            {weekDays.map((day, dayIndex) => {
-              const dateStr = format(day, "yyyy-MM-dd");
-              const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
-              
-              return dayAppointments.map((apt) => {
-                const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
-                const aptStartTime = aptHour * 60 + aptMinute;
-                const firstSlotTime = timeSlots[0].hour * 60 + timeSlots[0].minute;
-                const slotHeight = getSlotHeight();
+            <div className="absolute inset-0 pointer-events-none" style={{ top: '41px' }}>
+              {weekDays.map((day, dayIndex) => {
+                const dateStr = format(day, "yyyy-MM-dd");
+                const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
                 
-                // Calculate position and height
-                const startSlotIndex = timeSlots.findIndex(slot => 
-                  (slot.hour * 60 + slot.minute) === aptStartTime
-                );
-                
-                if (startSlotIndex === -1) return null;
-                
-                const topOffset = startSlotIndex * slotHeight;
-                const duration = apt.duration_minutes || 60;
-                const height = (duration / 30) * slotHeight;
-                const isPast = isSlotPast(day, aptHour, aptMinute);
-                
-                // Calculate left position (skip time column)
-                const leftOffset = `calc(${((dayIndex + 1) / 8) * 100}% + 1px)`;
-                const width = `calc(${(1 / 8) * 100}% - 2px)`;
-                
-                return (
-                  <div
-                    key={apt.id}
-                    className={`absolute p-1 rounded text-[10px] md:text-xs cursor-pointer z-10 ${
-                      isPast
-                        ? "bg-gray-200 border border-gray-300 text-gray-500"
-                        : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
-                    }`}
-                    style={{
-                      top: topOffset,
-                      left: leftOffset,
-                      width: width,
-                      height: height,
-                      minHeight: '40px'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAppointmentClick?.(apt);
-                    }}
-                  >
-                    <div className={`font-medium ${isPast ? "text-gray-500" : ""} break-words text-xs`}>
-                      {apt.client_name}
-                    </div>
-                    {apt.service_name && (
-                      <div className={`text-[9px] md:text-[10px] ${
-                        isPast ? "text-gray-400" : "text-muted-foreground"
-                      }`}>
-                        {apt.service_name}
+                return dayAppointments.map((apt) => {
+                  const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
+                  const aptStartTime = aptHour * 60 + aptMinute;
+                  const slotHeight = getSlotHeight();
+                  
+                  // Calculate position and height
+                  const startSlotIndex = timeSlots.findIndex(slot => 
+                    (slot.hour * 60 + slot.minute) === aptStartTime
+                  );
+                  
+                  if (startSlotIndex === -1) return null;
+                  
+                  const topOffset = startSlotIndex * slotHeight;
+                  const duration = apt.duration_minutes || 60;
+                  const height = (duration / 30) * slotHeight - 2;
+                  const isPast = isSlotPast(day, aptHour, aptMinute);
+                  
+                  return (
+                    <div
+                      key={apt.id}
+                      className={`absolute p-1 md:p-2 rounded cursor-pointer pointer-events-auto overflow-hidden ${
+                        isPast
+                          ? "bg-gray-200 border border-gray-300 text-gray-500"
+                          : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
+                      }`}
+                      style={{
+                        top: `${topOffset}px`,
+                        left: `calc((100% - 50px) / 7 * ${dayIndex} + 51px)`,
+                        width: `calc((100% - 50px) / 7 - 2px)`,
+                        height: `${height}px`,
+                        minHeight: '40px'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAppointmentClick?.(apt);
+                      }}
+                    >
+                      <div className={`font-medium text-[10px] md:text-xs leading-tight ${isPast ? "text-gray-500" : ""}`}>
+                        {apt.client_name}
                       </div>
-                    )}
-                  </div>
-                );
-              });
-            })}
+                      {apt.service_name && (
+                        <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 ${
+                          isPast ? "text-gray-400" : "text-muted-foreground"
+                        }`}>
+                          {apt.service_name}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })}
+            </div>
           </div>
         </div>
       </Card>
