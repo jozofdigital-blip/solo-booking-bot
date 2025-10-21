@@ -435,10 +435,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                     {isCalendarPage ? "На главную" : "Календарь"}
                   </span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={copyBookingLink}>
-                  <Share2 className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Поделиться ссылкой</span>
-                </Button>
                 {/* Hamburger on the right */}
                 <SidebarTrigger className="ml-2" />
               </div>
@@ -611,6 +607,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onLogout={handleLogout}
           onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
           onEditBusinessName={openBusinessNameDialog}
+          onCopyBookingLink={copyBookingLink}
         />
         {/* Dialogs */}
         <ServiceDialog

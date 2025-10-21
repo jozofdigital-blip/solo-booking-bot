@@ -1,4 +1,4 @@
-import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -18,6 +18,7 @@ interface AppSidebarProps {
   onLogout: () => void;
   onOpenWorkingHours: () => void;
   onEditBusinessName: () => void;
+  onCopyBookingLink: () => void;
 }
 
 const navigationItems = [
@@ -28,7 +29,7 @@ const navigationItems = [
   { id: "address", title: "Мой адрес", icon: MapPin },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onCopyBookingLink }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -81,6 +82,13 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 <SidebarMenuButton onClick={onEditBusinessName}>
                   <Edit3 className="h-4 w-4" />
                   {!isCollapsed && <span>Изменить название</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={onCopyBookingLink}>
+                  <Share2 className="h-4 w-4" />
+                  {!isCollapsed && <span>Ссылка для клиентов</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
