@@ -9,6 +9,7 @@ import { ru } from "date-fns/locale";
 interface Appointment {
   id: string;
   client_name: string;
+  appointment_date: string;
   appointment_time: string;
   service_name?: string;
   status: string;
@@ -84,11 +85,12 @@ export const WeekCalendar = ({
   }
 
   const getAppointmentsForTimeSlot = (date: Date, hour: number, minute: number) => {
+    const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
-      const aptDate = new Date(apt.appointment_time);
-      const aptHour = aptDate.getHours();
-      const aptMinute = aptDate.getMinutes();
-      return isSameDay(aptDate, date) && aptHour === hour && aptMinute === minute;
+      if (apt.appointment_date !== dateStr) return false;
+      
+      const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
+      return aptHour === hour && aptMinute === minute;
     });
   };
 

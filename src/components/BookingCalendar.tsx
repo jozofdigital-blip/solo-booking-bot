@@ -10,6 +10,7 @@ import { ru } from "date-fns/locale";
 interface Appointment {
   id: string;
   client_name: string;
+  appointment_date: string;
   appointment_time: string;
   service_name?: string;
   status: string;
@@ -29,14 +30,13 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
 
   const selectedDayAppointments = appointments.filter(apt => {
     if (!selectedDate) return false;
-    const aptDate = new Date(apt.appointment_time);
-    return format(aptDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+    return apt.appointment_date === format(selectedDate, 'yyyy-MM-dd');
   });
 
-  const isAppointmentPast = (aptTime: string) => {
+  const isAppointmentPast = (aptDate: string, aptTime: string) => {
     const now = new Date();
-    const aptDate = new Date(aptTime);
-    return isBefore(aptDate, now);
+    const appointmentDateTime = new Date(`${aptDate}T${aptTime}`);
+    return isBefore(appointmentDateTime, now);
   };
 
   const getStatusColor = (status: string) => {
@@ -87,7 +87,7 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
         ) : (
           <div className="space-y-3">
             {selectedDayAppointments.map((apt) => {
-              const isPast = isAppointmentPast(apt.appointment_time);
+              const isPast = isAppointmentPast(apt.appointment_date, apt.appointment_time);
               return (
                 <div
                   key={apt.id}
@@ -120,7 +120,7 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
                     </Badge>
                   </div>
                   <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
-                    {format(new Date(apt.appointment_time), 'HH:mm')}
+                    {apt.appointment_time.substring(0, 5)}
                   </p>
                 </div>
               );
