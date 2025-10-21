@@ -139,19 +139,6 @@ export const AppointmentDialog = ({
     if (appointment && onUpdate) {
       onUpdate(appointment.id, formData);
     } else {
-      // Save client if new
-      if (profileId && formData.client_name && formData.client_phone) {
-        const existingClient = clients.find(c => c.phone === formData.client_phone);
-        
-        if (!existingClient) {
-          await supabase.from("clients").insert({
-            profile_id: profileId,
-            name: formData.client_name,
-            phone: formData.client_phone,
-          });
-        }
-      }
-      
       onSave(formData);
     }
     

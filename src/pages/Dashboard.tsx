@@ -243,6 +243,23 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleSaveAppointment = async (appointmentData: any) => {
     try {
+      // Save client if new
+      if (appointmentData.client_name && appointmentData.client_phone) {
+        const { data: existingClients } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("profile_id", profile.id)
+          .eq("phone", appointmentData.client_phone);
+        
+        if (!existingClients || existingClients.length === 0) {
+          await supabase.from("clients").insert({
+            profile_id: profile.id,
+            name: appointmentData.client_name,
+            phone: appointmentData.client_phone,
+          });
+        }
+      }
+
       const { error } = await supabase
         .from('appointments')
         .insert({

@@ -110,7 +110,28 @@ export const WeekCalendar = ({
       if (apt.appointment_date !== dateStr) return false;
       
       const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
-      return aptHour === hour && aptMinute === minute;
+      
+      // Check if this is the start time of the appointment
+      if (aptHour === hour && aptMinute === minute) return true;
+      
+      return false;
+    });
+  };
+
+  const isSlotOccupied = (date: Date, hour: number, minute: number) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const slotTime = hour * 60 + minute;
+    
+    return appointments.some((apt) => {
+      if (apt.appointment_date !== dateStr) return false;
+      
+      const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
+      const aptStartTime = aptHour * 60 + aptMinute;
+      const aptDuration = apt.duration_minutes || 60;
+      const aptEndTime = aptStartTime + aptDuration;
+      
+      // Check if slot falls within appointment time range
+      return slotTime >= aptStartTime && slotTime < aptEndTime;
     });
   };
 
@@ -208,6 +229,7 @@ export const WeekCalendar = ({
                   const inWorkingHours = isSlotInWorkingHours(day, hour, minute);
                   const isPast = isSlotPast(day, hour, minute);
                   const dayFull = isDayFull(day);
+                  const isOccupied = isSlotOccupied(day, hour, minute);
                   
                   return (
                     <div
@@ -220,7 +242,7 @@ export const WeekCalendar = ({
                             : "hover:bg-muted/50 cursor-pointer bg-background"
                       }`}
                       onClick={() => {
-                        if (inWorkingHours && !isPast && !dayFull && slotAppointments.length === 0) {
+                        if (inWorkingHours && !isPast && !dayFull && !isOccupied) {
                           const dateStr = format(day, "yyyy-MM-dd");
                           const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
                           onCreateAppointment?.(dateStr, timeStr);
@@ -246,11 +268,11 @@ export const WeekCalendar = ({
                                   isPast
                                     ? "bg-gray-200 border border-gray-300 text-gray-500"
                                     : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
-                                }`}
-                                style={{ 
-                                  minHeight: `${slotsNeeded * 60 - 8}px`,
-                                }}
-                                onClick={(e) => {
+                                 }`}
+                                 style={{ 
+                                   minHeight: `${slotsNeeded * 50 - 8}px`,
+                                 }}
+                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onAppointmentClick?.(apt);
                                 }}
@@ -270,7 +292,7 @@ export const WeekCalendar = ({
                           })}
                         </div>
                       ) : (
-                        inWorkingHours && !isPast && !dayFull && (
+                        inWorkingHours && !isPast && !dayFull && !isOccupied && (
                           <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                             <Plus 
                               className="w-4 h-4 text-muted-foreground cursor-pointer"

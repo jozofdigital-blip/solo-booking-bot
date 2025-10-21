@@ -165,36 +165,37 @@ export const ThreeDayCalendar = ({
               <div className="p-2 text-xs text-muted-foreground border-r flex items-start">
                 {time}
               </div>
-              {threeDays.map((day) => {
-                const dayAppointments = getAppointmentsForTimeSlot(day, time);
-                const isWorking = isSlotInWorkingHours(day, time);
-                const isPast = isSlotPast(day, time);
-                const isFirstSlotOfAppointment = dayAppointments.length > 0 && 
-                  dayAppointments[0].appointment_time.substring(0, 5) === time;
+                {threeDays.map((day) => {
+                  const dayAppointments = getAppointmentsForTimeSlot(day, time);
+                  const isWorking = isSlotInWorkingHours(day, time);
+                  const isPast = isSlotPast(day, time);
+                  const isFirstSlotOfAppointment = dayAppointments.length > 0 && 
+                    dayAppointments[0].appointment_time.substring(0, 5) === time;
+                  const isOccupied = dayAppointments.length > 0;
 
-                return (
-                  <div
-                    key={`${day.toISOString()}-${time}`}
-                    className={`relative min-h-[60px] p-2 border-r last:border-r-0 ${
-                      !isWorking ? "bg-muted" : isPast ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
-                    } ${idx % 2 === 1 ? "border-t-dashed" : ""}`}
-                    onClick={() => {
-                      if (isWorking && !isPast && dayAppointments.length === 0 && onCreateAppointment) {
-                        onCreateAppointment(format(day, "yyyy-MM-dd"), time);
-                      }
-                    }}
-                  >
-                    {!isWorking && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    
-                    {isWorking && !isPast && dayAppointments.length === 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <Plus className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
+                  return (
+                    <div
+                      key={`${day.toISOString()}-${time}`}
+                      className={`relative min-h-[60px] p-2 border-r last:border-r-0 ${
+                        !isWorking ? "bg-muted" : isPast ? "bg-gray-100" : "bg-background hover:bg-accent cursor-pointer"
+                      } ${idx % 2 === 1 ? "border-t-dashed" : ""}`}
+                      onClick={() => {
+                        if (isWorking && !isPast && !isOccupied && onCreateAppointment) {
+                          onCreateAppointment(format(day, "yyyy-MM-dd"), time);
+                        }
+                      }}
+                    >
+                      {!isWorking && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {isWorking && !isPast && !isOccupied && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <Plus className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
 
                     {isFirstSlotOfAppointment && dayAppointments[0] && (
                       <div
