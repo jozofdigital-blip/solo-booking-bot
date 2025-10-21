@@ -38,9 +38,7 @@ export const WeekCalendar = ({
   onAppointmentClick,
   onCreateAppointment,
 }: WeekCalendarProps) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
 
   const weekDays = Array.from({ length: 7 }, (_, i) =>
     addDays(currentWeekStart, i)
