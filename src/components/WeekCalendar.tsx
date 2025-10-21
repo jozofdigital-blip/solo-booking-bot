@@ -263,7 +263,7 @@ export const WeekCalendar = ({
                         return (
                           <div
                             key={apt.id}
-                            className={`absolute inset-0 p-1 md:p-2 cursor-pointer z-10 overflow-hidden ${
+                            className={`absolute inset-0 p-1 md:p-2 rounded cursor-pointer z-10 overflow-hidden ${
                               isPast
                                 ? "bg-gray-200 border-l-4 border-gray-400"
                                 : "bg-telegram/10 border-l-4 border-telegram hover:bg-telegram/20"
