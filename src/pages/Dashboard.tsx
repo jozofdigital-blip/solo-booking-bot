@@ -54,7 +54,35 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(null);
+  const [highlightColor, setHighlightColor] = useState<'green' | 'red' | null>(null);
   const isCalendarPage = mode === "calendar";
+
+  // Check URL params for appointment highlight
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const appointmentId = params.get('id');
+    const highlight = params.get('highlight') as 'green' | 'red' | null;
+    
+    if (appointmentId && highlight) {
+      setHighlightedAppointmentId(appointmentId);
+      setHighlightColor(highlight);
+      setCurrentSection('calendar');
+      setCalendarView('3days');
+      
+      // Clear highlight after marking as viewed
+      const markAsViewed = async () => {
+        await supabase
+          .from('appointments')
+          .update({ notification_viewed: true })
+          .eq('id', appointmentId);
+      };
+      markAsViewed();
+      
+      // Clear URL params
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     setCalendarView(mode === "calendar" ? "week" : "3days");
@@ -240,6 +268,34 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
   };
 
+  const sendTelegramNotification = async (
+    appointmentData: any,
+    type: 'new' | 'cancelled'
+  ) => {
+    if (!profile?.telegram_chat_id) return;
+
+    try {
+      const service = services.find(s => s.id === appointmentData.service_id);
+      const bookingUrl = `${window.location.origin}/dashboard`;
+      
+      await supabase.functions.invoke('send-telegram-notification', {
+        body: {
+          chatId: profile.telegram_chat_id,
+          clientName: appointmentData.client_name,
+          serviceName: service?.name || 'Услуга',
+          date: format(new Date(appointmentData.appointment_date), 'd MMMM yyyy', { locale: ru }),
+          time: appointmentData.appointment_time.substring(0, 5),
+          phone: appointmentData.client_phone,
+          appointmentId: appointmentData.id,
+          type,
+          bookingUrl,
+        },
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+  };
+
   const handleSaveAppointment = async (appointmentData: any) => {
     try {
       // Save client if new
@@ -259,15 +315,23 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         }
       }
 
-      const { error } = await supabase
+      const { data: newAppointment, error } = await supabase
         .from('appointments')
         .insert({
           ...appointmentData,
           profile_id: profile.id,
           status: 'confirmed',
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      // Send Telegram notification
+      if (newAppointment) {
+        await sendTelegramNotification({...appointmentData, id: newAppointment.id}, 'new');
+      }
+      
       toast.success('Запись создана');
       loadData();
     } catch (error: any) {
@@ -365,12 +429,25 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleDeleteAppointment = async (appointmentId: string) => {
     try {
+      // Get appointment data before deletion for notification
+      const { data: appointment } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', appointmentId)
+        .single();
+
       const { error } = await supabase
         .from('appointments')
         .delete()
         .eq('id', appointmentId);
 
       if (error) throw error;
+      
+      // Send cancellation notification
+      if (appointment) {
+        await sendTelegramNotification(appointment, 'cancelled');
+      }
+      
       toast.success('Запись удалена');
       loadData();
     } catch (error: any) {
@@ -539,7 +616,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                               setAppointmentDialogOpen(true);
                             }}
                           />
-                        ) : (
+                         ) : (
                           <BookingCalendar
                             appointments={appointments.map(a => ({
                               ...a,
@@ -566,6 +643,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                         })}
                         workingHours={workingHours}
                         minServiceDuration={minServiceDuration}
+                        highlightedAppointmentId={highlightedAppointmentId}
+                        highlightColor={highlightColor}
+                        onClearHighlight={() => {
+                          setHighlightedAppointmentId(null);
+                          setHighlightColor(null);
+                        }}
                         onCreateAppointment={(date, time) => {
                           setSelectedDate(new Date(date));
                           setSelectedTime(time);
@@ -602,7 +685,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               )}
 
               {currentSection === "notifications" && (
-                <NotificationsSection />
+                <NotificationsSection 
+                  profileId={profile?.id}
+                  telegramChatId={profile?.telegram_chat_id}
+                />
               )}
 
               {currentSection === "address" && (

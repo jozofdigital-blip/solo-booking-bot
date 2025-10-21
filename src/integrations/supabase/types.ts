@@ -21,8 +21,10 @@ export type Database = {
           client_name: string
           client_phone: string
           created_at: string
+          highlight_color: string | null
           id: string
           notes: string | null
+          notification_viewed: boolean | null
           profile_id: string
           service_id: string
           status: string
@@ -34,8 +36,10 @@ export type Database = {
           client_name: string
           client_phone: string
           created_at?: string
+          highlight_color?: string | null
           id?: string
           notes?: string | null
+          notification_viewed?: boolean | null
           profile_id: string
           service_id: string
           status?: string
@@ -47,8 +51,10 @@ export type Database = {
           client_name?: string
           client_phone?: string
           created_at?: string
+          highlight_color?: string | null
           id?: string
           notes?: string | null
+          notification_viewed?: boolean | null
           profile_id?: string
           service_id?: string
           status?: string

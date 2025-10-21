@@ -12,6 +12,9 @@ interface NotificationRequest {
   date: string;
   time: string;
   phone: string;
+  appointmentId: string;
+  type: 'new' | 'cancelled';
+  bookingUrl: string;
 }
 
 serve(async (req) => {
@@ -25,19 +28,25 @@ serve(async (req) => {
       throw new Error('TELEGRAM_BOT_TOKEN not configured');
     }
 
-    const { chatId, clientName, serviceName, date, time, phone }: NotificationRequest = await req.json();
+    const { chatId, clientName, serviceName, date, time, phone, appointmentId, type, bookingUrl }: NotificationRequest = await req.json();
 
+    const isNew = type === 'new';
+    const emoji = isNew ? '🔔' : '❌';
+    const title = isNew ? 'Новая запись!' : 'Запись отменена';
+    
     const message = `
-🔔 *Новая запись!*
+${emoji} *${title}*
 
-👤 *Клиент:* ${clientName}
-📱 *Телефон:* ${phone}
-💅 *Услуга:* ${serviceName}
-📅 *Дата:* ${date}
-🕐 *Время:* ${time}
+📅 ${date}, ${time}
+👤 ${clientName}
+📱 ${phone}
+💅 ${serviceName}
 `;
 
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    
+    // Create deep link to appointment
+    const viewUrl = `${bookingUrl}?view=appointment&id=${appointmentId}&highlight=${isNew ? 'green' : 'red'}`;
     
     const response = await fetch(telegramUrl, {
       method: 'POST',
@@ -48,6 +57,16 @@ serve(async (req) => {
         chat_id: chatId,
         text: message,
         parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '➡️ Перейти',
+                url: viewUrl
+              }
+            ]
+          ]
+        }
       }),
     });
 

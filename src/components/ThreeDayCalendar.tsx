@@ -28,7 +28,10 @@ interface ThreeDayCalendarProps {
   onDateClick?: (date: Date) => void;
   onAppointmentClick?: (appointment: Appointment) => void;
   onCreateAppointment?: (date: string, time: string) => void;
-  minServiceDuration?: number; // Minimum service duration to check for available slots
+  minServiceDuration?: number;
+  highlightedAppointmentId?: string | null;
+  highlightColor?: 'green' | 'red' | null;
+  onClearHighlight?: () => void;
 }
 
 export const ThreeDayCalendar = ({
@@ -37,6 +40,9 @@ export const ThreeDayCalendar = ({
   onAppointmentClick,
   onCreateAppointment,
   minServiceDuration = 60,
+  highlightedAppointmentId,
+  highlightColor,
+  onClearHighlight,
 }: ThreeDayCalendarProps) => {
   const [currentDayStart, setCurrentDayStart] = useState(startOfDay(new Date()));
 
@@ -210,6 +216,7 @@ export const ThreeDayCalendar = ({
                       
                       const durationSlots = getAppointmentDurationSlots(apt);
                       const height = durationSlots * 60;
+                      const isHighlighted = apt.id === highlightedAppointmentId;
                       
                       return (
                         <div
@@ -217,16 +224,26 @@ export const ThreeDayCalendar = ({
                           className={`absolute inset-0 p-2 rounded cursor-pointer z-10 overflow-hidden ${
                             isPast 
                               ? "bg-gray-200 border-l-4 border-gray-400" 
+                              : isHighlighted && highlightColor === 'green'
+                              ? "bg-telegram-light border-l-4 border-success hover:bg-telegram-light/80 shadow-lg animate-pulse"
+                              : isHighlighted && highlightColor === 'red'
+                              ? "bg-telegram-light border-l-4 border-destructive hover:bg-telegram-light/80 shadow-lg animate-pulse"
                               : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
                           }`}
                           style={{ height: `${height}px` }}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (isHighlighted && onClearHighlight) {
+                              onClearHighlight();
+                            }
                             if (onAppointmentClick) {
                               onAppointmentClick(apt);
                             }
                           }}
                         >
+                          {isHighlighted && highlightColor === 'green' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse" />
+                          )}
                           <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : "text-telegram"}`}>
                             {apt.client_name}
                           </div>
