@@ -431,7 +431,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   }}
                 >
                   <Calendar className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">
+                  <span>
                     {isCalendarPage ? "На главную" : "Календарь"}
                   </span>
                 </Button>
