@@ -61,7 +61,12 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 return (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      onClick={() => onSectionChange(item.id)}
+                      onClick={() => {
+                        onSectionChange(item.id);
+                        if (!isCollapsed) {
+                          toggleSidebar();
+                        }
+                      }}
                       className={isActive ? "bg-accent text-accent-foreground" : ""}
                     >
                       <Icon className="h-4 w-4" />
