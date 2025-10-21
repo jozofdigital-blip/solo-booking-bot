@@ -13,6 +13,7 @@ interface NotificationRequest {
   time: string;
   phone: string;
   appointmentId: string;
+  appointmentDate: string;
   type: 'new' | 'cancelled';
   bookingUrl: string;
 }
@@ -28,7 +29,7 @@ serve(async (req) => {
       throw new Error('TELEGRAM_BOT_TOKEN not configured');
     }
 
-    const { chatId, clientName, serviceName, date, time, phone, appointmentId, type, bookingUrl }: NotificationRequest = await req.json();
+    const { chatId, clientName, serviceName, date, time, phone, appointmentId, appointmentDate, type, bookingUrl }: NotificationRequest = await req.json();
 
     const isNew = type === 'new';
     const emoji = isNew ? '🔔' : '❌';
@@ -45,8 +46,8 @@ ${emoji} *${title}*
 
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     
-    // Create deep link to appointment
-    const viewUrl = `${bookingUrl}?view=appointment&id=${appointmentId}&highlight=${isNew ? 'green' : 'red'}`;
+    // Create deep link to appointment with date navigation
+    const viewUrl = `${bookingUrl}?view=appointment&id=${appointmentId}&date=${appointmentDate}&highlight=${isNew ? 'green' : 'red'}`;
     
     const response = await fetch(telegramUrl, {
       method: 'POST',

@@ -67,12 +67,23 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     const params = new URLSearchParams(window.location.search);
     const appointmentId = params.get('id');
     const highlight = params.get('highlight') as 'green' | 'red' | null;
+    const dateParam = params.get('date');
     
     if (appointmentId && highlight) {
       setHighlightedAppointmentId(appointmentId);
       setHighlightColor(highlight);
       setCurrentSection('calendar');
       setCalendarView('3days');
+      
+      // Set the date from URL param
+      if (dateParam) {
+        try {
+          const targetDate = new Date(dateParam);
+          setSelectedDate(targetDate);
+        } catch (e) {
+          console.error('Invalid date in URL param:', e);
+        }
+      }
       
       // Clear highlight after marking as viewed
       const markAsViewed = async () => {
@@ -292,6 +303,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           time: appointmentData.appointment_time.substring(0, 5),
           phone: appointmentData.client_phone,
           appointmentId: appointmentData.id,
+          appointmentDate: appointmentData.appointment_date,
           type,
           bookingUrl,
         },

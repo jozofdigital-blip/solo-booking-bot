@@ -158,7 +158,8 @@ export default function MyAppointments() {
             time: appointment.appointment_time,
             phone: appointment.client_phone,
             appointmentId: appointment.id,
-            type: "cancel",
+            appointmentDate: appointment.appointment_date,
+            type: "cancelled",
             bookingUrl: `${window.location.origin}/dashboard`,
           },
         });

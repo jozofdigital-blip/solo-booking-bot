@@ -253,6 +253,7 @@ export default function BookingPage() {
               time: selectedTime,
               phone: clientPhone,
               appointmentId: newAppointment.id,
+              appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
               type: 'new',
               bookingUrl: dashboardUrl,
             },
