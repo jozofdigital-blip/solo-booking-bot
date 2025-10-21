@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -13,21 +13,31 @@ import { NotificationsSection } from "@/components/NotificationsSection";
 import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
+import {
+  DEFAULT_WORKING_HOURS,
+  WorkingHour,
+  WorkingHoursDialog,
+} from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { format, addDays, startOfDay } from "date-fns";
-import { ru } from "date-fns/locale";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function Dashboard() {
+type DashboardMode = "main" | "calendar";
+
+interface DashboardProps {
+  mode?: DashboardMode;
+}
+
+export default function Dashboard({ mode = "main" }: DashboardProps) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [workingHours, setWorkingHours] = useState<any[]>([]);
+  const [workingHours, setWorkingHours] = useState<WorkingHour[]>(() =>
+    DEFAULT_WORKING_HOURS.map((hour) => ({ ...hour }))
+  );
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -35,109 +45,172 @@ export default function Dashboard() {
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
-  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">("3days");
+  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">(
+    mode === "calendar" ? "week" : "3days"
+  );
   const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
-  const [tomorrowAppointmentsOpen, setTomorrowAppointmentsOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
+  const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
+  const isCalendarPage = mode === "calendar";
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    checkAuth();
-    loadData();
+    setCalendarView(mode === "calendar" ? "week" : "3days");
+    setCurrentSection("calendar");
+  }, [mode]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-    }
-  };
+  const mergeWithDefaultWorkingHours = useCallback((hours?: any[]): WorkingHour[] => {
+    const ensureTimeFormat = (time: string, fallback: string) => {
+      if (!time) return fallback;
+      return time.length > 5 ? time.substring(0, 5) : time;
+    };
 
-  const loadData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
+    const providedHours = Array.isArray(hours) ? hours : [];
+
+    return DEFAULT_WORKING_HOURS.map((defaultHour) => {
+      const existing = providedHours.find(
+        (hour) => hour.day_of_week === defaultHour.day_of_week
+      );
+
+      if (!existing) {
+        return { ...defaultHour };
       }
 
-      // Load profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      return {
+        day_of_week: existing.day_of_week,
+        start_time: ensureTimeFormat(existing.start_time, defaultHour.start_time),
+        end_time: ensureTimeFormat(existing.end_time, defaultHour.end_time),
+        is_working:
+          typeof existing.is_working === "boolean"
+            ? existing.is_working
+            : defaultHour.is_working,
+      };
+    });
+  }, []);
 
-      if (profileError) throw profileError;
-
-      if (!profileData) {
-        // Create profile if doesn't exist
-        const slug = await generateSlug();
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            business_name: 'Мой бизнес',
-            unique_slug: slug
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        setProfile(newProfile);
-        setBusinessName(newProfile.business_name);
-      } else {
-        setProfile(profileData);
-        setBusinessName(profileData.business_name);
-      }
-
-      // Load services
-      if (profileData?.id) {
-        const { data: servicesData } = await supabase
-          .from('services')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .order('created_at', { ascending: false });
-
-        setServices(servicesData || []);
-
-        // Load appointments
-        const { data: appointmentsData } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            services (name)
-          `)
-          .eq('profile_id', profileData.id)
-          .order('appointment_date', { ascending: true });
-
-        setAppointments(appointmentsData || []);
-
-        // Load working hours
-        const { data: workingHoursData } = await supabase
-          .from('working_hours')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .order('day_of_week', { ascending: true });
-
-        setWorkingHours(workingHoursData || []);
-      }
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-      toast.error('Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateSlug = async () => {
+  const generateSlug = useCallback(async () => {
     const { data, error } = await supabase.rpc('generate_unique_slug');
     if (error) throw error;
     return data;
-  };
+  }, []);
+
+  const loadData = useCallback(
+    async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
+      if (showLoading && isMountedRef.current) {
+        setLoading(true);
+      }
+
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const user = sessionData.session?.user;
+
+        if (!user) {
+          navigate('/auth', { replace: true });
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        let activeProfile = profileData;
+
+        if (!activeProfile) {
+          const slug = await generateSlug();
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              business_name: 'Мой бизнес',
+              unique_slug: slug,
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          activeProfile = newProfile;
+        }
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        setProfile(activeProfile);
+        setBusinessName(activeProfile?.business_name ?? '');
+
+        if (!activeProfile?.id) {
+          setServices([]);
+          setAppointments([]);
+          setWorkingHours(mergeWithDefaultWorkingHours());
+          return;
+        }
+
+        const [servicesResult, appointmentsResult, workingHoursResult] = await Promise.all([
+          supabase
+            .from('services')
+            .select('*')
+            .eq('profile_id', activeProfile.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('appointments')
+            .select(`
+              *,
+              services (name)
+            `)
+            .eq('profile_id', activeProfile.id)
+            .order('appointment_date', { ascending: true }),
+          supabase
+            .from('working_hours')
+            .select('*')
+            .eq('profile_id', activeProfile.id)
+            .order('day_of_week', { ascending: true })
+        ]);
+
+        if (servicesResult.error) throw servicesResult.error;
+        if (appointmentsResult.error) throw appointmentsResult.error;
+        if (workingHoursResult.error) throw workingHoursResult.error;
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        setServices(servicesResult.data || []);
+        setAppointments(appointmentsResult.data || []);
+        setWorkingHours(mergeWithDefaultWorkingHours(workingHoursResult.data));
+      } catch (error: any) {
+        if (!isMountedRef.current) {
+          return;
+        }
+        console.error('Error loading data:', error);
+        toast.error('Ошибка загрузки данных');
+      } finally {
+        if (showLoading && isMountedRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [generateSlug, mergeWithDefaultWorkingHours, navigate]
+  );
+
+  useEffect(() => {
+    void loadData({ showLoading: true });
+  }, [loadData]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -161,6 +234,10 @@ export default function Dashboard() {
         if (error) throw error;
         toast.success('Услуга обновлена');
       } else {
+        if (!profile?.id) {
+          toast.error('Профиль не найден');
+          return;
+        }
         const { error } = await supabase
           .from('services')
           .insert({ ...serviceData, profile_id: profile.id });
@@ -168,8 +245,8 @@ export default function Dashboard() {
         if (error) throw error;
         toast.success('Услуга добавлена');
       }
-      
-      loadData();
+
+      await loadData();
       setEditingService(null);
     } catch (error: any) {
       toast.error('Ошибка сохранения услуги');
@@ -186,7 +263,7 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('Услуга удалена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка удаления услуги');
       console.error(error);
@@ -195,6 +272,10 @@ export default function Dashboard() {
 
   const handleSaveAppointment = async (appointmentData: any) => {
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('appointments')
         .insert({
@@ -205,14 +286,19 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('Запись создана');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка создания записи');
       console.error(error);
     }
   };
 
-  const handleSaveWorkingHours = async (hours: any[]) => {
+  const handleSaveWorkingHours = async (hours: WorkingHour[]) => {
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
+
     try {
       // Delete existing working hours
       await supabase
@@ -227,7 +313,8 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('График работы сохранен');
-      loadData();
+      setWorkingHours(mergeWithDefaultWorkingHours(hours));
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения графика');
       console.error(error);
@@ -236,6 +323,10 @@ export default function Dashboard() {
 
   const handleSaveAddress = async (address: string) => {
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ address })
@@ -243,7 +334,7 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('Адрес сохранен');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения адреса');
       console.error(error);
@@ -257,6 +348,10 @@ export default function Dashboard() {
     }
 
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ business_name: businessName })
@@ -265,7 +360,7 @@ export default function Dashboard() {
       if (error) throw error;
       toast.success('Название обновлено');
       setIsEditingBusinessName(false);
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения названия');
       console.error(error);
@@ -281,7 +376,7 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('Запись обновлена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка обновления записи');
       console.error(error);
@@ -297,7 +392,7 @@ export default function Dashboard() {
 
       if (error) throw error;
       toast.success('Запись удалена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка удаления записи');
       console.error(error);
@@ -312,24 +407,18 @@ export default function Dashboard() {
     );
   }
 
-  const calculateEarnings = () => {
-    return appointments
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  const todayAppointments = appointments.filter(a => a.appointment_date === todayDate);
+
+  const calculateTodayEarnings = () => {
+    return todayAppointments
       .filter(a => a.status === 'confirmed' || a.status === 'completed')
       .reduce((total, apt) => {
         const service = services.find(s => s.id === apt.service_id);
         return total + (service?.price || 0);
       }, 0);
   };
-
-  const todayAppointments = appointments.filter(a => {
-    const today = new Date().toISOString().split('T')[0];
-    return a.appointment_date === today;
-  });
-
-  const tomorrowAppointments = appointments.filter(a => {
-    const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
-    return a.appointment_date === tomorrow;
-  });
 
   const stats = [
     {
@@ -341,16 +430,8 @@ export default function Dashboard() {
       onClick: () => setTodayAppointmentsOpen(true)
     },
     {
-      title: 'Записи на завтра',
-      value: tomorrowAppointments.length,
-      icon: Calendar,
-      color: 'text-blue-500',
-      clickable: true,
-      onClick: () => setTomorrowAppointmentsOpen(true)
-    },
-    {
-      title: 'Заработано',
-      value: `${calculateEarnings().toLocaleString('ru-RU')} ₽`,
+      title: 'Заработок сегодня',
+      value: `${calculateTodayEarnings().toLocaleString('ru-RU')} ₽`,
       icon: TrendingUp,
       color: 'text-success',
       clickable: false
@@ -404,6 +485,19 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentSection("calendar");
+                    navigate(isCalendarPage ? "/dashboard" : "/dashboard/calendar");
+                  }}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">
+                    {isCalendarPage ? "На главную" : "Календарь"}
+                  </span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={copyBookingLink}>
                   <Share2 className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">Поделиться ссылкой</span>
@@ -419,7 +513,7 @@ export default function Dashboard() {
               {currentSection === "calendar" && (
                 <>
                   {/* Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
                     {stats.map((stat) => {
                       const Icon = stat.icon;
                       return (
@@ -445,31 +539,62 @@ export default function Dashboard() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant={calendarView === "3days" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCalendarView("3days")}
-                      >
-                        3 дня
-                      </Button>
-                      <Button
-                        variant={calendarView === "week" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCalendarView("week")}
-                      >
-                        Неделя
-                      </Button>
-                      <Button
-                        variant={calendarView === "month" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCalendarView("month")}
-                      >
-                        Месяц
-                      </Button>
-                    </div>
+                    {isCalendarPage ? (
+                      <>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            variant={calendarView === "week" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCalendarView("week")}
+                          >
+                            Неделя
+                          </Button>
+                          <Button
+                            variant={calendarView === "month" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCalendarView("month")}
+                          >
+                            Месяц
+                          </Button>
+                        </div>
 
-                    {calendarView === "3days" ? (
+                        {calendarView === "week" ? (
+                          <WeekCalendar
+                            appointments={appointments.map(a => {
+                              const service = services.find(s => s.id === a.service_id);
+                              return {
+                                ...a,
+                                service_name: a.services?.name,
+                                duration_minutes: service?.duration_minutes
+                              };
+                            })}
+                            workingHours={workingHours}
+                            onCreateAppointment={(date, time) => {
+                              setSelectedDate(new Date(date));
+                              setSelectedTime(time);
+                              setEditingAppointment(null);
+                              setAppointmentDialogOpen(true);
+                            }}
+                            onAppointmentClick={(apt) => {
+                              setEditingAppointment(apt);
+                              setAppointmentDialogOpen(true);
+                            }}
+                          />
+                        ) : (
+                          <BookingCalendar
+                            appointments={appointments.map(a => ({
+                              ...a,
+                              service_name: a.services?.name
+                            }))}
+                            onDateSelect={(date) => {
+                              setSelectedDate(date);
+                              setSelectedTime(undefined);
+                              setEditingAppointment(null);
+                            }}
+                          />
+                        )}
+                      </>
+                    ) : (
                       <ThreeDayCalendar
                         appointments={appointments.map(a => {
                           const service = services.find(s => s.id === a.service_id);
@@ -489,40 +614,6 @@ export default function Dashboard() {
                         onAppointmentClick={(apt) => {
                           setEditingAppointment(apt);
                           setAppointmentDialogOpen(true);
-                        }}
-                      />
-                    ) : calendarView === "week" ? (
-                      <WeekCalendar
-                        appointments={appointments.map(a => {
-                          const service = services.find(s => s.id === a.service_id);
-                          return {
-                            ...a,
-                            service_name: a.services?.name,
-                            duration_minutes: service?.duration_minutes
-                          };
-                        })}
-                        workingHours={workingHours}
-                        onCreateAppointment={(date, time) => {
-                          setSelectedDate(new Date(date));
-                          setSelectedTime(time);
-                          setEditingAppointment(null);
-                          setAppointmentDialogOpen(true);
-                        }}
-                        onAppointmentClick={(apt) => {
-                          setEditingAppointment(apt);
-                          setAppointmentDialogOpen(true);
-                        }}
-                      />
-                    ) : (
-                      <BookingCalendar 
-                        appointments={appointments.map(a => ({
-                          ...a,
-                          service_name: a.services?.name
-                        }))}
-                        onDateSelect={(date) => {
-                          setSelectedDate(date);
-                          setSelectedTime(undefined);
-                          setEditingAppointment(null);
                         }}
                       />
                     )}
@@ -577,10 +668,11 @@ export default function Dashboard() {
           </main>
         </div>
         {/* Sidebar on the right */}
-        <AppSidebar 
+        <AppSidebar
           currentSection={currentSection}
           onSectionChange={setCurrentSection}
           onLogout={handleLogout}
+          onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
         />
         {/* Dialogs */}
         <ServiceDialog
@@ -617,6 +709,13 @@ export default function Dashboard() {
           onSave={handleSaveAddress}
         />
 
+        <WorkingHoursDialog
+          open={workingHoursDialogOpen}
+          onOpenChange={setWorkingHoursDialogOpen}
+          workingHours={workingHours}
+          onSave={handleSaveWorkingHours}
+        />
+
         <ClientsDialog
           open={clientsDialogOpen}
           onOpenChange={setClientsDialogOpen}
@@ -632,50 +731,28 @@ export default function Dashboard() {
               {todayAppointments.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">Записей нет</p>
               ) : (
-                todayAppointments.map((apt) => (
-                  <div key={apt.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{apt.client_name}</p>
-                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.appointment_time.substring(0, 5)}
-                        </p>
+                todayAppointments.map((apt) => {
+                  const appointmentTime = apt.appointment_time
+                    ? apt.appointment_time.substring(0, 5)
+                    : '—';
+
+                  return (
+                    <div key={apt.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{apt.client_name}</p>
+                          <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
+                          <p className="text-sm text-muted-foreground">{appointmentTime}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </DialogContent>
         </Dialog>
 
-        <Dialog open={tomorrowAppointmentsOpen} onOpenChange={setTomorrowAppointmentsOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>Записи на завтра</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
-              {tomorrowAppointments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">Записей нет</p>
-              ) : (
-                tomorrowAppointments.map((apt) => (
-                  <div key={apt.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{apt.client_name}</p>
-                        <p className="text-sm text-muted-foreground">{apt.services?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {apt.appointment_time.substring(0, 5)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </SidebarProvider>
   );
