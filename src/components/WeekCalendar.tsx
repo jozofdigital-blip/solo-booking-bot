@@ -10,7 +10,7 @@ interface Appointment {
   id: string;
   client_name: string;
   appointment_date: string;
-  appointment_time?: string;
+  appointment_time: string;
   service_name?: string;
   status: string;
   duration_minutes?: number;
@@ -88,8 +88,7 @@ export const WeekCalendar = ({
     const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
       if (apt.appointment_date !== dateStr) return false;
-      if (!apt.appointment_time) return false;
-
+      
       const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
       return aptHour === hour && aptMinute === minute;
     });

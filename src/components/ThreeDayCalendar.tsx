@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 interface Appointment {
   id: string;
   client_name: string;
-  appointment_time?: string;
+  appointment_time: string;
   appointment_date: string;
   service_name?: string;
   status: string;
@@ -76,21 +76,20 @@ export const ThreeDayCalendar = ({
     const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
       if (apt.appointment_date !== dateStr) return false;
-      if (!apt.appointment_time) return false;
-
+      
       const aptTime = apt.appointment_time.substring(0, 5);
       const slotTime = time;
-
+      
       if (aptTime === slotTime) return true;
-
+      
       if (apt.duration_minutes) {
-        const aptDate = parse(aptTime, 'HH:mm', new Date());
-        const slotDate = parse(slotTime, 'HH:mm', new Date());
+        const aptDate = parse(aptTime, "HH:mm", new Date());
+        const slotDate = parse(slotTime, "HH:mm", new Date());
         const aptEndDate = new Date(aptDate.getTime() + apt.duration_minutes * 60000);
-
+        
         return slotDate >= aptDate && slotDate < aptEndDate;
       }
-
+      
       return false;
     });
   };
@@ -182,9 +181,7 @@ export const ThreeDayCalendar = ({
                 const dayAppointments = getAppointmentsForTimeSlot(day, time);
                 const isWorking = isSlotInWorkingHours(day, time);
                 const isPast = isSlotPast(day, time);
-                const isFirstSlotOfAppointment =
-                  dayAppointments.length > 0 &&
-                  dayAppointments[0].appointment_time &&
+                const isFirstSlotOfAppointment = dayAppointments.length > 0 && 
                   dayAppointments[0].appointment_time.substring(0, 5) === time;
 
                 return (

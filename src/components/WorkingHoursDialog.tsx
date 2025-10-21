@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export interface WorkingHour {
+interface WorkingHour {
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -24,22 +25,7 @@ interface WorkingHoursDialogProps {
   workingHours: WorkingHour[];
 }
 
-const DAY_CONFIG = [
-  { label: "Пн", value: 1, defaultStart: "09:00", defaultEnd: "18:00", defaultWorking: true },
-  { label: "Вт", value: 2, defaultStart: "09:00", defaultEnd: "18:00", defaultWorking: true },
-  { label: "Ср", value: 3, defaultStart: "09:00", defaultEnd: "18:00", defaultWorking: true },
-  { label: "Чт", value: 4, defaultStart: "09:00", defaultEnd: "18:00", defaultWorking: true },
-  { label: "Пт", value: 5, defaultStart: "09:00", defaultEnd: "18:00", defaultWorking: true },
-  { label: "Сб", value: 6, defaultStart: "10:00", defaultEnd: "16:00", defaultWorking: true },
-  { label: "Вс", value: 0, defaultStart: "10:00", defaultEnd: "16:00", defaultWorking: false },
-];
-
-export const DEFAULT_WORKING_HOURS: WorkingHour[] = DAY_CONFIG.map((day) => ({
-  day_of_week: day.value,
-  start_time: day.defaultStart,
-  end_time: day.defaultEnd,
-  is_working: day.defaultWorking,
-}));
+const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 export const WorkingHoursDialog = ({
   open,
@@ -50,24 +36,19 @@ export const WorkingHoursDialog = ({
   const [hours, setHours] = useState<WorkingHour[]>([]);
 
   useEffect(() => {
-    setHours(
-      DAY_CONFIG.map((day) => {
-        const existing = workingHours.find(
-          (wh) => wh.day_of_week === day.value
-        );
-
-        if (existing) {
-          return { ...existing };
-        }
-
-        return {
-          day_of_week: day.value,
-          start_time: day.defaultStart,
-          end_time: day.defaultEnd,
-          is_working: day.defaultWorking,
-        };
-      })
-    );
+    if (workingHours.length > 0) {
+      setHours(workingHours);
+    } else {
+      // Default working hours
+      setHours(
+        Array.from({ length: 7 }, (_, i) => ({
+          day_of_week: i,
+          start_time: i < 5 ? "09:00" : "10:00",
+          end_time: i < 5 ? "18:00" : "16:00",
+          is_working: i < 6, // Пн-Сб работаем, Вс выходной
+        }))
+      );
+    }
   }, [workingHours, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,10 +75,8 @@ export const WorkingHoursDialog = ({
               key={hour.day_of_week}
               className="flex items-center gap-4 p-3 rounded-lg border bg-card"
             >
-              <div className="w-12 font-medium">
-                {DAY_CONFIG.find((day) => day.value === hour.day_of_week)?.label}
-              </div>
-
+              <div className="w-12 font-medium">{DAYS[hour.day_of_week]}</div>
+              
               <div className="flex items-center gap-2">
                 <Switch
                   checked={hour.is_working}
