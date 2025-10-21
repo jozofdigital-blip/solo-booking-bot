@@ -1,4 +1,4 @@
-import { LogOut, Package, Users, Bell, MapPin } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ interface AppSidebarProps {
 }
 
 const menuItems = [
+  { id: "calendar", title: "Мой график", icon: Calendar },
   { id: "services", title: "Мои услуги", icon: Package },
   { id: "clients", title: "Мои клиенты", icon: Users },
   { id: "notifications", title: "Уведомления", icon: Bell },
@@ -29,7 +30,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout }: AppSid
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-60"}>
+    <Sidebar side="right" className={isCollapsed ? "w-14" : "w-60"}>
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent>
