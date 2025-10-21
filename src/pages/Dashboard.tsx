@@ -519,6 +519,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                               ...a,
                               service_name: a.services?.name
                             }))}
+                            workingHours={workingHours}
                             onDateSelect={(date) => {
                               setSelectedDate(date);
                               setSelectedTime(undefined);

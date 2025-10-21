@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -19,13 +17,48 @@ interface Appointment {
 interface BookingCalendarProps {
   appointments: Appointment[];
   onDateSelect?: (date: Date) => void;
+  workingHours?: WorkingHour[];
 }
 
-export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarProps) => {
+interface WorkingHour {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_working: boolean;
+}
+
+export const BookingCalendar = ({ appointments, onDateSelect, workingHours }: BookingCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
+  };
+
+  const isDayBlocked = (date: Date) => {
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek);
+    return !workingDay?.is_working;
+  };
+
+  const isDayFull = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
+    
+    if (!workingDay) return false;
+    
+    const startHour = parseInt(workingDay.start_time.split(':')[0]);
+    const startMinute = parseInt(workingDay.start_time.split(':')[1]);
+    const endHour = parseInt(workingDay.end_time.split(':')[0]);
+    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+    
+    const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+    const totalSlots = Math.floor(totalMinutes / 30);
+    
+    const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
+    const bookedSlots = dayAppointments.length;
+    
+    return bookedSlots >= totalSlots;
   };
 
   const selectedDayAppointments = appointments.filter(apt => {
@@ -50,34 +83,37 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="p-4 md:p-6">
+    <div className="grid grid-cols-1 gap-4 md:gap-6">
+      <Card className="p-3 md:p-6">
         <h3 className="text-base md:text-lg font-semibold mb-4">Календарь</h3>
         <Calendar
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
           locale={ru}
-          className="rounded-md border w-full"
-          disabled={(date) => isBefore(startOfDay(date), startOfDay(new Date()))}
+          className="rounded-md border w-full mx-auto"
+          disabled={(date) => {
+            const isPast = isBefore(startOfDay(date), startOfDay(new Date()));
+            const isBlocked = isDayBlocked(date);
+            const isFull = isDayFull(date);
+            return isPast || isBlocked || isFull;
+          }}
+          modifiers={{
+            blocked: (date) => isDayBlocked(date) && !isBefore(startOfDay(date), startOfDay(new Date())),
+            full: (date) => isDayFull(date) && !isBefore(startOfDay(date), startOfDay(new Date()))
+          }}
+          modifiersClassNames={{
+            blocked: "bg-muted text-muted-foreground opacity-50",
+            full: "bg-muted text-muted-foreground opacity-50"
+          }}
         />
       </Card>
 
-      <Card className="p-4 md:p-6">
-        <div className="flex justify-between items-center mb-4">
+      <Card className="p-3 md:p-6">
+        <div className="mb-4">
           <h3 className="text-base md:text-lg font-semibold">
             {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: ru }) : 'Выберите дату'}
           </h3>
-          {selectedDate && onDateSelect && (
-            <Button
-              size="sm"
-              onClick={() => onDateSelect(selectedDate)}
-              className="bg-telegram hover:bg-telegram/90"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Запись
-            </Button>
-          )}
         </div>
         
         {selectedDayAppointments.length === 0 ? (

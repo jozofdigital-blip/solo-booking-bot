@@ -40,6 +40,27 @@ export const WeekCalendar = ({
 }: WeekCalendarProps) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
 
+  const isDayFull = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
+    
+    if (!workingDay) return false;
+    
+    const startHour = parseInt(workingDay.start_time.split(':')[0]);
+    const startMinute = parseInt(workingDay.start_time.split(':')[1]);
+    const endHour = parseInt(workingDay.end_time.split(':')[0]);
+    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+    
+    const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+    const totalSlots = Math.floor(totalMinutes / 30);
+    
+    const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
+    const bookedSlots = dayAppointments.length;
+    
+    return bookedSlots >= totalSlots;
+  };
+
   const weekDays = Array.from({ length: 7 }, (_, i) =>
     addDays(currentWeekStart, i)
   );
@@ -163,14 +184,22 @@ export const WeekCalendar = ({
             {weekDays.map((day) => (
               <div
                 key={day.toISOString()}
-                className="p-1 md:p-2 text-center border-r last:border-r-0 bg-muted/50"
+                className={`p-1 md:p-2 text-center border-r last:border-r-0 ${
+                  isDayFull(day) && !isBefore(day, new Date()) 
+                    ? "bg-muted/70" 
+                    : "bg-muted/50"
+                }`}
               >
                 <div className="text-[10px] md:text-xs text-muted-foreground">
                   {format(day, "EEE", { locale: ru })}
                 </div>
                 <div
                   className={`text-xs md:text-sm font-medium ${
-                    isSameDay(day, new Date()) ? "text-telegram" : ""
+                    isSameDay(day, new Date()) 
+                      ? "text-telegram" 
+                      : isDayFull(day) && !isBefore(day, new Date())
+                        ? "text-muted-foreground"
+                        : ""
                   }`}
                 >
                   {format(day, "d")}
@@ -190,6 +219,7 @@ export const WeekCalendar = ({
                   const slotAppointments = getAppointmentsForTimeSlot(day, hour, minute);
                   const inWorkingHours = isSlotInWorkingHours(day, hour, minute);
                   const isPast = isSlotPast(day, hour, minute);
+                  const dayFull = isDayFull(day);
                   
                   return (
                     <div
@@ -197,12 +227,12 @@ export const WeekCalendar = ({
                       className={`p-1 border-r last:border-r-0 relative group ${
                         !inWorkingHours 
                           ? "bg-muted/20" 
-                          : isPast 
-                            ? "bg-gray-100" 
+                          : isPast || dayFull
+                            ? "bg-muted/40" 
                             : "hover:bg-muted/50 cursor-pointer bg-background"
                       }`}
                       onClick={() => {
-                        if (inWorkingHours && !isPast && slotAppointments.length === 0) {
+                        if (inWorkingHours && !isPast && !dayFull && slotAppointments.length === 0) {
                           const dateStr = format(day, "yyyy-MM-dd");
                           const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
                           onCreateAppointment?.(dateStr, timeStr);
@@ -265,7 +295,7 @@ export const WeekCalendar = ({
                           })}
                         </div>
                       ) : (
-                        inWorkingHours && !isPast && (
+                        inWorkingHours && !isPast && !dayFull && (
                           <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                             <Plus 
                               className="w-4 h-4 text-muted-foreground cursor-pointer"

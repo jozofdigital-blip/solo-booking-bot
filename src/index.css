@@ -93,4 +93,10 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Calendar modifiers for blocked and full days */
+  .rdp-day_blocked button,
+  .rdp-day_full button {
+    @apply bg-muted text-muted-foreground opacity-50 cursor-not-allowed;
+  }
 }
