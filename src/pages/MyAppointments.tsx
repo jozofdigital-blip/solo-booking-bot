@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,16 @@ export default function MyAppointments() {
   const [clientId, setClientId] = useState<string>("");
   const [botUsername, setBotUsername] = useState<string>("");
   const [hasTelegram, setHasTelegram] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('client_booking_data');
+    if (saved) {
+      try {
+        const { phone } = JSON.parse(saved);
+        if (phone) setPhone(phone);
+      } catch {}
+    }
+  }, []);
 
   const loadBotUsername = async () => {
     try {

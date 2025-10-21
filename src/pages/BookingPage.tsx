@@ -243,7 +243,7 @@ export default function BookingPage() {
       const { data: clientData } = await supabase
         .from('clients')
         .select('telegram_chat_id')
-        .eq('phone', clientPhone)
+        .eq('id', clientId)
         .maybeSingle();
 
       if (clientData?.telegram_chat_id) {

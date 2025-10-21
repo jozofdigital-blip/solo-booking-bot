@@ -59,16 +59,29 @@ serve(async (req) => {
             });
           }
         } else if (param.startsWith('client_')) {
-          // Client connection using client ID
-          const clientId = param.replace('client_', '');
+          // Client connection - supports both client ID (UUID) and phone fallback
+          const value = param.replace('client_', '').trim();
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-          const { error } = await supabase
-            .from('clients')
-            .update({ telegram_chat_id: chatId.toString() })
-            .eq('id', clientId);
+          let updateError = null;
+          if (isUUID) {
+            const { error } = await supabase
+              .from('clients')
+              .update({ telegram_chat_id: chatId.toString() })
+              .eq('id', value);
+            updateError = error;
+          } else if (value) {
+            const { error } = await supabase
+              .from('clients')
+              .update({ telegram_chat_id: chatId.toString() })
+              .eq('phone', value);
+            updateError = error;
+          } else {
+            updateError = new Error('Invalid client parameter');
+          }
 
-          if (error) {
-            console.error('Error updating client:', error);
+          if (updateError) {
+            console.error('Error updating client:', updateError);
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
