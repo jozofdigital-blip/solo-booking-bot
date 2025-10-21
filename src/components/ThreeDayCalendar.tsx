@@ -203,17 +203,17 @@ export const ThreeDayCalendar = ({
                       if (!isFirstSlotOfAppointment(day, time, apt)) return null;
                       
                       const durationSlots = getAppointmentDurationSlots(apt);
-                      const height = durationSlots * 60 - 4;
+                      const height = durationSlots * 60;
                       
                       return (
                         <div
                           key={apt.id}
-                          className={`absolute inset-x-2 top-2 p-2 rounded cursor-pointer z-10 overflow-hidden ${
+                          className={`absolute inset-0 p-2 cursor-pointer z-10 overflow-hidden ${
                             isPast 
                               ? "bg-gray-200 border-l-4 border-gray-400" 
                               : "bg-primary/10 border-l-4 border-primary"
                           }`}
-                          style={{ height: `${height}px`, minHeight: '50px' }}
+                          style={{ height: `${height}px` }}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (onAppointmentClick) {

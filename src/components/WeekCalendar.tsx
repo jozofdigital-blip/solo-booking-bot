@@ -258,17 +258,17 @@ export const WeekCalendar = ({
                         if (!isFirstSlotOfAppointment(day, hour, minute, apt)) return null;
                         
                         const durationSlots = getAppointmentDurationSlots(apt);
-                        const height = durationSlots * 50 - 4;
+                        const height = durationSlots * 50;
                         
                         return (
                           <div
                             key={apt.id}
-                            className={`absolute inset-x-1 top-1 p-1 md:p-2 rounded cursor-pointer z-10 overflow-hidden ${
+                            className={`absolute inset-0 p-1 md:p-2 cursor-pointer z-10 overflow-hidden ${
                               isPast
                                 ? "bg-gray-200 border-l-4 border-gray-400"
                                 : "bg-telegram/10 border-l-4 border-telegram hover:bg-telegram/20"
                             }`}
-                            style={{ height: `${height}px`, minHeight: '40px' }}
+                            style={{ height: `${height}px` }}
                             onClick={(e) => {
                               e.stopPropagation();
                               onAppointmentClick?.(apt);
