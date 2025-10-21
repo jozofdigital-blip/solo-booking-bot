@@ -7,7 +7,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Booking Bot - Онлайн запись для вашего бизнеса";
+    document.title = "LookTime - Онлайн запись для вашего бизнеса";
   }, []);
 
   return (
@@ -20,7 +20,7 @@ const Index = () => {
           </div>
           
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-telegram to-telegram/70 bg-clip-text text-transparent">
-            Booking Bot
+            LookTime
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -28,21 +28,13 @@ const Index = () => {
             Получайте уведомления в Telegram и управляйте своим расписанием.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <Button
               size="lg"
               onClick={() => navigate('/auth')}
               className="bg-telegram hover:bg-telegram/90 text-lg h-14 px-8"
             >
-              Начать бесплатно
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate('/my-appointments')}
-              className="text-lg h-14 px-8"
-            >
-              Мои записи
+              Попробуйте бесплатно
             </Button>
           </div>
         </div>
@@ -92,7 +84,7 @@ const Index = () => {
             Готовы начать?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Присоединяйтесь к мастерам, которые уже используют Booking Bot
+            Присоединяйтесь к мастерам, которые уже используют LookTime
           </p>
           <Button
             size="lg"
