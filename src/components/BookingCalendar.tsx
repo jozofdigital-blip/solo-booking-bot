@@ -149,10 +149,11 @@ export const BookingCalendar = ({ appointments, onDateSelect, workingHours }: Bo
                         ? "bg-gray-400 text-gray-600" 
                         : getStatusColor(apt.status)
                     }`}>
-                      {apt.status === 'pending' && 'Ожидает'}
-                      {apt.status === 'confirmed' && 'Подтверждено'}
-                      {apt.status === 'cancelled' && 'Отменено'}
-                      {apt.status === 'completed' && 'Завершено'}
+                      {isPast && 'Завершено'}
+                      {!isPast && apt.status === 'pending' && 'Ожидает'}
+                      {!isPast && apt.status === 'confirmed' && 'Подтверждено'}
+                      {!isPast && apt.status === 'cancelled' && 'Отменено'}
+                      {!isPast && apt.status === 'completed' && 'Завершено'}
                     </Badge>
                   </div>
                   <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
