@@ -49,7 +49,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   );
   const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
-  const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
+  const [businessNameDialogOpen, setBusinessNameDialogOpen] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
@@ -316,12 +316,17 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Название обновлено');
-      setIsEditingBusinessName(false);
+      setBusinessNameDialogOpen(false);
       loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения названия');
       console.error(error);
     }
+  };
+
+  const openBusinessNameDialog = () => {
+    setBusinessName(profile?.business_name || "");
+    setBusinessNameDialogOpen(true);
   };
 
   const handleUpdateAppointment = async (appointmentId: string, updates: any) => {
@@ -403,43 +408,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           <header className="h-14 border-b bg-card flex items-center px-4">
             <div className="flex-1 flex justify-between items-center w-full">
               <div className="flex items-center gap-2">
-                {isEditingBusinessName ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
-                      className="text-xl font-bold border-b-2 border-primary bg-transparent outline-none"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveBusinessName();
-                        if (e.key === 'Escape') {
-                          setIsEditingBusinessName(false);
-                          setBusinessName(profile?.business_name);
-                        }
-                      }}
-                    />
-                    <Button size="sm" onClick={handleSaveBusinessName}>✓</Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={() => {
-                        setIsEditingBusinessName(false);
-                        setBusinessName(profile?.business_name);
-                      }}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                ) : (
-                  <h1 
-                    className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => setIsEditingBusinessName(true)}
-                    title="Нажмите для редактирования"
-                  >
-                    {profile?.business_name}
-                  </h1>
-                )}
+                <h1 
+                  className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => navigate('/')}
+                  title="Перейти на главную"
+                >
+                  {profile?.business_name}
+                </h1>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -630,6 +605,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onSectionChange={setCurrentSection}
           onLogout={handleLogout}
           onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
+          onEditBusinessName={openBusinessNameDialog}
         />
         {/* Dialogs */}
         <ServiceDialog
@@ -672,6 +648,41 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           workingHours={workingHours}
           onSave={handleSaveWorkingHours}
         />
+
+        <Dialog open={businessNameDialogOpen} onOpenChange={setBusinessNameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Изменить название</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Название бизнеса</label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 border rounded-md"
+                  placeholder="Введите название"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveBusinessName();
+                  }}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setBusinessNameDialogOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button onClick={handleSaveBusinessName}>
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <ClientsDialog
           open={clientsDialogOpen}

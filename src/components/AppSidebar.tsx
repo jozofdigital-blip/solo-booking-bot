@@ -1,4 +1,4 @@
-import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ interface AppSidebarProps {
   onSectionChange: (section: string) => void;
   onLogout: () => void;
   onOpenWorkingHours: () => void;
+  onEditBusinessName: () => void;
 }
 
 const navigationItems = [
@@ -26,7 +27,7 @@ const navigationItems = [
   { id: "address", title: "Мой адрес", icon: MapPin },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName }: AppSidebarProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -59,6 +60,13 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 <SidebarMenuButton onClick={onOpenWorkingHours}>
                   <CalendarCog className="h-4 w-4" />
                   {!isCollapsed && <span>Мой график</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={onEditBusinessName}>
+                  <Edit3 className="h-4 w-4" />
+                  {!isCollapsed && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
