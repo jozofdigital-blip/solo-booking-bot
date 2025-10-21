@@ -129,6 +129,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          notify_1h_before: boolean | null
+          notify_24h_before: boolean | null
           telegram_chat_id: string | null
           unique_slug: string
           updated_at: string
@@ -141,6 +143,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          notify_1h_before?: boolean | null
+          notify_24h_before?: boolean | null
           telegram_chat_id?: string | null
           unique_slug: string
           updated_at?: string
@@ -153,6 +157,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          notify_1h_before?: boolean | null
+          notify_24h_before?: boolean | null
           telegram_chat_id?: string | null
           unique_slug?: string
           updated_at?: string
