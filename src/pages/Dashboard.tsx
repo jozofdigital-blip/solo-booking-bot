@@ -22,6 +22,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 type DashboardMode = "main" | "calendar";
 
 interface DashboardProps {
@@ -392,7 +394,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       onClick: () => setTodayAppointmentsOpen(true)
     },
     {
-      title: 'Заработок сегодня',
+      title: 'Заработок',
       value: `${calculateTodayEarnings().toLocaleString('ru-RU')} ₽`,
       icon: TrendingUp,
       color: 'text-success',
@@ -405,16 +407,19 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       <div className="min-h-screen flex w-full bg-background">
         {/* Main content first so the sidebar appears on the right */}
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b bg-card flex items-center px-4">
-            <div className="flex-1 flex justify-between items-center w-full">
-              <div className="flex items-center gap-2">
+          <header className="border-b bg-card px-4 py-3">
+            <div className="flex justify-between items-center w-full">
+              <div className="flex flex-col gap-1">
                 <h1 
                   className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => navigate('/')}
-                  title="Перейти на главную"
+                  onClick={() => navigate('/dashboard')}
+                  title="Перейти на дашборд"
                 >
                   {profile?.business_name}
                 </h1>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(), "d MMMM", { locale: ru })}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -445,7 +450,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               {currentSection === "calendar" && (
                 <>
                   {/* Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+                  <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
                     {stats.map((stat) => {
                       const Icon = stat.icon;
                       return (
