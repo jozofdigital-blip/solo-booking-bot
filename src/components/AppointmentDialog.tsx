@@ -270,7 +270,7 @@ export const AppointmentDialog = ({
                     }
                   }}
                   required
-                  placeholder="Введите имя"
+                  placeholder="Введите имя клиента"
                   autoComplete="off"
                 />
               </PopoverTrigger>
@@ -301,6 +301,9 @@ export const AppointmentDialog = ({
                 </PopoverContent>
               )}
             </Popover>
+            <p className="text-xs text-muted-foreground">
+              Можно выбрать существующего клиента или ввести нового
+            </p>
           </div>
 
           <div className="space-y-2">
