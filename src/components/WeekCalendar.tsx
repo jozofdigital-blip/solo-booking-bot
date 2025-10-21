@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay } from "date-fns";
+import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
+import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, isBefore, parse } from "date-fns";
 import { ru } from "date-fns/locale";
 
 interface Appointment {
@@ -93,7 +93,7 @@ export const WeekCalendar = ({
   };
 
   const isSlotInWorkingHours = (date: Date, hour: number, minute: number) => {
-    const dayOfWeek = (date.getDay() + 6) % 7; // Convert to Monday = 0
+    const dayOfWeek = date.getDay();
     const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
     
     if (!workingDay) return false;
@@ -108,6 +108,13 @@ export const WeekCalendar = ({
     const endTime = endHour * 60 + endMinute;
     
     return slotTime >= startTime && slotTime < endTime;
+  };
+
+  const isSlotPast = (date: Date, hour: number, minute: number) => {
+    const now = new Date();
+    const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    const slotDateTime = parse(timeStr, "HH:mm", date);
+    return isBefore(slotDateTime, now);
   };
 
   const getStatusColor = (status: string) => {
@@ -181,25 +188,33 @@ export const WeekCalendar = ({
                 </div>
                 {weekDays.map((day) => {
                   const slotAppointments = getAppointmentsForTimeSlot(day, hour, minute);
-                  const dayOfWeek = (day.getDay() + 6) % 7;
                   const inWorkingHours = isSlotInWorkingHours(day, hour, minute);
+                  const isPast = isSlotPast(day, hour, minute);
                   
                   return (
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
                       className={`p-1 border-r last:border-r-0 relative group ${
-                        inWorkingHours 
-                          ? "hover:bg-muted/50 cursor-pointer bg-background" 
-                          : "bg-muted/20"
+                        !inWorkingHours 
+                          ? "bg-muted/20" 
+                          : isPast 
+                            ? "bg-gray-100" 
+                            : "hover:bg-muted/50 cursor-pointer bg-background"
                       }`}
                       onClick={() => {
-                        if (inWorkingHours) {
+                        if (inWorkingHours && !isPast && slotAppointments.length === 0) {
                           const dateStr = format(day, "yyyy-MM-dd");
                           const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-                          onDateClick?.(new Date(day));
+                          onCreateAppointment?.(dateStr, timeStr);
                         }
                       }}
                     >
+                      {!inWorkingHours && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Lock className="h-3 w-3 text-muted-foreground opacity-50" />
+                        </div>
+                      )}
+
                       {slotAppointments.length > 0 ? (
                         <div className="space-y-1">
                           {slotAppointments.map((apt) => {
@@ -209,7 +224,11 @@ export const WeekCalendar = ({
                             return (
                               <div
                                 key={apt.id}
-                                className="p-1 md:p-2 rounded text-[10px] md:text-xs bg-telegram/10 border border-telegram/20 cursor-pointer hover:bg-telegram/20"
+                                className={`p-1 md:p-2 rounded text-[10px] md:text-xs cursor-pointer ${
+                                  isPast
+                                    ? "bg-gray-200 border border-gray-300 text-gray-500"
+                                    : "bg-telegram/10 border border-telegram/20 hover:bg-telegram/20"
+                                }`}
                                 style={{ 
                                   minHeight: `${slotsNeeded * 60 - 8}px`,
                                 }}
@@ -218,16 +237,22 @@ export const WeekCalendar = ({
                                   onAppointmentClick?.(apt);
                                 }}
                               >
-                                <div className="font-medium truncate">
+                                <div className={`font-medium truncate ${isPast ? "text-gray-500" : ""}`}>
                                   {apt.client_name}
                                 </div>
                                 {apt.service_name && (
-                                  <div className="text-muted-foreground truncate text-[9px] md:text-[10px]">
+                                  <div className={`truncate text-[9px] md:text-[10px] ${
+                                    isPast ? "text-gray-400" : "text-muted-foreground"
+                                  }`}>
                                     {apt.service_name}
                                   </div>
                                 )}
                                 <Badge
-                                  className={`${getStatusColor(apt.status)} text-[8px] md:text-[10px] mt-1`}
+                                  className={`text-[8px] md:text-[10px] mt-1 ${
+                                    isPast 
+                                      ? "bg-gray-400 text-gray-600" 
+                                      : getStatusColor(apt.status)
+                                  }`}
                                   variant="secondary"
                                 >
                                   {apt.status === "pending" && "Ожид."}
@@ -240,8 +265,8 @@ export const WeekCalendar = ({
                           })}
                         </div>
                       ) : (
-                        inWorkingHours && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
+                        inWorkingHours && !isPast && (
+                          <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                             <Plus 
                               className="w-4 h-4 text-muted-foreground cursor-pointer"
                               onClick={(e) => {

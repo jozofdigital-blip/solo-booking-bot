@@ -210,9 +210,7 @@ export const ThreeDayCalendar = ({
 
                     {isFirstSlotOfAppointment && dayAppointments[0] && (
                       <div
-                        className={`absolute inset-0 p-1 text-xs overflow-hidden cursor-pointer ${
-                          isPast ? "opacity-50" : ""
-                        }`}
+                        className="absolute inset-0 p-1 text-xs overflow-hidden cursor-pointer"
                         style={{
                           height: dayAppointments[0].duration_minutes 
                             ? `${(dayAppointments[0].duration_minutes / 30) * 60}px`
@@ -225,18 +223,26 @@ export const ThreeDayCalendar = ({
                           }
                         }}
                       >
-                        <div className="h-full bg-primary/10 border-l-4 border-primary rounded p-1 flex flex-col justify-between">
+                        <div className={`h-full rounded p-1 flex flex-col justify-between ${
+                          isPast 
+                            ? "bg-gray-200 border-l-4 border-gray-400" 
+                            : "bg-primary/10 border-l-4 border-primary"
+                        }`}>
                           <div>
-                            <div className="font-medium truncate text-xs">
+                            <div className={`font-medium truncate text-xs ${isPast ? "text-gray-500" : ""}`}>
                               {dayAppointments[0].client_name}
                             </div>
                             {dayAppointments[0].service_name && (
-                              <div className="text-xs text-muted-foreground truncate">
+                              <div className={`text-xs truncate ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
                                 {dayAppointments[0].service_name}
                               </div>
                             )}
                           </div>
-                          <Badge className={`${getStatusColor(dayAppointments[0].status)} text-white text-xs w-fit`}>
+                          <Badge className={`text-xs w-fit ${
+                            isPast 
+                              ? "bg-gray-400 text-gray-600" 
+                              : getStatusColor(dayAppointments[0].status) + " text-white"
+                          }`}>
                             {dayAppointments[0].status === "confirmed" ? "Подтверждено" : 
                              dayAppointments[0].status === "cancelled" ? "Отменено" : "В ожидании"}
                           </Badge>

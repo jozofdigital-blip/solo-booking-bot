@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 
 interface Appointment {
@@ -33,6 +33,12 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
     return format(aptDate, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
   });
 
+  const isAppointmentPast = (aptTime: string) => {
+    const now = new Date();
+    const aptDate = new Date(aptTime);
+    return isBefore(aptDate, now);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'bg-success text-white';
@@ -53,6 +59,7 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
           onSelect={handleDateSelect}
           locale={ru}
           className="rounded-md border w-full"
+          disabled={(date) => isBefore(startOfDay(date), startOfDay(new Date()))}
         />
       </Card>
 
@@ -79,30 +86,45 @@ export const BookingCalendar = ({ appointments, onDateSelect }: BookingCalendarP
           </p>
         ) : (
           <div className="space-y-3">
-            {selectedDayAppointments.map((apt) => (
-              <div
-                key={apt.id}
-                className="p-3 md:p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-sm md:text-base">{apt.client_name}</p>
-                    {apt.service_name && (
-                      <p className="text-xs md:text-sm text-muted-foreground">{apt.service_name}</p>
-                    )}
+            {selectedDayAppointments.map((apt) => {
+              const isPast = isAppointmentPast(apt.appointment_time);
+              return (
+                <div
+                  key={apt.id}
+                  className={`p-3 md:p-4 rounded-lg border transition-shadow ${
+                    isPast 
+                      ? "bg-gray-100 border-gray-300" 
+                      : "bg-card hover:shadow-md"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className={`font-medium text-sm md:text-base ${isPast ? "text-gray-500" : ""}`}>
+                        {apt.client_name}
+                      </p>
+                      {apt.service_name && (
+                        <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
+                          {apt.service_name}
+                        </p>
+                      )}
+                    </div>
+                    <Badge className={`text-xs ${
+                      isPast 
+                        ? "bg-gray-400 text-gray-600" 
+                        : getStatusColor(apt.status)
+                    }`}>
+                      {apt.status === 'pending' && 'Ожидает'}
+                      {apt.status === 'confirmed' && 'Подтверждено'}
+                      {apt.status === 'cancelled' && 'Отменено'}
+                      {apt.status === 'completed' && 'Завершено'}
+                    </Badge>
                   </div>
-                  <Badge className={`${getStatusColor(apt.status)} text-xs`}>
-                    {apt.status === 'pending' && 'Ожидает'}
-                    {apt.status === 'confirmed' && 'Подтверждено'}
-                    {apt.status === 'cancelled' && 'Отменено'}
-                    {apt.status === 'completed' && 'Завершено'}
-                  </Badge>
+                  <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
+                    {format(new Date(apt.appointment_time), 'HH:mm')}
+                  </p>
                 </div>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {format(new Date(apt.appointment_time), 'HH:mm')}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
