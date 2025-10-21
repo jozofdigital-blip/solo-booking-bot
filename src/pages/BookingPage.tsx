@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { ru } from "date-fns/locale";
 import { format } from "date-fns";
-import { Clock, Send } from "lucide-react";
+import { Clock } from "lucide-react";
 import { hasEnoughContinuousTime } from "@/lib/utils";
 
 export default function BookingPage() {
@@ -20,7 +20,6 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [clientTelegram, setClientTelegram] = useState('');
   const [loading, setLoading] = useState(false);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<any[]>([]);
@@ -138,7 +137,6 @@ export default function BookingPage() {
           profile_id: profile.id,
           client_name: clientName,
           client_phone: clientPhone,
-          client_telegram: clientTelegram || null,
           appointment_date: format(selectedDate, 'yyyy-MM-dd'),
           appointment_time: selectedTime,
           status: 'pending'
@@ -149,11 +147,12 @@ export default function BookingPage() {
       // Send telegram notification if chat_id is configured
       if (profile?.telegram_chat_id) {
         try {
+          const serviceData = services.find(s => s.id === selectedService);
           await supabase.functions.invoke('send-telegram-notification', {
             body: {
               chatId: profile.telegram_chat_id,
               clientName: clientName,
-              serviceName: selectedServiceData?.name || '',
+              serviceName: serviceData?.name || '',
               date: format(selectedDate, 'dd.MM.yyyy', { locale: ru }),
               time: selectedTime,
               phone: clientPhone,
@@ -173,7 +172,6 @@ export default function BookingPage() {
       setSelectedTime('');
       setClientName('');
       setClientPhone('');
-      setClientTelegram('');
     } catch (error: any) {
       toast.error('Ошибка при создании записи');
     } finally {
@@ -196,7 +194,7 @@ export default function BookingPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card className="p-8 mb-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">{profile.business_name}</h1>
+            <h1 className="text-xl font-bold mb-2">{profile.business_name}</h1>
             {profile.description && (
               <p className="text-muted-foreground">{profile.description}</p>
             )}
@@ -302,11 +300,6 @@ export default function BookingPage() {
                 onChange={(e) => setClientPhone(e.target.value)}
                 required
               />
-              <Input
-                placeholder="Telegram (опционально)"
-                value={clientTelegram}
-                onChange={(e) => setClientTelegram(e.target.value)}
-              />
 
               <div className="border-t pt-4 mt-4">
                 <div className="bg-muted p-4 rounded-lg mb-4">
@@ -322,7 +315,6 @@ export default function BookingPage() {
                   disabled={loading}
                   className="w-full h-12 bg-telegram hover:bg-telegram/90"
                 >
-                  <Send className="w-4 h-4 mr-2" />
                   {loading ? 'Отправка...' : 'Записаться'}
                 </Button>
               </div>
