@@ -21,13 +21,26 @@ serve(async (req) => {
 
     console.log('Setting webhook to:', webhookUrl);
 
+    // Use JSON body to set allowed updates explicitly
     const response = await fetch(
-      `https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}`,
-      { method: 'POST' }
+      `https://api.telegram.org/bot${botToken}/setWebhook`,
+      { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: webhookUrl,
+          allowed_updates: ["message", "callback_query", "my_chat_member", "chat_member"],
+          drop_pending_updates: false
+        })
+      }
     );
 
     const result = await response.json();
     console.log('Webhook setup result:', result);
+
+    // Bot info
+    const meRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    const me = await meRes.json();
 
     // Also get webhook info to verify
     const infoResponse = await fetch(
@@ -39,7 +52,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         setup: result,
-        info: info
+        me,
+        info
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

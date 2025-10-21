@@ -15,21 +15,27 @@ serve(async (req) => {
     const update = await req.json();
     console.log('Received Telegram update:', JSON.stringify(update));
 
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+
+    // Handle callback queries (future use)
+    if (update.callback_query) {
+      console.log('Callback query:', update.callback_query.data);
+    }
+
     // Handle /start command with deep link
     if (update.message?.text?.startsWith('/start')) {
       const chatId = update.message.chat.id;
-      const text = update.message.text;
+      const text: string = update.message.text;
       const parts = text.split(' ');
       
-      // Check if this is a deep link with profile ID
       if (parts.length > 1 && parts[1].startsWith('connect_')) {
+        // Deep link connect flow
         const profileId = parts[1].replace('connect_', '');
         
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Update profile with chat_id
         const { error } = await supabase
           .from('profiles')
           .update({ telegram_chat_id: chatId.toString() })
@@ -40,49 +46,36 @@ serve(async (req) => {
           throw error;
         }
 
-        // Send success message
-        const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-        const message = `✅ Готово, уведомления подключены!\n\nВы будете получать уведомления о новых записях и отменах.`;
-        
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-          }),
-        });
+        if (botToken) {
+          const message = `✅ Готово, уведомления подключены!\n\nВы будете получать уведомления о новых записях и отменах.`;
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message }),
+          });
+        }
       } else {
-        // First time user - send welcome message
-        const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-        const welcomeMessage = `👋 Добро пожаловать в LookTime!\n\nДля подключения уведомлений перейдите в настройки вашего кабинета и нажмите "Включить уведомления".`;
-        
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: welcomeMessage,
-          }),
-        });
+        // First-time start without deep link
+        if (botToken) {
+          const welcomeMessage = `👋 Добро пожаловать!\n\nЧтобы подключить уведомления, вернитесь в приложение и нажмите \"Подключить Telegram\" в разделе Уведомления.`;
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: welcomeMessage }),
+          });
+        }
       }
     }
 
     return new Response(
       JSON.stringify({ ok: true }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error: any) {
     console.error('Error in telegram webhook:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
