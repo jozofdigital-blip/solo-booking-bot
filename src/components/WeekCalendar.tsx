@@ -255,6 +255,11 @@ export const WeekCalendar = ({
                         </div>
                       )}
 
+                      {/* Occupied continuation slots shading */}
+                      {inWorkingHours && !isPast && isOccupied && slotAppointments.length === 0 && (
+                        <div className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-sm" />
+                      )}
+
                       {slotAppointments.length > 0 ? (
                         <div className="space-y-1">
                           {slotAppointments.map((apt) => {

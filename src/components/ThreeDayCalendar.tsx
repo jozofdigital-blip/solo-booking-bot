@@ -185,17 +185,22 @@ export const ThreeDayCalendar = ({
                         }
                       }}
                     >
-                      {!isWorking && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
-                      
-                      {isWorking && !isPast && !isOccupied && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                          <Plus className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
+                    {!isWorking && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {/* Occupied continuation slots shading */}
+                    {isWorking && !isPast && dayAppointments.length > 0 && !isFirstSlotOfAppointment && (
+                      <div className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-sm" />
+                    )}
+                    
+                    {isWorking && !isPast && !isOccupied && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <Plus className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
 
                     {isFirstSlotOfAppointment && dayAppointments[0] && (
                       <div
