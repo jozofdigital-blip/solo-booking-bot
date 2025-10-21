@@ -19,10 +19,10 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
+import { Calendar, Share2, MapPin, Users, TrendingUp, CalendarCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ru } from "date-fns/locale";
 import { toast } from "sonner";
-
 type DashboardMode = "main" | "calendar";
 
 interface DashboardProps {
@@ -54,22 +54,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [businessName, setBusinessName] = useState("");
   const [currentSection, setCurrentSection] = useState("calendar");
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
-  const isCalendarPage = mode === "calendar";
-  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    setCalendarView(mode === "calendar" ? "week" : "3days");
-    setCurrentSection("calendar");
-  }, [mode]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const mergeWithDefaultWorkingHours = useCallback((hours?: any[]): WorkingHour[] => {
+  const mergeWithDefaultWorkingHours = (hours?: any[]): WorkingHour[] => {
     const ensureTimeFormat = (time: string, fallback: string) => {
       if (!time) return fallback;
       return time.length > 5 ? time.substring(0, 5) : time;
@@ -96,7 +82,41 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
             : defaultHour.is_working,
       };
     });
+  };
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
+
+  const mergeWithDefaultWorkingHours = useCallback((hours?: any[]): WorkingHour[] => {
+    const ensureTimeFormat = (time: string, fallback: string) => {
+      if (!time) return fallback;
+      return time.length > 5 ? time.substring(0, 5) : time;
+    };
+
+  const loadData = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Load profile
+      const {
+        data: profileData,
+        error: profileError,
+      } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
   const generateSlug = useCallback(async () => {
     const { data, error } = await supabase.rpc('generate_unique_slug');
@@ -104,105 +124,60 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     return data;
   }, []);
 
-  const loadData = useCallback(
-    async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
-      if (showLoading && isMountedRef.current) {
-        setLoading(true);
+      let activeProfile = profileData;
+
+      if (!profileData) {
+        // Create profile if doesn't exist
+        const slug = await generateSlug();
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            business_name: 'Мой бизнес',
+            unique_slug: slug,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        activeProfile = newProfile;
       }
 
-      try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-
-        const user = sessionData.session?.user;
-
-        if (!user) {
-          navigate('/auth', { replace: true });
-          return;
-        }
-
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (profileError) throw profileError;
-
-        let activeProfile = profileData;
-
-        if (!activeProfile) {
-          const slug = await generateSlug();
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              user_id: user.id,
-              business_name: 'Мой бизнес',
-              unique_slug: slug,
-            })
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          activeProfile = newProfile;
-        }
-
-        if (!isMountedRef.current) {
-          return;
-        }
-
+      if (activeProfile) {
         setProfile(activeProfile);
-        setBusinessName(activeProfile?.business_name ?? '');
+        setBusinessName(activeProfile.business_name);
+      }
 
-        if (!activeProfile?.id) {
-          setServices([]);
-          setAppointments([]);
-          setWorkingHours(mergeWithDefaultWorkingHours());
-          return;
-        }
+      // Load services
+      if (activeProfile?.id) {
+        const { data: servicesData } = await supabase
+          .from('services')
+          .select('*')
+          .eq('profile_id', activeProfile.id)
+          .order('created_at', { ascending: false });
 
-        const [servicesResult, appointmentsResult, workingHoursResult] = await Promise.all([
-          supabase
-            .from('services')
-            .select('*')
-            .eq('profile_id', activeProfile.id)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('appointments')
-            .select(`
-              *,
-              services (name)
-            `)
-            .eq('profile_id', activeProfile.id)
-            .order('appointment_date', { ascending: true }),
-          supabase
-            .from('working_hours')
-            .select('*')
-            .eq('profile_id', activeProfile.id)
-            .order('day_of_week', { ascending: true })
-        ]);
+        setServices(servicesData || []);
 
-        if (servicesResult.error) throw servicesResult.error;
-        if (appointmentsResult.error) throw appointmentsResult.error;
-        if (workingHoursResult.error) throw workingHoursResult.error;
+        // Load appointments
+        const { data: appointmentsData } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            services (name)
+          `)
+          .eq('profile_id', activeProfile.id)
+          .order('appointment_date', { ascending: true });
 
-        if (!isMountedRef.current) {
-          return;
-        }
+        setAppointments(appointmentsData || []);
 
-        setServices(servicesResult.data || []);
-        setAppointments(appointmentsResult.data || []);
-        setWorkingHours(mergeWithDefaultWorkingHours(workingHoursResult.data));
-      } catch (error: any) {
-        if (!isMountedRef.current) {
-          return;
-        }
-        console.error('Error loading data:', error);
-        toast.error('Ошибка загрузки данных');
-      } finally {
-        if (showLoading && isMountedRef.current) {
-          setLoading(false);
-        }
+        // Load working hours
+        const { data: workingHoursData } = await supabase
+          .from('working_hours')
+          .select('*')
+          .eq('profile_id', activeProfile.id)
+          .order('day_of_week', { ascending: true });
+
+        setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
       }
     },
     [generateSlug, mergeWithDefaultWorkingHours, navigate]
@@ -314,7 +289,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       if (error) throw error;
       toast.success('График работы сохранен');
       setWorkingHours(mergeWithDefaultWorkingHours(hours));
-      await loadData();
+      loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения графика');
       console.error(error);
@@ -539,62 +514,39 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </div>
 
                   <div className="space-y-4">
-                    {isCalendarPage ? (
-                      <>
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={calendarView === "week" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("week")}
-                          >
-                            Неделя
-                          </Button>
-                          <Button
-                            variant={calendarView === "month" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("month")}
-                          >
-                            Месяц
-                          </Button>
-                        </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant={calendarView === "3days" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("3days")}
+                      >
+                        3 дня
+                      </Button>
+                      <Button
+                        variant={calendarView === "week" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("week")}
+                      >
+                        Неделя
+                      </Button>
+                      <Button
+                        variant={calendarView === "month" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCalendarView("month")}
+                      >
+                        Месяц
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWorkingHoursDialogOpen(true)}
+                      >
+                        <CalendarCog className="w-4 h-4 mr-2" />
+                        Настроить график
+                      </Button>
+                    </div>
 
-                        {calendarView === "week" ? (
-                          <WeekCalendar
-                            appointments={appointments.map(a => {
-                              const service = services.find(s => s.id === a.service_id);
-                              return {
-                                ...a,
-                                service_name: a.services?.name,
-                                duration_minutes: service?.duration_minutes
-                              };
-                            })}
-                            workingHours={workingHours}
-                            onCreateAppointment={(date, time) => {
-                              setSelectedDate(new Date(date));
-                              setSelectedTime(time);
-                              setEditingAppointment(null);
-                              setAppointmentDialogOpen(true);
-                            }}
-                            onAppointmentClick={(apt) => {
-                              setEditingAppointment(apt);
-                              setAppointmentDialogOpen(true);
-                            }}
-                          />
-                        ) : (
-                          <BookingCalendar
-                            appointments={appointments.map(a => ({
-                              ...a,
-                              service_name: a.services?.name
-                            }))}
-                            onDateSelect={(date) => {
-                              setSelectedDate(date);
-                              setSelectedTime(undefined);
-                              setEditingAppointment(null);
-                            }}
-                          />
-                        )}
-                      </>
-                    ) : (
+                    {calendarView === "3days" ? (
                       <ThreeDayCalendar
                         appointments={appointments.map(a => {
                           const service = services.find(s => s.id === a.service_id);
