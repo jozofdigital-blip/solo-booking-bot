@@ -71,6 +71,16 @@ export const ThreeDayCalendar = ({
     }
   }
 
+  const isFirstSlotOfAppointment = (date: Date, time: string, appointment: any) => {
+    const aptTime = appointment.appointment_time.substring(0, 5);
+    return aptTime === time;
+  };
+
+  const getAppointmentDurationSlots = (appointment: any) => {
+    const duration = appointment.duration_minutes || 60;
+    return Math.ceil(duration / 30);
+  };
+
   const getAppointmentsForTimeSlot = (date: Date, time: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
@@ -159,7 +169,7 @@ export const ThreeDayCalendar = ({
           ))}
         </div>
 
-        <div className="overflow-auto max-h-[600px] relative">
+        <div className="overflow-auto max-h-[600px]">
           {timeSlots.map((time, idx) => (
             <div key={time} className="grid grid-cols-[60px_1fr_1fr_1fr] border-t min-h-[60px]">
               <div className="p-2 text-xs text-muted-foreground border-r flex items-start">
@@ -189,6 +199,40 @@ export const ThreeDayCalendar = ({
                       </div>
                     )}
                     
+                    {dayAppointments.length > 0 && dayAppointments.map((apt) => {
+                      if (!isFirstSlotOfAppointment(day, time, apt)) return null;
+                      
+                      const durationSlots = getAppointmentDurationSlots(apt);
+                      const height = durationSlots * 60 - 4;
+                      
+                      return (
+                        <div
+                          key={apt.id}
+                          className={`absolute inset-x-2 top-2 p-2 rounded cursor-pointer z-10 overflow-hidden ${
+                            isPast 
+                              ? "bg-gray-200 border-l-4 border-gray-400" 
+                              : "bg-primary/10 border-l-4 border-primary"
+                          }`}
+                          style={{ height: `${height}px`, minHeight: '50px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onAppointmentClick) {
+                              onAppointmentClick(apt);
+                            }
+                          }}
+                        >
+                          <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : ""}`}>
+                            {apt.client_name}
+                          </div>
+                          {apt.service_name && (
+                            <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
+                              {apt.service_name}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    
                     {isWorking && !isPast && !isOccupied && (
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <Plus className="h-5 w-5 text-muted-foreground" />
@@ -199,59 +243,6 @@ export const ThreeDayCalendar = ({
               })}
             </div>
           ))}
-
-          {/* Appointment overlays */}
-          {threeDays.map((day, dayIndex) => {
-            const dateStr = format(day, "yyyy-MM-dd");
-            const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
-            
-            return dayAppointments.map((apt) => {
-              const aptTime = apt.appointment_time.substring(0, 5);
-              const slotIndex = timeSlots.findIndex(slot => slot === aptTime);
-              
-              if (slotIndex === -1) return null;
-              
-              const topOffset = slotIndex * 60 + 41; // 60px per slot + header height
-              const duration = apt.duration_minutes || 60;
-              const height = (duration / 30) * 60 - 2; // 60px per 30-minute slot, minus border
-              const isPast = isSlotPast(day, aptTime);
-              
-              return (
-                <div
-                  key={apt.id}
-                  className={`absolute p-2 rounded cursor-pointer z-10 overflow-hidden ${
-                    isPast 
-                      ? "bg-gray-200 border-l-4 border-gray-400" 
-                      : "bg-primary/10 border-l-4 border-primary"
-                  }`}
-                  style={{
-                    top: `${topOffset}px`,
-                    left: `calc(${60 + ((dayIndex) * (100 - 60 / window.innerWidth * 100) / 3)}% + ${dayIndex + 1}px)`,
-                    width: `calc(${(100 - 60 / window.innerWidth * 100) / 3}% - ${2}px)`,
-                    height: `${height}px`,
-                    minHeight: '50px',
-                    gridColumn: `${dayIndex + 2} / span 1`,
-                    gridRow: `${slotIndex + 1} / span ${Math.ceil(duration / 30)}`
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onAppointmentClick) {
-                      onAppointmentClick(apt);
-                    }
-                  }}
-                >
-                  <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : ""}`}>
-                    {apt.client_name}
-                  </div>
-                  {apt.service_name && (
-                    <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
-                      {apt.service_name}
-                    </div>
-                  )}
-                </div>
-              );
-            });
-          })}
         </div>
       </div>
     </div>
