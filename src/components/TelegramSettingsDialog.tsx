@@ -46,13 +46,6 @@ export const TelegramSettingsDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Вы будете получать уведомления о каждой новой записи и отмене с возможностью быстро перейти в календарь
-            </AlertDescription>
-          </Alert>
-
           {isConnected ? (
             <Alert className="bg-success/10 border-success">
               <Info className="h-4 w-4 text-success" />
