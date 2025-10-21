@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -85,16 +85,17 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   useEffect(() => {
-    checkAuth();
-    loadData();
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-    }
-  };
+  const mergeWithDefaultWorkingHours = useCallback((hours?: any[]): WorkingHour[] => {
+    const ensureTimeFormat = (time: string, fallback: string) => {
+      if (!time) return fallback;
+      return time.length > 5 ? time.substring(0, 5) : time;
+    };
 
   const loadData = async () => {
     try {
@@ -117,7 +118,11 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (profileError) throw profileError;
+  const generateSlug = useCallback(async () => {
+    const { data, error } = await supabase.rpc('generate_unique_slug');
+    if (error) throw error;
+    return data;
+  }, []);
 
       let activeProfile = profileData;
 
@@ -174,19 +179,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
         setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
       }
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-      toast.error('Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [generateSlug, mergeWithDefaultWorkingHours, navigate]
+  );
 
-  const generateSlug = async () => {
-    const { data, error } = await supabase.rpc('generate_unique_slug');
-    if (error) throw error;
-    return data;
-  };
+  useEffect(() => {
+    void loadData({ showLoading: true });
+  }, [loadData]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -210,6 +209,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         if (error) throw error;
         toast.success('Услуга обновлена');
       } else {
+        if (!profile?.id) {
+          toast.error('Профиль не найден');
+          return;
+        }
         const { error } = await supabase
           .from('services')
           .insert({ ...serviceData, profile_id: profile.id });
@@ -217,8 +220,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         if (error) throw error;
         toast.success('Услуга добавлена');
       }
-      
-      loadData();
+
+      await loadData();
       setEditingService(null);
     } catch (error: any) {
       toast.error('Ошибка сохранения услуги');
@@ -235,7 +238,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Услуга удалена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка удаления услуги');
       console.error(error);
@@ -244,6 +247,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleSaveAppointment = async (appointmentData: any) => {
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('appointments')
         .insert({
@@ -254,7 +261,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Запись создана');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка создания записи');
       console.error(error);
@@ -291,6 +298,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleSaveAddress = async (address: string) => {
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ address })
@@ -298,7 +309,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Адрес сохранен');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения адреса');
       console.error(error);
@@ -312,6 +323,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
 
     try {
+      if (!profile?.id) {
+        toast.error('Профиль не найден');
+        return;
+      }
       const { error } = await supabase
         .from('profiles')
         .update({ business_name: businessName })
@@ -320,7 +335,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       if (error) throw error;
       toast.success('Название обновлено');
       setIsEditingBusinessName(false);
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка сохранения названия');
       console.error(error);
@@ -336,7 +351,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Запись обновлена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка обновления записи');
       console.error(error);
@@ -352,7 +367,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       toast.success('Запись удалена');
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast.error('Ошибка удаления записи');
       console.error(error);
