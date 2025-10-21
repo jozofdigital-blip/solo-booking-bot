@@ -23,9 +23,13 @@ import { Calendar, Share2, MapPin, Users, TrendingUp, CalendarCog } from "lucide
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+type DashboardMode = "main" | "calendar";
 
-export default function Dashboard() {
+interface DashboardProps {
+  mode?: DashboardMode;
+}
+
+export default function Dashboard({ mode = "main" }: DashboardProps) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -41,7 +45,9 @@ export default function Dashboard() {
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
-  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">("3days");
+  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">(
+    mode === "calendar" ? "week" : "3days"
+  );
   const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [isEditingBusinessName, setIsEditingBusinessName] = useState(false);
@@ -431,6 +437,19 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCurrentSection("calendar");
+                    navigate(isCalendarPage ? "/dashboard" : "/dashboard/calendar");
+                  }}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">
+                    {isCalendarPage ? "На главную" : "Календарь"}
+                  </span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={copyBookingLink}>
                   <Share2 className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">Поделиться ссылкой</span>
@@ -524,40 +543,6 @@ export default function Dashboard() {
                         onAppointmentClick={(apt) => {
                           setEditingAppointment(apt);
                           setAppointmentDialogOpen(true);
-                        }}
-                      />
-                    ) : calendarView === "week" ? (
-                      <WeekCalendar
-                        appointments={appointments.map(a => {
-                          const service = services.find(s => s.id === a.service_id);
-                          return {
-                            ...a,
-                            service_name: a.services?.name,
-                            duration_minutes: service?.duration_minutes
-                          };
-                        })}
-                        workingHours={workingHours}
-                        onCreateAppointment={(date, time) => {
-                          setSelectedDate(new Date(date));
-                          setSelectedTime(time);
-                          setEditingAppointment(null);
-                          setAppointmentDialogOpen(true);
-                        }}
-                        onAppointmentClick={(apt) => {
-                          setEditingAppointment(apt);
-                          setAppointmentDialogOpen(true);
-                        }}
-                      />
-                    ) : (
-                      <BookingCalendar 
-                        appointments={appointments.map(a => ({
-                          ...a,
-                          service_name: a.services?.name
-                        }))}
-                        onDateSelect={(date) => {
-                          setSelectedDate(date);
-                          setSelectedTime(undefined);
-                          setEditingAppointment(null);
                         }}
                       />
                     )}
