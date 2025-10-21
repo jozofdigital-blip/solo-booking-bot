@@ -89,6 +89,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
 
     // Merge clients with their next appointments
     const clientsWithAppointments: ClientWithAppointment[] = (data || []).map((client) => {
+      // Find the earliest upcoming appointment for this client
       const nextAppointment = appointmentsData?.find((apt) => apt.client_phone === client.phone);
       return {
         ...client,
@@ -99,6 +100,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
     });
 
     setClients(clientsWithAppointments);
+    setFilteredClients(clientsWithAppointments);
   };
 
   const handleSave = async () => {
