@@ -1,4 +1,5 @@
-import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3 } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -28,12 +29,27 @@ const navigationItems = [
 ];
 
 export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName }: AppSidebarProps) {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar side="right" className={`bg-background border-l ${isCollapsed ? "w-14" : "w-60"}`}>
-      <SidebarContent>
+    <Sidebar side="right" className={`${isCollapsed ? "w-14" : "w-60"}`}>
+      <div className="bg-background h-full border-l">
+        {/* Close button at the top */}
+        {!isCollapsed && (
+          <div className="flex justify-end p-2 border-b">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="h-8 w-8"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+        
+        <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -77,7 +93,8 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
+        </SidebarContent>
+      </div>
     </Sidebar>
   );
 }

@@ -18,8 +18,8 @@ import {
   WorkingHour,
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
-import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { Calendar, Share2, MapPin, Users, TrendingUp, Menu, X } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -56,22 +56,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [currentSection, setCurrentSection] = useState("calendar");
   const [workingHoursDialogOpen, setWorkingHoursDialogOpen] = useState(false);
   const isCalendarPage = mode === "calendar";
-
-  // Custom sidebar trigger component
-  const CustomSidebarTrigger = () => {
-    const { open, toggleSidebar } = useSidebar();
-    
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleSidebar}
-        className="ml-2"
-      >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-    );
-  };
 
   useEffect(() => {
     setCalendarView(mode === "calendar" ? "week" : "3days");
@@ -456,7 +440,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   <span className="hidden sm:inline">Поделиться ссылкой</span>
                 </Button>
                 {/* Hamburger on the right */}
-                <CustomSidebarTrigger />
+                <SidebarTrigger className="ml-2" />
               </div>
             </div>
           </header>
