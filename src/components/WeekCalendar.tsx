@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, isBefore, parse } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -140,21 +139,6 @@ export const WeekCalendar = ({
     return isBefore(slotDateTime, now);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-success text-white";
-      case "pending":
-        return "bg-warning text-white";
-      case "cancelled":
-        return "bg-destructive text-white";
-      case "completed":
-        return "bg-muted text-muted-foreground";
-      default:
-        return "bg-secondary";
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -281,19 +265,6 @@ export const WeekCalendar = ({
                                     {apt.service_name}
                                   </div>
                                 )}
-                                <Badge
-                                  className={`text-[8px] md:text-[10px] mt-1 ${
-                                    isPast 
-                                      ? "bg-gray-400 text-gray-600" 
-                                      : getStatusColor(apt.status)
-                                  }`}
-                                  variant="secondary"
-                                >
-                                  {apt.status === "pending" && "Ожид."}
-                                  {apt.status === "confirmed" && "Подтв."}
-                                  {apt.status === "cancelled" && "Отм."}
-                                  {apt.status === "completed" && "Зав."}
-                                </Badge>
                               </div>
                             );
                           })}

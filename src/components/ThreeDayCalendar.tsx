@@ -3,7 +3,6 @@ import { format, addDays, startOfDay, isBefore, isToday, isSameDay, parse } from
 import { ru } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 interface Appointment {
   id: string;
@@ -108,17 +107,6 @@ export const ThreeDayCalendar = ({
     const now = new Date();
     const slotDateTime = parse(time, "HH:mm", date);
     return isBefore(slotDateTime, now);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-500";
-      case "cancelled":
-        return "bg-red-500";
-      default:
-        return "bg-blue-500";
-    }
   };
 
   const handlePrevDay = () => {
@@ -238,14 +226,6 @@ export const ThreeDayCalendar = ({
                               </div>
                             )}
                           </div>
-                          <Badge className={`text-xs w-fit ${
-                            isPast 
-                              ? "bg-gray-400 text-gray-600" 
-                              : getStatusColor(dayAppointments[0].status) + " text-white"
-                          }`}>
-                            {dayAppointments[0].status === "confirmed" ? "Подтверждено" : 
-                             dayAppointments[0].status === "cancelled" ? "Отменено" : "В ожидании"}
-                          </Badge>
                         </div>
                       </div>
                     )}

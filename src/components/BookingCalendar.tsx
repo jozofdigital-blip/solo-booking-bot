@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -72,16 +71,6 @@ export const BookingCalendar = ({ appointments, onDateSelect, workingHours }: Bo
     return isBefore(appointmentDateTime, now);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'bg-success text-white';
-      case 'pending': return 'bg-warning text-white';
-      case 'cancelled': return 'bg-destructive text-white';
-      case 'completed': return 'bg-muted text-muted-foreground';
-      default: return 'bg-secondary';
-    }
-  };
-
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <Card className="p-3 md:p-6">
@@ -144,17 +133,6 @@ export const BookingCalendar = ({ appointments, onDateSelect, workingHours }: Bo
                         </p>
                       )}
                     </div>
-                    <Badge className={`text-xs ${
-                      isPast 
-                        ? "bg-gray-400 text-gray-600" 
-                        : getStatusColor(apt.status)
-                    }`}>
-                      {isPast && 'Завершено'}
-                      {!isPast && apt.status === 'pending' && 'Ожидает'}
-                      {!isPast && apt.status === 'confirmed' && 'Подтверждено'}
-                      {!isPast && apt.status === 'cancelled' && 'Отменено'}
-                      {!isPast && apt.status === 'completed' && 'Завершено'}
-                    </Badge>
                   </div>
                   <p className={`text-xs md:text-sm ${isPast ? "text-gray-400" : "text-muted-foreground"}`}>
                     {apt.appointment_time.substring(0, 5)}
