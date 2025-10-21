@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -91,6 +91,7 @@ export const AppointmentDialog = ({
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsOpen, setClientsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const clientNameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && profileId) {
@@ -254,6 +255,7 @@ export const AppointmentDialog = ({
             <Popover open={clientsOpen} onOpenChange={setClientsOpen}>
               <PopoverTrigger asChild>
                 <Input
+                  ref={clientNameInputRef}
                   id="client_name"
                   value={formData.client_name}
                   onChange={(e) => {
@@ -283,6 +285,9 @@ export const AppointmentDialog = ({
                           setFormData({ ...formData, client_name: "", client_phone: "" });
                           setClientsOpen(false);
                           setSearchQuery("");
+                          setTimeout(() => {
+                            clientNameInputRef.current?.focus();
+                          }, 100);
                         }}
                         className="cursor-pointer font-medium text-primary"
                       >
