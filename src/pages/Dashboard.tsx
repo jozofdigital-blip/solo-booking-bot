@@ -571,7 +571,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   ];
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full bg-background">
         {/* Main content first so the sidebar appears on the right */}
         <div className="flex-1 flex flex-col">
