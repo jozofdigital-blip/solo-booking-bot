@@ -278,6 +278,16 @@ export const AppointmentDialog = ({
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandGroup>
+                      <CommandItem
+                        onSelect={() => {
+                          setFormData({ ...formData, client_name: "", client_phone: "" });
+                          setClientsOpen(false);
+                          setSearchQuery("");
+                        }}
+                        className="cursor-pointer font-medium text-primary"
+                      >
+                        + Новый клиент
+                      </CommandItem>
                       {filteredClients.map((client) => (
                         <CommandItem
                           key={client.id}
