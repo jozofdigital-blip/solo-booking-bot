@@ -32,9 +32,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar side="right" className={isCollapsed ? "w-14" : "w-60"}>
-      <SidebarTrigger className="m-2 self-end" />
-      
+    <Sidebar side="right" className={`bg-background border-l ${isCollapsed ? "w-14" : "w-60"}`}>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
