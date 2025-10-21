@@ -211,7 +211,7 @@ export const ThreeDayCalendar = ({
                           className={`absolute inset-0 p-2 rounded cursor-pointer z-10 overflow-hidden ${
                             isPast 
                               ? "bg-gray-200 border-l-4 border-gray-400" 
-                              : "bg-primary border-l-4 border-primary-dark hover:bg-primary/90"
+                              : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
                           }`}
                           style={{ height: `${height}px` }}
                           onClick={(e) => {
@@ -221,11 +221,11 @@ export const ThreeDayCalendar = ({
                             }
                           }}
                         >
-                          <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : "text-primary-foreground"}`}>
+                          <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : "text-telegram"}`}>
                             {apt.client_name}
                           </div>
                           {apt.service_name && (
-                            <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-primary-foreground/90"}`}>
+                            <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-telegram/70"}`}>
                               {apt.service_name}
                             </div>
                           )}
