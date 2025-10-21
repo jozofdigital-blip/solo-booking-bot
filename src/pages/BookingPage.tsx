@@ -182,6 +182,32 @@ export default function BookingPage() {
       // Save client data to localStorage
       saveClientDataToLocalStorage(clientName, clientPhone);
 
+      // Save or update client in the clients table
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('phone', clientPhone)
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+
+      if (existingClient) {
+        // Update last_visit for existing client
+        await supabase
+          .from('clients')
+          .update({ last_visit: new Date().toISOString(), name: clientName })
+          .eq('id', existingClient.id);
+      } else {
+        // Create new client
+        await supabase
+          .from('clients')
+          .insert({
+            profile_id: profile.id,
+            name: clientName,
+            phone: clientPhone,
+            last_visit: new Date().toISOString()
+          });
+      }
+
       // Send telegram notification to owner if chat_id is configured
       if (profile?.telegram_chat_id && newAppointment?.id) {
         try {
