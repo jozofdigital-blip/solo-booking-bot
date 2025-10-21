@@ -30,7 +30,25 @@ export default function BookingPage() {
   useEffect(() => {
     loadProfile();
     loadBotUsername();
+    loadClientDataFromLocalStorage();
   }, [slug]);
+
+  const loadClientDataFromLocalStorage = () => {
+    const savedData = localStorage.getItem('client_booking_data');
+    if (savedData) {
+      try {
+        const { name, phone } = JSON.parse(savedData);
+        setClientName(name || '');
+        setClientPhone(phone || '');
+      } catch (error) {
+        console.error('Error loading client data:', error);
+      }
+    }
+  };
+
+  const saveClientDataToLocalStorage = (name: string, phone: string) => {
+    localStorage.setItem('client_booking_data', JSON.stringify({ name, phone }));
+  };
 
   const loadBotUsername = async () => {
     try {
@@ -161,10 +179,15 @@ export default function BookingPage() {
 
       if (error) throw error;
 
+      // Save client data to localStorage
+      saveClientDataToLocalStorage(clientName, clientPhone);
+
       // Send telegram notification to owner if chat_id is configured
-      if (profile?.telegram_chat_id && newAppointment) {
+      if (profile?.telegram_chat_id && newAppointment?.id) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
+          const dashboardUrl = `${window.location.origin}/dashboard`;
+          
           await supabase.functions.invoke('send-telegram-notification', {
             body: {
               chatId: profile.telegram_chat_id,
@@ -175,7 +198,7 @@ export default function BookingPage() {
               phone: clientPhone,
               appointmentId: newAppointment.id,
               type: 'new',
-              bookingUrl: window.location.origin + '/dashboard',
+              bookingUrl: dashboardUrl,
             },
           });
         } catch (notificationError) {
