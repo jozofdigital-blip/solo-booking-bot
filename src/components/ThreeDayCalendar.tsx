@@ -140,17 +140,10 @@ export const ThreeDayCalendar = ({
         <Button variant="outline" size="icon" onClick={handlePrevDay}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">
-            {format(currentDayStart, "d MMMM", { locale: ru })} -{" "}
-            {format(threeDays[2], "d MMMM yyyy", { locale: ru })}
-          </span>
-          {!isToday(currentDayStart) && (
-            <Button variant="outline" size="sm" onClick={handleToday}>
-              Сегодня
-            </Button>
-          )}
-        </div>
+        <span className="font-semibold">
+          {format(currentDayStart, "d MMMM", { locale: ru })} -{" "}
+          {format(threeDays[2], "d MMMM yyyy", { locale: ru })}
+        </span>
         <Button variant="outline" size="icon" onClick={handleNextDay}>
           <ChevronRight className="h-4 w-4" />
         </Button>
