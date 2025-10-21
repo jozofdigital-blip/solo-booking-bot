@@ -57,7 +57,7 @@ serve(async (req) => {
       } else {
         // First-time start without deep link
         if (botToken) {
-          const welcomeMessage = `👋 Добро пожаловать!\n\nЧтобы подключить уведомления, вернитесь в приложение и нажмите \"Подключить Telegram\" в разделе Уведомления.`;
+          const welcomeMessage = `Добро пожаловать )\n\nНажмите кнопку Запустить, чтобы открыть приложение.\n👇`;
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
