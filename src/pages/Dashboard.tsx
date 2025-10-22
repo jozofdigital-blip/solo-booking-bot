@@ -292,7 +292,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
     try {
       const service = services.find(s => s.id === appointmentData.service_id);
-      const bookingUrl = `${window.location.origin}/dashboard`;
+      const bookingUrl = 'https://looktime.lovable.app/dashboard';
       
       await supabase.functions.invoke('send-telegram-notification', {
         body: {
