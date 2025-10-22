@@ -1,7 +1,15 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Share2, Zap } from "lucide-react";
+import { Calendar, Clock, Share2, Zap, Bell, Users, Check } from "lucide-react";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -10,17 +18,36 @@ const Index = () => {
     document.title = "LookTime - Онлайн запись для вашего бизнеса";
   }, []);
 
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-telegram-light via-background to-telegram-light/30">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex justify-end">
+      <header className="container mx-auto px-4 py-6 sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-telegram">LookTime</h2>
+          
+          <nav className="hidden md:flex items-center gap-8">
+            <button onClick={() => scrollToSection('features')} className="text-foreground hover:text-telegram transition-colors">
+              Преимущества
+            </button>
+            <button onClick={() => scrollToSection('for-whom')} className="text-foreground hover:text-telegram transition-colors">
+              Для кого
+            </button>
+            <button onClick={() => scrollToSection('pricing')} className="text-foreground hover:text-telegram transition-colors">
+              Цены
+            </button>
+          </nav>
+
           <Button
             variant="outline"
             onClick={() => navigate('/auth')}
             className="border-telegram text-telegram hover:bg-telegram hover:text-white"
           >
-            Войти в личный кабинет
+            Войти
           </Button>
         </div>
       </header>
@@ -53,9 +80,60 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Demo Screenshots Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+            Просто и удобно
+          </h2>
+          <p className="text-xl text-muted-foreground text-center mb-12">
+            Для владельцев и клиентов
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            {/* Owner Demo */}
+            <div className="flex flex-col items-center">
+              <div className="relative w-64 h-[500px] bg-gradient-to-br from-telegram/20 to-telegram/5 rounded-[2.5rem] border-8 border-foreground/10 shadow-2xl p-4">
+                <div className="w-full h-full bg-background rounded-[1.5rem] overflow-hidden">
+                  <div className="p-4 space-y-3">
+                    <div className="h-12 bg-telegram/10 rounded-lg animate-pulse"></div>
+                    <div className="h-32 bg-primary/10 rounded-lg animate-pulse"></div>
+                    <div className="h-24 bg-accent/20 rounded-lg animate-pulse"></div>
+                    <div className="h-24 bg-secondary/20 rounded-lg animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-6 text-lg font-semibold">Личный кабинет владельца</p>
+            </div>
+
+            {/* Client Demo */}
+            <div className="flex flex-col items-center">
+              <div className="relative w-64 h-[500px] bg-gradient-to-br from-telegram/20 to-telegram/5 rounded-[2.5rem] border-8 border-foreground/10 shadow-2xl p-4">
+                <div className="w-full h-full bg-background rounded-[1.5rem] overflow-hidden">
+                  <div className="p-4 space-y-3">
+                    <div className="h-16 bg-telegram/10 rounded-lg animate-pulse"></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-20 bg-primary/10 rounded-lg animate-pulse"></div>
+                      <div className="h-20 bg-primary/10 rounded-lg animate-pulse"></div>
+                      <div className="h-20 bg-accent/20 rounded-lg animate-pulse"></div>
+                      <div className="h-20 bg-accent/20 rounded-lg animate-pulse"></div>
+                    </div>
+                    <div className="h-32 bg-secondary/20 rounded-lg animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-6 text-lg font-semibold">Страница записи для клиента</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="container mx-auto px-4 py-16 scroll-mt-20">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+          Преимущества
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {[
             {
               icon: Zap,
@@ -71,6 +149,11 @@ const Index = () => {
               icon: Clock,
               title: 'Управление временем',
               description: 'Просматривайте все записи в удобном календаре'
+            },
+            {
+              icon: Bell,
+              title: 'Уведомления в Telegram',
+              description: 'Рассылки и уведомления клиентам прямо в Telegram'
             }
           ].map((feature, index) => {
             const Icon = feature.icon;
@@ -87,6 +170,80 @@ const Index = () => {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* For Whom Section */}
+      <section id="for-whom" className="container mx-auto px-4 py-16 scroll-mt-20">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Для кого
+          </h2>
+          <div className="bg-card p-8 rounded-2xl border border-border">
+            <Users className="w-16 h-16 text-telegram mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold mb-4">
+              Для частных специалистов и их клиентов
+            </h3>
+            <p className="text-lg text-muted-foreground mb-4">
+              Максимально простой, но удобный функционал
+            </p>
+            <Button
+              size="lg"
+              onClick={() => navigate('/auth?mode=signup')}
+              className="bg-telegram hover:bg-telegram/90 mt-4"
+            >
+              Попробуйте сами
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="container mx-auto px-4 py-16 scroll-mt-20">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12">
+            Цены
+          </h2>
+          <div className="bg-gradient-to-br from-telegram/10 to-telegram/5 p-8 md:p-12 rounded-3xl border border-telegram/20">
+            <div className="mb-6">
+              <p className="text-lg text-muted-foreground mb-2">Первые</p>
+              <p className="text-5xl md:text-6xl font-bold text-telegram mb-2">30 дней</p>
+              <p className="text-2xl font-semibold">БЕСПЛАТНО</p>
+            </div>
+            
+            <div className="my-8 h-px bg-border"></div>
+            
+            <div className="mb-8">
+              <p className="text-lg text-muted-foreground mb-2">Далее всего</p>
+              <p className="text-4xl md:text-5xl font-bold mb-4">
+                399 ₽<span className="text-xl text-muted-foreground">/месяц</span>
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-8 text-left max-w-md mx-auto">
+              {[
+                'Ссылка для клиентов',
+                'Личный кабинет',
+                'Уведомления клиентам в Telegram',
+                'Календарь записей',
+                'Управление услугами',
+                'И многое другое'
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <Check className="w-5 h-5 text-telegram flex-shrink-0" />
+                  <span className="text-foreground">{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              size="lg"
+              onClick={() => navigate('/auth?mode=signup')}
+              className="bg-telegram hover:bg-telegram/90 text-lg h-14 px-8"
+            >
+              Начать бесплатно
+            </Button>
+          </div>
         </div>
       </section>
 
