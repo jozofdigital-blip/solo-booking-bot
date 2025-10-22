@@ -2,14 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Share2, Zap, Bell, Users, Check } from "lucide-react";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import logo from "@/assets/logo.png";
+import dashboardMockup from "@/assets/dashboard-mockup.png";
+import bookingMockup from "@/assets/booking-mockup.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -28,7 +23,10 @@ const Index = () => {
       {/* Header */}
       <header className="container mx-auto px-4 py-6 sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-telegram">LookTime</h2>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="LookTime" className="w-10 h-10" />
+            <h2 className="text-2xl font-bold text-telegram">LookTime</h2>
+          </div>
           
           <nav className="hidden md:flex items-center gap-8">
             <button onClick={() => scrollToSection('features')} className="text-foreground hover:text-telegram transition-colors">
@@ -93,14 +91,13 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             {/* Owner Demo */}
             <div className="flex flex-col items-center">
-              <div className="relative w-64 h-[500px] bg-gradient-to-br from-telegram/20 to-telegram/5 rounded-[2.5rem] border-8 border-foreground/10 shadow-2xl p-4">
+              <div className="relative w-64 h-[540px] bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-[2.5rem] border-8 border-foreground/20 shadow-2xl p-3">
                 <div className="w-full h-full bg-background rounded-[1.5rem] overflow-hidden">
-                  <div className="p-4 space-y-3">
-                    <div className="h-12 bg-telegram/10 rounded-lg animate-pulse"></div>
-                    <div className="h-32 bg-primary/10 rounded-lg animate-pulse"></div>
-                    <div className="h-24 bg-accent/20 rounded-lg animate-pulse"></div>
-                    <div className="h-24 bg-secondary/20 rounded-lg animate-pulse"></div>
-                  </div>
+                  <img 
+                    src={dashboardMockup} 
+                    alt="Личный кабинет владельца" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
               <p className="mt-6 text-lg font-semibold">Личный кабинет владельца</p>
@@ -108,18 +105,13 @@ const Index = () => {
 
             {/* Client Demo */}
             <div className="flex flex-col items-center">
-              <div className="relative w-64 h-[500px] bg-gradient-to-br from-telegram/20 to-telegram/5 rounded-[2.5rem] border-8 border-foreground/10 shadow-2xl p-4">
+              <div className="relative w-64 h-[540px] bg-gradient-to-br from-foreground/5 to-foreground/10 rounded-[2.5rem] border-8 border-foreground/20 shadow-2xl p-3">
                 <div className="w-full h-full bg-background rounded-[1.5rem] overflow-hidden">
-                  <div className="p-4 space-y-3">
-                    <div className="h-16 bg-telegram/10 rounded-lg animate-pulse"></div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="h-20 bg-primary/10 rounded-lg animate-pulse"></div>
-                      <div className="h-20 bg-primary/10 rounded-lg animate-pulse"></div>
-                      <div className="h-20 bg-accent/20 rounded-lg animate-pulse"></div>
-                      <div className="h-20 bg-accent/20 rounded-lg animate-pulse"></div>
-                    </div>
-                    <div className="h-32 bg-secondary/20 rounded-lg animate-pulse"></div>
-                  </div>
+                  <img 
+                    src={bookingMockup} 
+                    alt="Страница записи для клиента" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
               <p className="mt-6 text-lg font-semibold">Страница записи для клиента</p>
