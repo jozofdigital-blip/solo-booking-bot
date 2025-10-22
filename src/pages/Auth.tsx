@@ -65,7 +65,7 @@ export default function Auth() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-telegram/10 mb-4">
             <Send className="w-8 h-8 text-telegram" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Booking Bot</h1>
+          <h1 className="text-3xl font-bold mb-2">LookTime</h1>
           <p className="text-muted-foreground">
             {isSignUp ? 'Создайте аккаунт' : 'Войдите в систему'}
           </p>
