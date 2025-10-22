@@ -242,7 +242,7 @@ export default function BookingPage() {
       if (profile?.telegram_chat_id && newAppointment?.id) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
-          const dashboardUrl = 'https://looktime.lovable.app/dashboard';
+          const dashboardUrl = 'https://looktime.pro/dashboard';
           
           await supabase.functions.invoke('send-telegram-notification', {
             body: {
@@ -286,7 +286,7 @@ export default function BookingPage() {
               time: selectedTime,
               businessName: profile.business_name,
               address: profile.address,
-              myAppointmentsUrl: 'https://looktime.lovable.app/my-appointments',
+              myAppointmentsUrl: 'https://looktime.pro/my-appointments',
             },
           });
         } catch (notificationError) {
