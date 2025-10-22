@@ -12,6 +12,19 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-telegram-light via-background to-telegram-light/30">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/auth')}
+            className="border-telegram text-telegram hover:bg-telegram hover:text-white"
+          >
+            Войти в личный кабинет
+          </Button>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center">
@@ -31,7 +44,7 @@ const Index = () => {
           <div className="flex justify-center">
             <Button
               size="lg"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/auth?mode=signup')}
               className="bg-telegram hover:bg-telegram/90 text-lg h-14 px-8"
             >
               Попробуйте бесплатно
@@ -88,7 +101,7 @@ const Index = () => {
           </p>
           <Button
             size="lg"
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/auth?mode=signup')}
             className="bg-telegram hover:bg-telegram/90 text-lg h-14 px-8"
           >
             Создать аккаунт
