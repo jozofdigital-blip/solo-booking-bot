@@ -544,12 +544,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const minServiceDuration = getMinServiceDuration();
 
   const calculateTodayEarnings = () => {
-    return todayAppointments
-      .filter(a => a.status === 'confirmed' || a.status === 'completed')
-      .reduce((total, apt) => {
-        const service = services.find(s => s.id === apt.service_id);
-        return total + (service?.price || 0);
-      }, 0);
+    return todayAppointments.reduce((total, apt) => {
+      const service = services.find(s => s.id === apt.service_id);
+      return total + (service?.price || 0);
+    }, 0);
   };
 
   const stats = [
@@ -589,23 +587,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   {format(new Date(), "d MMMM", { locale: ru })}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCurrentSection("calendar");
-                    navigate(isCalendarPage ? "/dashboard" : "/dashboard/calendar");
-                  }}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>
-                    {isCalendarPage ? "На главную" : "Календарь"}
-                  </span>
-                </Button>
-                {/* Hamburger on the right */}
-                <SidebarTrigger className="ml-2" />
-              </div>
+              <SidebarTrigger />
             </div>
           </header>
 
