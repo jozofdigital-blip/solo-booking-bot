@@ -1,5 +1,6 @@
 import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +33,7 @@ const navigationItems = [
 export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onCopyBookingLink }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const isMobile = useIsMobile();
 
   return (
     <Sidebar side="right" className={`${isCollapsed ? "w-14" : "w-60"}`}>
@@ -70,7 +72,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                       className={isActive ? "bg-accent text-accent-foreground" : ""}
                     >
                       <Icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      {(!isCollapsed || isMobile) && <span>{item.title}</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -79,28 +81,28 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onOpenWorkingHours}>
                   <CalendarCog className="h-4 w-4" />
-                  {!isCollapsed && <span>Мой график</span>}
+                  {(!isCollapsed || isMobile) && <span>Мой график</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onEditBusinessName}>
                   <Edit3 className="h-4 w-4" />
-                  {!isCollapsed && <span>Изменить название</span>}
+                  {(!isCollapsed || isMobile) && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onCopyBookingLink}>
                   <Share2 className="h-4 w-4" />
-                  {!isCollapsed && <span>Ссылка для клиентов</span>}
+                  {(!isCollapsed || isMobile) && <span>Ссылка для клиентов</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
                   <LogOut className="h-4 w-4" />
-                  {!isCollapsed && <span>Выйти</span>}
+                  {(!isCollapsed || isMobile) && <span>Выйти</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

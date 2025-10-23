@@ -614,7 +614,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               {currentSection === "calendar" && (
                 <>
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
+                  <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
                     {stats.map((stat) => {
                       const Icon = stat.icon;
                       return (
@@ -639,26 +639,46 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                     })}
                   </div>
 
+                  {/* Calendar view switcher */}
+                  <div className="grid grid-cols-3 gap-2 mb-6">
+                    <Button
+                      variant={calendarView === "3days" && !isCalendarPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setCalendarView("3days");
+                        navigate("/dashboard");
+                      }}
+                      className="w-full"
+                    >
+                      3 дня
+                    </Button>
+                    <Button
+                      variant={calendarView === "week" && isCalendarPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setCalendarView("week");
+                        navigate("/dashboard/calendar");
+                      }}
+                      className="w-full"
+                    >
+                      Неделя
+                    </Button>
+                    <Button
+                      variant={calendarView === "month" && isCalendarPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setCalendarView("month");
+                        navigate("/dashboard/calendar");
+                      }}
+                      className="w-full"
+                    >
+                      Месяц
+                    </Button>
+                  </div>
+
                   <div className="space-y-4">
                     {isCalendarPage ? (
                       <>
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={calendarView === "week" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("week")}
-                          >
-                            Неделя
-                          </Button>
-                          <Button
-                            variant={calendarView === "month" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCalendarView("month")}
-                          >
-                            Месяц
-                          </Button>
-                        </div>
-
                         {calendarView === "week" ? (
                           <WeekCalendar
                             appointments={appointments.map(a => {
