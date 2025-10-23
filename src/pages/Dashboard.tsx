@@ -20,7 +20,7 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, Share2, MapPin, Users, TrendingUp } from "lucide-react";
+import { Calendar, MapPin, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -838,6 +838,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Изменить название</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Введите новое название для вашего бизнеса
+              </p>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -874,6 +877,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Записи на сегодня</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Все ваши записи на сегодняшний день
+              </p>
             </DialogHeader>
             <div className="space-y-2">
               {todayAppointments.length === 0 ? (
