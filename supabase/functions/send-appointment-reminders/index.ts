@@ -99,7 +99,7 @@ serve(async (req) => {
             await supabase.functions.invoke('send-client-notification', {
               body: {
                 chatId: client.telegram_chat_id,
-                type: 'reminder',
+                type: 'reminder_1h',
                 clientName: client.name,
                 serviceName: service.name,
                 date: formatDate(appointmentDate),
@@ -138,7 +138,7 @@ serve(async (req) => {
             await supabase.functions.invoke('send-client-notification', {
               body: {
                 chatId: client.telegram_chat_id,
-                type: 'reminder',
+                type: 'reminder_24h',
                 clientName: client.name,
                 serviceName: service.name,
                 date: formatDate(appointmentDate),

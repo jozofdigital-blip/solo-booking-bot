@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface ClientNotificationRequest {
   chatId: string;
-  type: 'confirmation' | 'reminder' | 'cancellation' | 'update';
+  type: 'confirmation' | 'reminder_1h' | 'reminder_24h' | 'cancellation' | 'update';
   clientName: string;
   serviceName: string;
   date: string;
@@ -60,7 +60,22 @@ serve(async (req) => {
         message += `\nЖдём вас! 😊`;
         break;
 
-      case 'reminder':
+      case 'reminder_1h':
+        emoji = '⏰';
+        message = `${emoji} *Напоминание о записи*\n\n`;
+        message += `Здравствуйте, ${clientName}!\n\n`;
+        message += `Напоминаем, что через час у вас запись:\n\n`;
+        message += `📅 ${date}\n`;
+        message += `🕐 ${time}\n`;
+        message += `💅 ${serviceName}\n`;
+        message += `🏢 ${businessName}\n`;
+        if (address) {
+          message += `📍 ${address}\n`;
+        }
+        message += `\nЖдём вас! 😊`;
+        break;
+
+      case 'reminder_24h':
         emoji = '⏰';
         message = `${emoji} *Напоминание о записи*\n\n`;
         message += `Здравствуйте, ${clientName}!\n\n`;
