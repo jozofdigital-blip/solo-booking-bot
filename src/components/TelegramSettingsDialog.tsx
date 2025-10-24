@@ -111,6 +111,15 @@ export const TelegramSettingsDialog = ({
     window.open(deeplink, '_blank');
   };
 
+  const handleCopyCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(`/start connect_${profileId}`);
+      toast.success('Команда скопирована');
+    } catch (e) {
+      toast.error('Не удалось скопировать команду');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -167,12 +176,23 @@ export const TelegramSettingsDialog = ({
               </div>
             </>
           ) : (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                После нажатия кнопки откроется Telegram бот. Нажмите "Старт" для подключения уведомлений
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  После нажатия кнопки откроется Telegram бот. Нажмите "Старт" для подключения уведомлений
+                </AlertDescription>
+              </Alert>
+              <div className="rounded-md border p-3 text-xs space-y-2">
+                <div className="text-muted-foreground">
+                  Если «Старт» не сработал, отправьте боту вручную команду:
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="px-2 py-1 rounded bg-muted/50">/start connect_{profileId}</code>
+                  <Button size="sm" variant="outline" onClick={handleCopyCommand}>Скопировать</Button>
+                </div>
+              </div>
+            </>
           )}
 
           <DialogFooter className="flex-col sm:flex-row gap-2">

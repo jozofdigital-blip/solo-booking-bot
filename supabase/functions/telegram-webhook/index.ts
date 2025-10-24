@@ -105,6 +105,57 @@ serve(async (req) => {
       // Note: /start without parameters is ignored to allow custom bot commands
     }
 
+    // Fallback: handle plain 'connect_<id>' or 'client_<value>' messages and /notify command
+    if (update.message?.text) {
+      const chatId = update.message.chat.id;
+      const text = (update.message.text as string).trim();
+      const userName = update.message.from?.first_name || update.message.from?.username || 'там';
+
+      if (/^connect_[\w-]+$/.test(text)) {
+        const profileId = text.replace('connect_', '');
+        const { error } = await supabase
+          .from('profiles')
+          .update({ telegram_chat_id: chatId.toString() })
+          .eq('id', profileId);
+        if (error) {
+          console.error('Error updating profile via fallback:', error);
+        } else if (botToken) {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: '✅ Уведомления подключены' }),
+          });
+        }
+      } else if (/^client_[\w-]+$/.test(text)) {
+        const value = text.replace('client_', '').trim();
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+        let updateError = null;
+        if (isUUID) {
+          const { error } = await supabase.from('clients').update({ telegram_chat_id: chatId.toString() }).eq('id', value);
+          updateError = error;
+        } else if (value) {
+          const { error } = await supabase.from('clients').update({ telegram_chat_id: chatId.toString() }).eq('phone', value);
+          updateError = error;
+        }
+        if (updateError) {
+          console.error('Error updating client via fallback:', updateError);
+        } else if (botToken) {
+          const message = `✅ Отлично, ${userName}! Уведомления подключены.`;
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message }),
+          });
+        }
+      } else if (text.startsWith('/notify')) {
+        if (botToken) {
+          const help = 'Чтобы подключить уведомления, вернитесь в приложение и нажмите «Включить уведомления». Либо отправьте сюда команду: /start connect_<id>';
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: help }),
+          });
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ ok: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
