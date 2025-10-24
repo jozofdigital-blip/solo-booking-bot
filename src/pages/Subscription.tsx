@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -23,10 +23,17 @@ export default function Subscription() {
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const paymentButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     loadProfile();
   }, []);
+
+  useEffect(() => {
+    if (selectedPlan && paymentButtonRef.current) {
+      paymentButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedPlan]);
 
   const loadProfile = async () => {
     try {
@@ -255,6 +262,7 @@ export default function Subscription() {
         </Card>
 
         <Button
+          ref={paymentButtonRef}
           onClick={handlePayment}
           disabled={!selectedPlan}
           className="w-full bg-telegram hover:bg-telegram/90 font-semibold"
