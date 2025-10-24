@@ -107,8 +107,17 @@ export const TelegramSettingsDialog = ({
 
   const handleEnableNotifications = () => {
     const botUsername = "looktime_app_bot";
-    const deeplink = `https://t.me/${botUsername}?start=connect_${profileId}`;
-    window.open(deeplink, '_blank');
+    const payload = `connect_${profileId}`;
+    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
+    const httpsLink = `https://t.me/${botUsername}?start=${payload}`;
+
+    // Try native Telegram scheme first; fallback to https link
+    try {
+      window.open(tgLink, '_blank');
+      setTimeout(() => window.open(httpsLink, '_blank'), 500);
+    } catch {
+      window.open(httpsLink, '_blank');
+    }
   };
 
   const handleCopyCommand = async () => {
