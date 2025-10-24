@@ -20,7 +20,7 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
+  const [clientPhone, setClientPhone] = useState('+7');
   const [loading, setLoading] = useState(false);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<any[]>([]);
@@ -63,7 +63,7 @@ export default function BookingPage() {
       try {
         const { name, phone } = JSON.parse(savedData);
         setClientName(name || '');
-        setClientPhone(phone || '');
+        setClientPhone(phone || '+7');
       } catch (error) {
         console.error('Error loading client data:', error);
       }
@@ -430,6 +430,7 @@ export default function BookingPage() {
                 required
               />
               <Input
+                type="tel"
                 placeholder="Телефон *"
                 value={clientPhone}
                 onChange={(e) => {

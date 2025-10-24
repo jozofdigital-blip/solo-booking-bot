@@ -45,7 +45,7 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientWithAppointment | null>(null);
-  const [formData, setFormData] = useState({ name: "", phone: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "+7" });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const { toast } = useToast();
@@ -153,7 +153,7 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
 
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "" });
+    setFormData({ name: "", phone: "+7" });
     loadClients();
   };
 
@@ -195,7 +195,7 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
   const handleCancel = () => {
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "" });
+    setFormData({ name: "", phone: "+7" });
   };
 
   return (
@@ -285,6 +285,7 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
                 <Label htmlFor="phone">Телефон</Label>
                 <Input
                   id="phone"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => {
                     let value = e.target.value;

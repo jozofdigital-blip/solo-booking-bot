@@ -115,7 +115,7 @@ export const AppointmentDialog = ({
         appointment_date: date,
         appointment_time: time,
         client_name: "",
-        client_phone: "",
+        client_phone: "+7",
         notes: "",
       });
     }
