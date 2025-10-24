@@ -23,7 +23,6 @@ interface AppSidebarProps {
 }
 
 const navigationItems = [
-  { id: "calendar", title: "Главная", icon: Calendar },
   { id: "services", title: "Мои услуги", icon: Package },
   { id: "clients", title: "Мои клиенты", icon: Users },
   { id: "notifications", title: "Уведомления", icon: Bell },

@@ -766,43 +766,83 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               )}
 
               {currentSection === "services" && (
-                <ServicesList
-                  services={services}
-                  onAdd={() => {
-                    setEditingService(null);
-                    setServiceDialogOpen(true);
-                  }}
-                  onEdit={(service) => {
-                    setEditingService(service);
-                    setServiceDialogOpen(true);
-                  }}
-                  onDelete={handleDeleteService}
-                />
+                <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentSection("calendar")}
+                    className="mb-4"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    На главную
+                  </Button>
+                  <ServicesList
+                    services={services}
+                    onAdd={() => {
+                      setEditingService(null);
+                      setServiceDialogOpen(true);
+                    }}
+                    onEdit={(service) => {
+                      setEditingService(service);
+                      setServiceDialogOpen(true);
+                    }}
+                    onDelete={handleDeleteService}
+                  />
+                </div>
               )}
 
               {currentSection === "clients" && (
-                <ClientsList profileId={profile?.id} />
+                <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentSection("calendar")}
+                    className="mb-4"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    На главную
+                  </Button>
+                  <ClientsList profileId={profile?.id} />
+                </div>
               )}
 
               {currentSection === "notifications" && (
-                <NotificationsSection 
-                  profileId={profile?.id}
-                  telegramChatId={profile?.telegram_chat_id}
-                />
+                <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentSection("calendar")}
+                    className="mb-4"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    На главную
+                  </Button>
+                  <NotificationsSection 
+                    profileId={profile?.id}
+                    telegramChatId={profile?.telegram_chat_id}
+                  />
+                </div>
               )}
 
               {currentSection === "address" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
-                  <Card className="p-6">
-                    <p className="text-muted-foreground mb-4">
-                      {profile?.address || "Адрес не указан"}
-                    </p>
-                    <Button onClick={() => setAddressDialogOpen(true)}>
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Изменить адрес
-                    </Button>
-                  </Card>
+                <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentSection("calendar")}
+                    className="mb-4"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    На главную
+                  </Button>
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
+                    <Card className="p-6">
+                      <p className="text-muted-foreground mb-4">
+                        {profile?.address || "Адрес не указан"}
+                      </p>
+                      <Button onClick={() => setAddressDialogOpen(true)}>
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Изменить адрес
+                      </Button>
+                    </Card>
+                  </div>
                 </div>
               )}
             </div>
