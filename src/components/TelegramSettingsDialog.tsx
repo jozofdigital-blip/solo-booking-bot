@@ -104,38 +104,6 @@ export const TelegramSettingsDialog = ({
       setLoading(false);
     }
   };
-
-  const handleEnableNotifications = () => {
-    const botUsername = "looktime_app_bot";
-    const payload = `connect_${profileId}`;
-    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
-
-    try {
-      (window.top || window).location.href = tgLink;
-    } catch {
-      window.location.href = tgLink;
-    }
-
-    // Programmatic anchor click as an additional fallback to trigger OS handler
-    const a = document.createElement('a');
-    a.href = tgLink;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      try { document.body.removeChild(a); } catch {}
-    }, 1500);
-  };
-
-  const handleCopyCommand = async () => {
-    try {
-      await navigator.clipboard.writeText(`/start connect_${profileId}`);
-      toast.success('Команда скопирована');
-    } catch (e) {
-      toast.error('Не удалось скопировать команду');
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -194,11 +162,13 @@ export const TelegramSettingsDialog = ({
           ) : (
             <>
               <Button 
-                onClick={handleEnableNotifications}
+                asChild
                 className="bg-telegram hover:bg-telegram/90 w-full"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Включить уведомления
+                <a href={`tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`}>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Включить уведомления
+                </a>
               </Button>
             </>
           )}

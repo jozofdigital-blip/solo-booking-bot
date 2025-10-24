@@ -12,27 +12,8 @@ interface NotificationsSectionProps {
 export function NotificationsSection({ profileId, telegramChatId }: NotificationsSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleConnect = () => {
-    const botUsername = "looktime_app_bot";
-    const payload = `connect_${profileId}`;
-    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
-
-    try {
-      (window.top || window).location.href = tgLink;
-    } catch {
-      window.location.href = tgLink;
-    }
-
-    // Programmatic anchor click as an additional fallback to trigger OS handler
-    const a = document.createElement('a');
-    a.href = tgLink;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      try { document.body.removeChild(a); } catch {}
-    }, 1500);
-  };
+  // Прямая ссылка в Telegram app
+  const tgLink = `tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`;
 
   return (
     <div className="space-y-4">
@@ -62,8 +43,8 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
                 </Button>
               </div>
             ) : (
-              <Button onClick={handleConnect}>
-                Подключить Telegram
+              <Button asChild>
+                <a href={tgLink}>Подключить Telegram</a>
               </Button>
             )}
           </div>
