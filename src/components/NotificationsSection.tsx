@@ -13,10 +13,23 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleConnect = () => {
+    console.log('Подключение Telegram...');
     const botUsername = "looktime_app_bot";
     const payload = `connect_${profileId}`;
     const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
-    window.location.href = tgLink;
+    const httpsLink = `https://t.me/${botUsername}?start=${payload}`;
+    
+    // Try to open Telegram app
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = tgLink;
+    document.body.appendChild(iframe);
+    
+    // Fallback to web version after a short delay
+    setTimeout(() => {
+      window.open(httpsLink, '_blank');
+      document.body.removeChild(iframe);
+    }, 500);
   };
 
   return (
