@@ -42,6 +42,13 @@ export default function BookingPage() {
   useEffect(() => {
     if (selectedService && calendarRef.current) {
       calendarRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Автоматически выбрать текущую дату если она еще не выбрана
+      if (!selectedDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        setSelectedDate(today);
+      }
     }
   }, [selectedService]);
 
