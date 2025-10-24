@@ -27,7 +27,19 @@ export default function Subscription() {
 
   useEffect(() => {
     loadProfile();
+    checkPaymentStatus();
   }, []);
+
+  const checkPaymentStatus = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast.success('Платеж успешно обработан! Подписка будет активирована в течение минуты.');
+      // Clear URL parameter
+      window.history.replaceState({}, '', '/subscription');
+    }
+  };
 
   useEffect(() => {
     if (selectedPlan && paymentButtonRef.current) {
@@ -110,11 +122,33 @@ export default function Subscription() {
 
     const finalPrice = calculateFinalPrice(plan.price);
 
-    // TODO: Integrate with YooKassa
-    toast.info("Интеграция с ЮКасса в разработке");
-    
-    // For now, simulate successful payment
-    // await updateSubscription(plan.months);
+    setLoading(true);
+    try {
+      // Create payment via YooKassa
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          planId: plan.id,
+          amount: finalPrice,
+          description: `Подписка LookTime - ${plan.name}`,
+          profileId: profile.id,
+          months: plan.months
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.confirmationUrl) {
+        // Redirect to YooKassa payment page
+        window.location.href = data.confirmationUrl;
+      } else {
+        throw new Error('No confirmation URL received');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error('Ошибка при создании платежа');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateSubscription = async (months: number) => {
@@ -264,11 +298,11 @@ export default function Subscription() {
         <Button
           ref={paymentButtonRef}
           onClick={handlePayment}
-          disabled={!selectedPlan}
+          disabled={!selectedPlan || loading}
           className="w-full bg-telegram hover:bg-telegram/90 font-semibold"
         >
-          Оплатить
-          {selectedPlan && ` ${calculateFinalPrice(PLANS.find(p => p.id === selectedPlan)?.price || 0)} ₽`}
+          {loading ? 'Создание платежа...' : 'Оплатить'}
+          {!loading && selectedPlan && ` ${calculateFinalPrice(PLANS.find(p => p.id === selectedPlan)?.price || 0)} ₽`}
         </Button>
       </div>
     </div>
