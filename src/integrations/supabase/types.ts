@@ -25,6 +25,8 @@ export type Database = {
           highlight_color: string | null
           id: string
           notes: string | null
+          notification_sent_1h: boolean | null
+          notification_sent_24h: boolean | null
           notification_viewed: boolean | null
           profile_id: string
           service_id: string
@@ -41,6 +43,8 @@ export type Database = {
           highlight_color?: string | null
           id?: string
           notes?: string | null
+          notification_sent_1h?: boolean | null
+          notification_sent_24h?: boolean | null
           notification_viewed?: boolean | null
           profile_id: string
           service_id: string
@@ -57,6 +61,8 @@ export type Database = {
           highlight_color?: string | null
           id?: string
           notes?: string | null
+          notification_sent_1h?: boolean | null
+          notification_sent_24h?: boolean | null
           notification_viewed?: boolean | null
           profile_id?: string
           service_id?: string
