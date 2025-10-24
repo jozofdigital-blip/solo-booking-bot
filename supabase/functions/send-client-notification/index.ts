@@ -24,9 +24,9 @@ serve(async (req) => {
   }
 
   try {
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    const botToken = Deno.env.get('TELEGRAM_CLIENT_BOT_TOKEN');
     if (!botToken) {
-      throw new Error('TELEGRAM_BOT_TOKEN not configured');
+      throw new Error('TELEGRAM_CLIENT_BOT_TOKEN not configured');
     }
 
     const { 
