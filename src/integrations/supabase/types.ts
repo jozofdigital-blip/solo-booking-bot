@@ -86,6 +86,7 @@ export type Database = {
           id: string
           last_visit: string | null
           name: string
+          notes: string | null
           phone: string
           profile_id: string
           telegram_chat_id: string | null
@@ -96,6 +97,7 @@ export type Database = {
           id?: string
           last_visit?: string | null
           name: string
+          notes?: string | null
           phone: string
           profile_id: string
           telegram_chat_id?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           id?: string
           last_visit?: string | null
           name?: string
+          notes?: string | null
           phone?: string
           profile_id?: string
           telegram_chat_id?: string | null
@@ -256,10 +259,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_unique_slug: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_unique_slug: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

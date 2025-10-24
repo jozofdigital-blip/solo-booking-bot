@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +25,7 @@ interface Client {
   name: string;
   phone: string;
   last_visit: string | null;
+  notes: string | null;
 }
 
 interface ClientWithAppointment extends Client {
@@ -43,7 +45,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientWithAppointment | null>(null);
-  const [formData, setFormData] = useState({ name: "", phone: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "", notes: "" });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const { toast } = useToast();
@@ -129,7 +131,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
     if (editingClient) {
       const { error } = await supabase
         .from("clients")
-        .update({ name: formData.name, phone: formData.phone })
+        .update({ name: formData.name, phone: formData.phone, notes: formData.notes })
         .eq("id", editingClient.id);
 
       if (error) {
@@ -145,6 +147,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
         profile_id: profileId,
         name: formData.name,
         phone: formData.phone,
+        notes: formData.notes,
       });
 
       if (error) {
@@ -164,13 +167,13 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
 
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "" });
+    setFormData({ name: "", phone: "", notes: "" });
     loadClients();
   };
 
   const handleEdit = (client: ClientWithAppointment) => {
     setEditingClient(client);
-    setFormData({ name: client.name, phone: client.phone });
+    setFormData({ name: client.name, phone: client.phone, notes: client.notes || "" });
     setIsEditing(true);
   };
 
@@ -206,7 +209,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "" });
+    setFormData({ name: "", phone: "", notes: "" });
   };
 
   return (
@@ -242,6 +245,11 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
                   <div className="flex-1">
                     <p className="font-medium">{client.name}</p>
                     <p className="text-sm text-muted-foreground">{client.phone}</p>
+                    {client.notes && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">
+                        💬 {client.notes}
+                      </p>
+                    )}
                     {client.next_appointment ? (
                       <p className="text-xs text-telegram font-medium mt-1">
                         Активная запись:{" "}
@@ -297,6 +305,16 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+7 (XXX) XXX-XX-XX"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Комментарий (виден только вам)</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Добавьте личные заметки о клиенте"
+                  rows={3}
                 />
               </div>
               <div className="flex gap-2 justify-end">
