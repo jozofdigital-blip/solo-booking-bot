@@ -61,10 +61,7 @@ export default function Auth() {
       if (error) throw error;
 
       if (data?.success) {
-        // Parse the magic link to get the token_hash
-        const url = new URL(data.access_token);
-        const tokenHash = url.searchParams.get('token_hash');
-        
+        const tokenHash = data.hashed_token;
         if (tokenHash) {
           const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,

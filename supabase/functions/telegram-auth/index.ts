@@ -29,10 +29,10 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
 
     console.log('Data check string:', dataCheckString);
 
-    // Step 1: Create secret key = HMAC-SHA-256(key=bot_token, message="WebAppData")
-    const botTokenKey = await crypto.subtle.importKey(
+    // Step 1: Create secret key = HMAC-SHA-256(key="WebAppData", message=bot_token)
+    const webAppDataKey = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(botToken),
+      new TextEncoder().encode('WebAppData'),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
@@ -40,8 +40,8 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
 
     const secretKeyBytes = await crypto.subtle.sign(
       'HMAC',
-      botTokenKey,
-      encoder.encode('WebAppData')
+      webAppDataKey,
+      encoder.encode(botToken)
     );
 
     // Step 2: Calculate hash = HMAC-SHA-256(key=secret_key, message=data_check_string)
@@ -186,7 +186,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        access_token: sessionData.properties?.action_link,
+        action_link: sessionData.properties?.action_link,
+        hashed_token: sessionData.properties?.hashed_token,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
