@@ -1,60 +1,85 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: any;
+    };
+  }
+}
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
+  const [loading, setLoading] = useState(true);
+  const [telegramUser, setTelegramUser] = useState<any>(null);
 
   useEffect(() => {
-    checkAuth();
+    authenticateWithTelegram();
   }, []);
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      navigate('/dashboard');
-    }
-  };
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const authenticateWithTelegram = async () => {
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`
-          }
-        });
-        
-        if (error) throw error;
-        toast.success('Регистрация успешна! Войдите в аккаунт');
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (error) throw error;
+      // Check if already authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         navigate('/dashboard');
+        return;
+      }
+
+      // Check if Telegram Web App is available
+      if (!window.Telegram?.WebApp) {
+        toast.error('Это приложение работает только в Telegram');
+        setLoading(false);
+        return;
+      }
+
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+
+      const initData = tg.initData;
+      if (!initData) {
+        toast.error('Не удалось получить данные Telegram');
+        setLoading(false);
+        return;
+      }
+
+      const user = tg.initDataUnsafe?.user;
+      setTelegramUser(user);
+
+      // Authenticate with backend
+      const { data, error } = await supabase.functions.invoke('telegram-auth', {
+        body: { initData }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        // Parse the magic link to get the token
+        const url = new URL(data.access_token);
+        const token = url.searchParams.get('token');
+        
+        if (token) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'magiclink',
+          });
+
+          if (verifyError) throw verifyError;
+          
+          toast.success('Добро пожаловать!');
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast.error(error.message || 'Ошибка авторизации');
-    } finally {
       setLoading(false);
     }
   };
@@ -67,51 +92,34 @@ export default function Auth() {
             <Send className="w-8 h-8 text-telegram" />
           </div>
           <h1 className="text-3xl font-bold mb-2">LookTime</h1>
-          <p className="text-muted-foreground">
-            {isSignUp ? 'Создайте аккаунт' : 'Войдите в систему'}
-          </p>
-        </div>
-
-        <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-12"
-            />
-          </div>
-
-          <div>
-            <Input
-              type="password"
-              placeholder="Пароль"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="h-12"
-              minLength={6}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-12 bg-telegram hover:bg-telegram/90"
-            disabled={loading}
-          >
-            {loading ? 'Загрузка...' : isSignUp ? 'Зарегистрироваться' : 'Войти'}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-muted-foreground hover:text-telegram transition-colors"
-          >
-            {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
-          </button>
+          
+          {loading ? (
+            <div className="space-y-4">
+              <p className="text-muted-foreground">Авторизация через Telegram...</p>
+              <div className="animate-pulse">
+                <div className="h-12 bg-muted rounded-lg"></div>
+              </div>
+            </div>
+          ) : telegramUser ? (
+            <div className="space-y-4">
+              <Avatar className="w-20 h-20 mx-auto">
+                <AvatarImage src={telegramUser.photo_url} alt={telegramUser.first_name} />
+                <AvatarFallback>
+                  {telegramUser.first_name?.[0] || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-lg font-medium">
+                {telegramUser.first_name} {telegramUser.last_name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Ошибка авторизации. Попробуйте перезапустить приложение.
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              Откройте приложение через Telegram
+            </p>
+          )}
         </div>
       </Card>
     </div>
