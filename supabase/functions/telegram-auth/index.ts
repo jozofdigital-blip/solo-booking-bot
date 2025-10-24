@@ -108,11 +108,6 @@ serve(async (req) => {
 
     const tokens = TOKENS_RAW.split(',').map((s) => s.trim()).filter(Boolean);
 
-    // Temporary: disable signature verification for debugging
-    console.log('WARNING: Signature verification disabled for debugging');
-    const matchedToken = tokens[0]; // Use first token
-    
-    /*
     // Verify Telegram data
     console.log('Starting verification...');
     const matchedToken = await verifyWithAnyToken(initData, tokens);
@@ -121,9 +116,8 @@ serve(async (req) => {
       console.error('Telegram data verification failed');
       throw new Error('Invalid Telegram data signature');
     }
-    */
     
-    console.log('Proceeding without signature verification (DEBUG MODE)');
+    console.log('Telegram data verified successfully with one of the configured tokens');
 
     const urlParams = new URLSearchParams(initData);
     const userJson = urlParams.get('user');
