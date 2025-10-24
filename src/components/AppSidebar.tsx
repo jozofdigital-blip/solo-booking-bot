@@ -65,7 +65,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                     <SidebarMenuButton
                       onClick={() => {
                         onSectionChange(item.id);
-                        if (!isCollapsed) {
+                        if (isMobile || !isCollapsed) {
                           toggleSidebar();
                         }
                       }}

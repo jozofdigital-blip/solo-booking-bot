@@ -294,18 +294,18 @@ export default function BookingPage() {
         }
       }
 
+      // Reload appointments to update available slots
+      await loadAppointments(selectedDate);
+      
       toast.success('Запись успешно создана!');
       
       // Open success dialog with client ID
       setClientId(clientId);
       setSuccessDialogOpen(true);
       
-      // Reset form
+      // Reset form but keep date to show updated slots
       setSelectedService(null);
-      setSelectedDate(undefined);
       setSelectedTime('');
-      setClientName('');
-      setClientPhone('');
     } catch (error: any) {
       toast.error('Ошибка при создании записи');
     } finally {
