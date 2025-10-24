@@ -110,12 +110,8 @@ export default function BookingPage() {
         .select('*')
         .eq('profile_id', profileData.id);
       
+      console.log('Working hours loaded:', workingData);
       setWorkingHours(workingData || []);
-
-      // Автоматически выбрать текущую дату
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      setSelectedDate(today);
     } catch (error) {
       toast.error('Профиль не найден');
     }
@@ -147,12 +143,22 @@ export default function BookingPage() {
   }, [selectedDate, profile]);
 
   const getAvailableTimeSlots = () => {
-    if (!selectedDate || !selectedService) return [];
+    if (!selectedDate || !selectedService) {
+      console.log('No date or service selected');
+      return [];
+    }
 
     const dayOfWeek = selectedDate.getDay();
+    console.log('Day of week:', dayOfWeek, 'Working hours:', workingHours);
+    
     const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
     
-    if (!workingDay) return [];
+    if (!workingDay) {
+      console.log('No working hours for this day');
+      return [];
+    }
+
+    console.log('Working day found:', workingDay);
 
     const selectedServiceData = services.find(s => s.id === selectedService);
     const serviceDuration = selectedServiceData?.duration_minutes || 60;
@@ -179,6 +185,7 @@ export default function BookingPage() {
       }
     }
 
+    console.log('Available slots:', slots);
     return slots;
   };
 
@@ -398,10 +405,14 @@ export default function BookingPage() {
         )}
 
         {/* Time Selection */}
-        {selectedDate && (
+        {selectedDate && selectedService && (
           <Card className="p-5 mb-6" ref={timeRef}>
             <h2 className="text-lg font-semibold mb-3">Выберите время</h2>
-            {availableTimeSlots.length > 0 ? (
+            {workingHours.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Рабочие часы не настроены. Пожалуйста, обратитесь к администратору.
+              </p>
+            ) : availableTimeSlots.length > 0 ? (
               <div className="grid grid-cols-4 gap-2">
                 {availableTimeSlots.map((time) => (
                   <Button
