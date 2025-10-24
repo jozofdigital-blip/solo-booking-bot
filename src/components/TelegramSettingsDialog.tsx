@@ -108,9 +108,23 @@ export const TelegramSettingsDialog = ({
   const handleEnableNotifications = () => {
     const botUsername = "looktime_app_bot";
     const payload = `connect_${profileId}`;
-    // Use tg:// protocol to open directly in Telegram app
     const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
-    window.location.href = tgLink;
+
+    try {
+      (window.top || window).location.href = tgLink;
+    } catch {
+      window.location.href = tgLink;
+    }
+
+    // Programmatic anchor click as an additional fallback to trigger OS handler
+    const a = document.createElement('a');
+    a.href = tgLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch {}
+    }, 1500);
   };
 
   const handleCopyCommand = async () => {

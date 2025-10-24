@@ -16,8 +16,22 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
     const botUsername = "looktime_app_bot";
     const payload = `connect_${profileId}`;
     const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
-    // Open directly in Telegram app (no extra windows)
-    window.location.href = tgLink;
+
+    try {
+      (window.top || window).location.href = tgLink;
+    } catch {
+      window.location.href = tgLink;
+    }
+
+    // Programmatic anchor click as an additional fallback to trigger OS handler
+    const a = document.createElement('a');
+    a.href = tgLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch {}
+    }, 1500);
   };
 
   return (
