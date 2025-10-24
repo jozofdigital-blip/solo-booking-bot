@@ -12,6 +12,13 @@ interface NotificationsSectionProps {
 export function NotificationsSection({ profileId, telegramChatId }: NotificationsSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const handleConnect = () => {
+    const botUsername = "looktime_app_bot";
+    const payload = `connect_${profileId}`;
+    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
+    window.location.href = tgLink;
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Уведомления</h2>
@@ -40,7 +47,7 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => setDialogOpen(true)}>
+              <Button onClick={handleConnect}>
                 Подключить Telegram
               </Button>
             )}
