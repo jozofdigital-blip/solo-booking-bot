@@ -19,7 +19,6 @@ interface AppSidebarProps {
   onLogout: () => void;
   onOpenWorkingHours: () => void;
   onEditBusinessName: () => void;
-  onCopyBookingLink: () => void;
 }
 
 const navigationItems = [
@@ -27,9 +26,10 @@ const navigationItems = [
   { id: "clients", title: "Мои клиенты", icon: Users },
   { id: "notifications", title: "Уведомления", icon: Bell },
   { id: "address", title: "Мой адрес", icon: MapPin },
+  { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onCopyBookingLink }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
@@ -88,13 +88,6 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 <SidebarMenuButton onClick={onEditBusinessName}>
                   <Edit3 className="h-4 w-4" />
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={onCopyBookingLink}>
-                  <Share2 className="h-4 w-4" />
-                  {(!isCollapsed || isMobile) && <span>Ссылка для клиентов</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 

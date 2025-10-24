@@ -20,7 +20,7 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, MapPin, TrendingUp, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, TrendingUp, ArrowLeft, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -816,6 +816,24 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </Card>
                 </div>
               )}
+
+              {currentSection === "booking-link" && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Ссылка для клиентов</h2>
+                  <Card className="p-6 space-y-4">
+                    <p className="text-muted-foreground">
+                      Эту ссылку вы можете вставить в описание своего Telegram, Инстаграм, отправлять в WhatsApp и т.д.
+                    </p>
+                    <div className="p-4 bg-muted rounded-lg break-all text-sm">
+                      {`${window.location.origin}/book/${profile?.unique_slug}`}
+                    </div>
+                    <Button onClick={copyBookingLink} className="w-full">
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Скопировать ссылку
+                    </Button>
+                  </Card>
+                </div>
+              )}
             </div>
           </main>
         </div>
@@ -826,7 +844,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onLogout={handleLogout}
           onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
           onEditBusinessName={openBusinessNameDialog}
-          onCopyBookingLink={copyBookingLink}
         />
         {/* Dialogs */}
         <ServiceDialog
