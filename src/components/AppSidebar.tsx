@@ -55,6 +55,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
         )}
         
         <SidebarContent>
+        {/* Main navigation items */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -93,29 +94,44 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
+        {/* Subscription section - highlighted */}
+        <SidebarGroup className="mt-auto pt-4 border-t">
+          <SidebarGroupContent>
+            <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <Button 
                   onClick={onOpenSubscription}
-                  className="bg-telegram/10 hover:bg-telegram/20 text-telegram border border-telegram/20"
+                  className="w-full justify-start bg-telegram hover:bg-telegram/90 text-white font-semibold"
+                  size={isCollapsed ? "icon" : "default"}
                 >
                   <CreditCard className="h-4 w-4" />
-                  {(!isCollapsed || isMobile) && (
-                    <div className="flex flex-col items-start">
-                      <span className="font-semibold">Мой тариф</span>
-                      {daysLeft !== null && daysLeft !== undefined && (
-                        <span className="text-xs">
-                          {isTrial 
-                            ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
-                            : `Активна ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
-                          }
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </SidebarMenuButton>
+                  {(!isCollapsed || isMobile) && <span className="ml-2">Мой тариф</span>}
+                </Button>
               </SidebarMenuItem>
+            </SidebarMenu>
+            
+            {/* Days remaining text */}
+            {(!isCollapsed || isMobile) && daysLeft !== null && daysLeft !== undefined && (
+              <div className="px-2 pt-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {isTrial 
+                    ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
+                    : `Активна ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
+                  }
+                </p>
+              </div>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
 
+        {/* Logout button */}
+        <SidebarGroup className="pb-4">
+          <SidebarGroupContent>
+            <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
                   <LogOut className="h-4 w-4" />
