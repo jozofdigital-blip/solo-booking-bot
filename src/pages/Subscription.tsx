@@ -141,80 +141,95 @@ export default function Subscription() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
           variant="ghost"
           onClick={() => navigate("/dashboard")}
-          className="mb-6"
+          className="mb-4"
+          size="sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Назад
         </Button>
 
-        <h1 className="text-3xl font-bold mb-2">Мой тариф</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-1">Мой тариф</h1>
+          <p className="text-sm text-muted-foreground">Выберите подходящий план</p>
+        </div>
         
         {isActive && (
-          <Card className="p-6 mb-6 bg-success/10 border-success">
-            <div className="flex items-center gap-2 mb-2">
-              <Check className="w-5 h-5 text-success" />
-              <h2 className="text-xl font-semibold">
+          <Card className="p-4 mb-6 bg-success/10 border-success">
+            <div className="flex items-center gap-2 mb-1">
+              <Check className="w-4 h-4 text-success" />
+              <p className="font-medium text-sm">
                 {isTrial ? "Пробный период активен" : "Подписка активна"}
-              </h2>
+              </p>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground ml-6">
               {isTrial 
-                ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'} до окончания бесплатного тарифа`
-                : `Подписка активна до ${format(new Date(profile.subscription_end_date), "d MMMM yyyy", { locale: ru })}`
+                ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'} до окончания`
+                : `До ${format(new Date(profile.subscription_end_date), "d MMMM yyyy", { locale: ru })}`
               }
             </p>
           </Card>
         )}
 
-        <h2 className="text-2xl font-bold mb-4">Выберите тариф</h2>
-
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          {PLANS.map((plan) => {
+        <div className="grid md:grid-cols-3 gap-3 mb-5">
+          {PLANS.map((plan, index) => {
             const finalPrice = calculateFinalPrice(plan.price);
             const isSelected = selectedPlan === plan.id;
+            const isPopular = index === 1; // 6 months is popular
 
             return (
               <Card
                 key={plan.id}
-                className={`p-6 cursor-pointer transition-all ${
+                className={`relative p-4 cursor-pointer transition-all ${
                   isSelected
                     ? "border-telegram bg-telegram/5 ring-2 ring-telegram"
-                    : "hover:border-telegram/50"
+                    : "hover:border-telegram/30 hover:shadow-md"
                 }`}
                 onClick={() => setSelectedPlan(plan.id)}
               >
-                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  {discount > 0 ? (
-                    <>
-                      <p className="text-sm text-muted-foreground line-through">
-                        {plan.price} ₽
-                      </p>
-                      <p className="text-3xl font-bold text-telegram">
-                        {finalPrice} ₽
-                      </p>
-                      <p className="text-sm text-success">
-                        Скидка {discount}%
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-3xl font-bold">{plan.price} ₽</p>
-                  )}
+                {isPopular && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                    <span className="bg-telegram text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                      Популярный
+                    </span>
+                  </div>
+                )}
+                
+                <div className="text-center">
+                  <h3 className="font-semibold mb-3">{plan.name}</h3>
+                  
+                  <div className="mb-3">
+                    {discount > 0 ? (
+                      <>
+                        <p className="text-xs text-muted-foreground line-through mb-1">
+                          {plan.price} ₽
+                        </p>
+                        <p className="text-2xl font-bold text-telegram">
+                          {finalPrice} ₽
+                        </p>
+                        <p className="text-xs text-success mt-1">
+                          −{discount}%
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-2xl font-bold">{plan.price} ₽</p>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    {Math.round(finalPrice / plan.months)} ₽/мес
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  ~{Math.round(finalPrice / plan.months)} ₽/месяц
-                </p>
               </Card>
             );
           })}
         </div>
 
-        <Card className="p-6 mb-6">
-          <h3 className="font-semibold mb-3">Промокод</h3>
+        <Card className="p-4 mb-5">
+          <label className="text-sm font-medium mb-2 block">У вас есть промокод?</label>
           <div className="flex gap-2">
             <Input
               placeholder="Введите промокод"
@@ -225,14 +240,16 @@ export default function Subscription() {
                   validatePromoCode();
                 }
               }}
+              className="h-9"
             />
-            <Button onClick={validatePromoCode} variant="outline">
+            <Button onClick={validatePromoCode} variant="outline" size="sm">
               Применить
             </Button>
           </div>
           {discount > 0 && (
-            <p className="text-sm text-success mt-2">
-              ✓ Промокод применен: скидка {discount}%
+            <p className="text-xs text-success mt-2 flex items-center gap-1">
+              <Check className="w-3 h-3" />
+              Промокод применен: скидка {discount}%
             </p>
           )}
         </Card>
@@ -240,9 +257,10 @@ export default function Subscription() {
         <Button
           onClick={handlePayment}
           disabled={!selectedPlan}
-          className="w-full h-12 bg-telegram hover:bg-telegram/90 text-lg font-semibold"
+          className="w-full bg-telegram hover:bg-telegram/90 font-semibold"
         >
           Оплатить
+          {selectedPlan && ` ${calculateFinalPrice(PLANS.find(p => p.id === selectedPlan)?.price || 0)} ₽`}
         </Button>
       </div>
     </div>
