@@ -20,7 +20,7 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, MapPin, TrendingUp } from "lucide-react";
+import { Calendar, MapPin, TrendingUp, ArrowLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -607,18 +607,29 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         <div className="flex-1 flex flex-col">
           <header className="border-b bg-card px-4 py-3">
             <div className="flex justify-between items-center w-full">
-              <div className="flex flex-col gap-1">
-                <h1 
-                  className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => navigate('/dashboard')}
-                  title="Перейти на дашборд"
+              {currentSection !== "calendar" ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => setCurrentSection("calendar")}
+                  className="gap-2"
                 >
-                  {profile?.business_name}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(), "d MMMM", { locale: ru })}
-                </p>
-              </div>
+                  <ArrowLeft className="w-5 h-5" />
+                  На главную
+                </Button>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <h1 
+                    className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => navigate('/dashboard')}
+                    title="Перейти на дашборд"
+                  >
+                    {profile?.business_name}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(), "d MMMM", { locale: ru })}
+                  </p>
+                </div>
+              )}
               <SidebarTrigger />
             </div>
           </header>
@@ -766,83 +777,43 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
               )}
 
               {currentSection === "services" && (
-                <div className="space-y-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentSection("calendar")}
-                    className="mb-4"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    На главную
-                  </Button>
-                  <ServicesList
-                    services={services}
-                    onAdd={() => {
-                      setEditingService(null);
-                      setServiceDialogOpen(true);
-                    }}
-                    onEdit={(service) => {
-                      setEditingService(service);
-                      setServiceDialogOpen(true);
-                    }}
-                    onDelete={handleDeleteService}
-                  />
-                </div>
+                <ServicesList
+                  services={services}
+                  onAdd={() => {
+                    setEditingService(null);
+                    setServiceDialogOpen(true);
+                  }}
+                  onEdit={(service) => {
+                    setEditingService(service);
+                    setServiceDialogOpen(true);
+                  }}
+                  onDelete={handleDeleteService}
+                />
               )}
 
               {currentSection === "clients" && (
-                <div className="space-y-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentSection("calendar")}
-                    className="mb-4"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    На главную
-                  </Button>
-                  <ClientsList profileId={profile?.id} />
-                </div>
+                <ClientsList profileId={profile?.id} />
               )}
 
               {currentSection === "notifications" && (
-                <div className="space-y-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentSection("calendar")}
-                    className="mb-4"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    На главную
-                  </Button>
-                  <NotificationsSection 
-                    profileId={profile?.id}
-                    telegramChatId={profile?.telegram_chat_id}
-                  />
-                </div>
+                <NotificationsSection 
+                  profileId={profile?.id}
+                  telegramChatId={profile?.telegram_chat_id}
+                />
               )}
 
               {currentSection === "address" && (
-                <div className="space-y-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentSection("calendar")}
-                    className="mb-4"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    На главную
-                  </Button>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
-                    <Card className="p-6">
-                      <p className="text-muted-foreground mb-4">
-                        {profile?.address || "Адрес не указан"}
-                      </p>
-                      <Button onClick={() => setAddressDialogOpen(true)}>
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Изменить адрес
-                      </Button>
-                    </Card>
-                  </div>
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
+                  <Card className="p-6">
+                    <p className="text-muted-foreground mb-4">
+                      {profile?.address || "Адрес не указан"}
+                    </p>
+                    <Button onClick={() => setAddressDialogOpen(true)}>
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Изменить адрес
+                    </Button>
+                  </Card>
                 </div>
               )}
             </div>
