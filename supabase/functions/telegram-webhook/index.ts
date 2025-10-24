@@ -101,17 +101,8 @@ serve(async (req) => {
             }
           }
         }
-      } else {
-        // First-time start without deep link
-        if (botToken) {
-          const welcomeMessage = `Привет, ${userName}! 👋\n\nЯ бот для уведомлений о записях.\n\nЧтобы подключить уведомления, нажмите на ссылку в приложении или после создания записи.`;
-          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: welcomeMessage }),
-          });
-        }
       }
+      // Note: /start without parameters is ignored to allow custom bot commands
     }
 
     return new Response(
