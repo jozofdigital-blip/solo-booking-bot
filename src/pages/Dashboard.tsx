@@ -136,7 +136,39 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   useEffect(() => {
     checkAuth();
     loadData();
-  }, []);
+
+    // Real-time subscription для обновления профиля
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${profile?.id}`
+        },
+        (payload) => {
+          console.log('Profile updated:', payload);
+          setProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    // Обновление при возврате на страницу
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [profile?.id]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
