@@ -17,11 +17,12 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
       return false;
     }
 
-    // Exclude non-signable fields
+    // Remove hash and signature fields
     urlParams.delete('hash');
     urlParams.delete('signature');
     urlParams.delete('sign');
 
+    // Create data check string according to Telegram docs
     const dataCheckString = Array.from(urlParams.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}=${value}`)
@@ -29,34 +30,44 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
 
     console.log('Data check string:', dataCheckString);
 
-    // Helper to compute HMAC-SHA256
-    const hmac = async (keyData: ArrayBuffer, data: string) => {
-      const key = await crypto.subtle.importKey(
-        'raw',
-        keyData,
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      );
-      const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
-      return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
-    };
+    // Step 1: Create secret_key = HMAC_SHA256(key="WebAppData", data=bot_token)
+    const webAppDataKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode('WebAppData'),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
 
-    const botBytes = encoder.encode(botToken);
-    const webAppBytes = encoder.encode('WebAppData');
+    const secretKeyBytes = await crypto.subtle.sign(
+      'HMAC',
+      webAppDataKey,
+      encoder.encode(botToken)
+    );
 
-    // Two possible secret derivations seen in community examples; accept either to be robust
-    const secret1BytesSig = await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw', botBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), webAppBytes);
-    const secret2BytesSig = await crypto.subtle.sign('HMAC', await crypto.subtle.importKey('raw', webAppBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), botBytes);
+    // Step 2: Calculate hash = HMAC_SHA256(key=secret_key, data=data_check_string)
+    const secretKey = await crypto.subtle.importKey(
+      'raw',
+      secretKeyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
 
-    const calc1 = await hmac(secret1BytesSig, dataCheckString);
-    const calc2 = await hmac(secret2BytesSig, dataCheckString);
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      secretKey,
+      encoder.encode(dataCheckString)
+    );
+
+    const calculatedHash = Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
 
     console.log('Received hash:', receivedHash);
-    console.log('Calculated hash #1:', calc1);
-    console.log('Calculated hash #2:', calc2);
+    console.log('Calculated hash #1:', calculatedHash);
 
-    return receivedHash === calc1 || receivedHash === calc2;
+    return receivedHash === calculatedHash;
   } catch (error: any) {
     console.error('Verification error:', error);
     return false;
