@@ -82,6 +82,29 @@ export const TelegramSettingsDialog = ({
     }
   };
 
+  const handleDisconnect = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          telegram_chat_id: null,
+        })
+        .eq('id', profileId);
+
+      if (error) throw error;
+      
+      toast.success('Уведомления отключены');
+      onOpenChange(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error disconnecting notifications:', error);
+      toast.error('Ошибка при отключении уведомлений');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEnableNotifications = () => {
     const botUsername = "looktime_app_bot";
     const deeplink = `https://t.me/${botUsername}?start=connect_${profileId}`;
@@ -157,11 +180,12 @@ export const TelegramSettingsDialog = ({
               <>
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  variant="destructive"
+                  onClick={handleDisconnect}
+                  disabled={loading}
                   className="w-full sm:w-auto"
                 >
-                  Отмена
+                  {loading ? 'Отключение...' : 'Отключить уведомления'}
                 </Button>
                 <Button
                   onClick={handleSaveSettings}
