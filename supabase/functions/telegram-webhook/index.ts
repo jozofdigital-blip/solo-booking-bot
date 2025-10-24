@@ -124,27 +124,16 @@ serve(async (req) => {
           }
         }
       } else {
-        // /start without parameters - show welcome message with web app button
+        // /start without parameters - show welcome message
         if (botToken) {
           const welcomeMessage = `Привет! 👋\n\nЧтобы открыть приложение - нажмите "Запустить"\n👇`;
-          const webAppUrl = 'https://27fa0ea9-fc9d-49c2-9eaf-88525afe2b9c.lovableproject.com';
           
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: chatId,
-              text: welcomeMessage,
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: '🚀 Запустить',
-                      web_app: { url: webAppUrl }
-                    }
-                  ]
-                ]
-              }
+              text: welcomeMessage
             }),
           });
         }
