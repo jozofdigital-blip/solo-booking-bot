@@ -11,6 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Service {
   id?: string;
@@ -38,7 +45,7 @@ export const ServiceDialog = ({
     name: "",
     description: "",
     duration_minutes: 60,
-    price: 0,
+    price: undefined as any,
     is_active: true,
   });
 
@@ -50,7 +57,7 @@ export const ServiceDialog = ({
         name: "",
         description: "",
         duration_minutes: 60,
-        price: 0,
+        price: undefined as any,
         is_active: true,
       });
     }
@@ -105,30 +112,39 @@ export const ServiceDialog = ({
                 type="number"
                 min="0"
                 step="1"
-                value={formData.price}
+                value={formData.price || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, price: Number(e.target.value) })
                 }
+                placeholder="Введите цену"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duration">Длительность (мин) *</Label>
-              <Input
-                id="duration"
-                type="number"
-                min="15"
-                step="15"
-                value={formData.duration_minutes}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    duration_minutes: Number(e.target.value),
-                  })
+              <Label htmlFor="duration">Длительность *</Label>
+              <Select
+                value={formData.duration_minutes.toString()}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, duration_minutes: Number(value) })
                 }
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите время" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480].map(
+                    (minutes) => (
+                      <SelectItem key={minutes} value={minutes.toString()}>
+                        {minutes < 60 
+                          ? `${minutes} мин` 
+                          : `${Math.floor(minutes / 60)} ч ${minutes % 60 > 0 ? `${minutes % 60} мин` : ''}`}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

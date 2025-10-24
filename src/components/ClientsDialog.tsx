@@ -286,7 +286,23 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Remove all non-digits
+                    value = value.replace(/\D/g, '');
+                    // Add +7 prefix if not present
+                    if (!value.startsWith('7') && value.length > 0) {
+                      value = '7' + value;
+                    }
+                    if (value.length > 0) {
+                      value = '+' + value;
+                    }
+                    // Limit to +7 + 10 digits
+                    if (value.length > 12) {
+                      value = value.substring(0, 12);
+                    }
+                    setFormData({ ...formData, phone: value });
+                  }}
                   placeholder="+7 (XXX) XXX-XX-XX"
                 />
               </div>

@@ -382,7 +382,11 @@ export default function BookingPage() {
               selected={selectedDate}
               onSelect={setSelectedDate}
               locale={ru}
-              disabled={(date) => date < new Date()}
+              disabled={(date) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return date < today;
+              }}
               className="rounded-md border w-full"
             />
           </Card>
@@ -428,7 +432,23 @@ export default function BookingPage() {
               <Input
                 placeholder="Телефон *"
                 value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Remove all non-digits
+                  value = value.replace(/\D/g, '');
+                  // Add +7 prefix if not present
+                  if (!value.startsWith('7') && value.length > 0) {
+                    value = '7' + value;
+                  }
+                  if (value.length > 0) {
+                    value = '+' + value;
+                  }
+                  // Limit to +7 + 10 digits
+                  if (value.length > 12) {
+                    value = value.substring(0, 12);
+                  }
+                  setClientPhone(value);
+                }}
                 required
               />
 

@@ -306,9 +306,23 @@ export const AppointmentDialog = ({
               id="client_phone"
               type="tel"
               value={formData.client_phone}
-              onChange={(e) =>
-                setFormData({ ...formData, client_phone: e.target.value })
-              }
+              onChange={(e) => {
+                let value = e.target.value;
+                // Remove all non-digits
+                value = value.replace(/\D/g, '');
+                // Add +7 prefix if not present
+                if (!value.startsWith('7') && value.length > 0) {
+                  value = '7' + value;
+                }
+                if (value.length > 0) {
+                  value = '+' + value;
+                }
+                // Limit to +7 + 10 digits
+                if (value.length > 12) {
+                  value = value.substring(0, 12);
+                }
+                setFormData({ ...formData, client_phone: value });
+              }}
               required
               placeholder="+7 (999) 123-45-67"
             />
