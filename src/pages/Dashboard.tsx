@@ -23,7 +23,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Calendar, MapPin, TrendingUp, ArrowLeft, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ru } from "date-fns/locale";
 type DashboardMode = "main" | "calendar";
 
@@ -60,6 +60,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingAppointmentId, setCancellingAppointmentId] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [isTrial, setIsTrial] = useState(false);
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -225,6 +227,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       } else {
         setProfile(profileData);
         setBusinessName(profileData.business_name);
+        
+        // Check subscription status
+        checkSubscriptionStatus(profileData);
       }
 
       // Load services
@@ -285,6 +290,35 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     const { data, error } = await supabase.rpc('generate_unique_slug');
     if (error) throw error;
     return data;
+  };
+
+  const checkSubscriptionStatus = (profileData: any) => {
+    const now = new Date();
+    
+    // Check if user has active paid subscription
+    if (profileData.subscription_end_date) {
+      const endDate = new Date(profileData.subscription_end_date);
+      const days = differenceInDays(endDate, now);
+      if (days > 0) {
+        setDaysLeft(days);
+        setIsTrial(false);
+        return;
+      }
+    }
+    
+    // Check trial period
+    if (profileData.trial_end_date) {
+      const trialEnd = new Date(profileData.trial_end_date);
+      const days = differenceInDays(trialEnd, now);
+      if (days > 0) {
+        setDaysLeft(days);
+        setIsTrial(true);
+        return;
+      }
+    }
+    
+    // No active subscription or trial - block access
+    navigate('/subscription-blocked');
   };
 
   const handleLogout = async () => {
@@ -869,6 +903,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onLogout={handleLogout}
           onOpenWorkingHours={() => setWorkingHoursDialogOpen(true)}
           onEditBusinessName={openBusinessNameDialog}
+          onOpenSubscription={() => navigate('/subscription')}
+          daysLeft={daysLeft}
+          isTrial={isTrial}
         />
         {/* Dialogs */}
         <ServiceDialog

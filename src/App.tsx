@@ -11,6 +11,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const MyAppointments = lazy(() => import("./pages/MyAppointments"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const SubscriptionBlocked = lazy(() => import("./pages/SubscriptionBlocked"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/calendar" element={<Dashboard mode="calendar" />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/subscription-blocked" element={<SubscriptionBlocked />} />
             <Route path="/book/:slug" element={<BookingPage />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="*" element={<NotFound />} />

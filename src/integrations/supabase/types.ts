@@ -134,7 +134,9 @@ export type Database = {
           id: string
           notify_1h_before: boolean | null
           notify_24h_before: boolean | null
+          subscription_end_date: string | null
           telegram_chat_id: string | null
+          trial_end_date: string | null
           unique_slug: string
           updated_at: string
           user_id: string
@@ -148,7 +150,9 @@ export type Database = {
           id?: string
           notify_1h_before?: boolean | null
           notify_24h_before?: boolean | null
+          subscription_end_date?: string | null
           telegram_chat_id?: string | null
+          trial_end_date?: string | null
           unique_slug: string
           updated_at?: string
           user_id: string
@@ -162,10 +166,36 @@ export type Database = {
           id?: string
           notify_1h_before?: boolean | null
           notify_24h_before?: boolean | null
+          subscription_end_date?: string | null
           telegram_chat_id?: string | null
+          trial_end_date?: string | null
           unique_slug?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          discount_percent: number
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          discount_percent: number
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          discount_percent?: number
+          id?: string
+          is_active?: boolean | null
         }
         Relationships: []
       }

@@ -1,4 +1,4 @@
-import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2 } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -19,6 +19,9 @@ interface AppSidebarProps {
   onLogout: () => void;
   onOpenWorkingHours: () => void;
   onEditBusinessName: () => void;
+  onOpenSubscription: () => void;
+  daysLeft?: number | null;
+  isTrial?: boolean;
 }
 
 const navigationItems = [
@@ -29,7 +32,7 @@ const navigationItems = [
   { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
@@ -88,6 +91,28 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 <SidebarMenuButton onClick={onEditBusinessName}>
                   <Edit3 className="h-4 w-4" />
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={onOpenSubscription}
+                  className="bg-telegram/10 hover:bg-telegram/20 text-telegram border border-telegram/20"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {(!isCollapsed || isMobile) && (
+                    <div className="flex flex-col items-start">
+                      <span className="font-semibold">Мой тариф</span>
+                      {daysLeft !== null && daysLeft !== undefined && (
+                        <span className="text-xs">
+                          {isTrial 
+                            ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
+                            : `Активна ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
+                          }
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
