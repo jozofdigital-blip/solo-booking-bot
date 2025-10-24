@@ -108,9 +108,9 @@ export const TelegramSettingsDialog = ({
   const handleEnableNotifications = () => {
     const botUsername = "looktime_app_bot";
     const payload = `connect_${profileId}`;
-    const httpsLink = `https://t.me/${botUsername}?start=${payload}`;
-    // Navigate in the same tab to avoid extra windows/tabs
-    window.location.href = httpsLink;
+    // Use tg:// protocol to open directly in Telegram app
+    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
+    window.location.href = tgLink;
   };
 
   const handleCopyCommand = async () => {
