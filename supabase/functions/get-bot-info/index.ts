@@ -11,12 +11,12 @@ serve(async (req) => {
   }
 
   try {
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    if (!botToken) {
-      throw new Error('TELEGRAM_BOT_TOKEN not configured');
+    const clientToken = Deno.env.get('TELEGRAM_CLIENT_BOT_TOKEN');
+    if (!clientToken) {
+      throw new Error('TELEGRAM_CLIENT_BOT_TOKEN not configured');
     }
 
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    const response = await fetch(`https://api.telegram.org/bot${clientToken}/getMe`);
     const data = await response.json();
 
     if (!data.ok) {
