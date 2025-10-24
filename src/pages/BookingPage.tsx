@@ -111,6 +111,11 @@ export default function BookingPage() {
         .eq('profile_id', profileData.id);
       
       setWorkingHours(workingData || []);
+
+      // Автоматически выбрать текущую дату
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      setSelectedDate(today);
     } catch (error) {
       toast.error('Профиль не найден');
     }
