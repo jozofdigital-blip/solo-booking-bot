@@ -174,10 +174,29 @@ export default function BookingPage() {
     const endHour = parseInt(workingDay.end_time.split(':')[0]);
     const endMinute = parseInt(workingDay.end_time.split(':')[1]);
 
+    // Get current time in Moscow timezone
+    const now = new Date();
+    const moscowOffset = 3 * 60; // Moscow is UTC+3
+    const localOffset = now.getTimezoneOffset();
+    const moscowTime = new Date(now.getTime() + (moscowOffset + localOffset) * 60 * 1000);
+    
+    const currentHour = moscowTime.getHours();
+    const currentMinute = moscowTime.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    
+    // Check if selected date is today
+    const isToday = format(selectedDate, 'yyyy-MM-dd') === format(moscowTime, 'yyyy-MM-dd');
+
     const slots: string[] = [];
     for (let hour = startHour; hour <= endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        const slotTimeInMinutes = hour * 60 + minute;
+        
+        // Skip past time slots if it's today
+        if (isToday && slotTimeInMinutes <= currentTimeInMinutes) {
+          continue;
+        }
         
         // Check if slot has enough continuous time for the service
         if (hasEnoughContinuousTime(
