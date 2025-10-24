@@ -105,11 +105,14 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <Button 
                   onClick={onOpenSubscription}
-                  className="w-full justify-start bg-telegram hover:bg-telegram/90 text-white font-semibold"
+                  className="w-full justify-center bg-telegram hover:bg-telegram/90 text-white font-semibold"
                   size={isCollapsed ? "icon" : "default"}
                 >
-                  <CreditCard className="h-4 w-4" />
-                  {(!isCollapsed || isMobile) && <span className="ml-2">Мой тариф</span>}
+                  {(!isCollapsed || isMobile) ? (
+                    <span>Мой тариф</span>
+                  ) : (
+                    <CreditCard className="h-4 w-4" />
+                  )}
                 </Button>
               </SidebarMenuItem>
             </SidebarMenu>
