@@ -163,19 +163,12 @@ export const TelegramSettingsDialog = ({
             <>
               <Button 
                 asChild
-                className="bg-telegram hover:bg-telegram/90 w-full cursor-pointer"
+                className="bg-telegram hover:bg-telegram/90 w-full"
               >
                 <a
                   href={`tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const url = `tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`;
-                    try {
-                      (window.top || window).location.href = url;
-                    } catch {
-                      window.location.href = url;
-                    }
-                  }}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Включить уведомления

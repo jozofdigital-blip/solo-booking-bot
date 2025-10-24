@@ -43,19 +43,8 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
                 </Button>
               </div>
             ) : (
-              <Button asChild className="cursor-pointer">
-                <a
-                  href={tgLink}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const url = tgLink;
-                    try {
-                      (window.top || window).location.href = url;
-                    } catch {
-                      window.location.href = url;
-                    }
-                  }}
-                >
+              <Button asChild>
+                <a href={tgLink} target="_blank" rel="noopener noreferrer">
                   Подключить Telegram
                 </a>
               </Button>
