@@ -61,13 +61,13 @@ export default function Auth() {
       if (error) throw error;
 
       if (data?.success) {
-        // Parse the magic link to get the token
+        // Parse the magic link to get the token_hash
         const url = new URL(data.access_token);
-        const token = url.searchParams.get('token');
+        const tokenHash = url.searchParams.get('token_hash');
         
-        if (token) {
+        if (tokenHash) {
           const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: token,
+            token_hash: tokenHash,
             type: 'magiclink',
           });
 
@@ -75,6 +75,8 @@ export default function Auth() {
           
           toast.success('Добро пожаловать!');
           navigate('/dashboard');
+        } else {
+          throw new Error('Invalid magic link');
         }
       }
     } catch (error: any) {

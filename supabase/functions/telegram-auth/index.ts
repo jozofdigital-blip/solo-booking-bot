@@ -18,6 +18,9 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
     }
     
     urlParams.delete('hash');
+    // Some clients include extra signature fields; exclude them from the check
+    urlParams.delete('signature');
+    urlParams.delete('sign');
     
     const dataCheckString = Array.from(urlParams.entries())
       .sort(([a], [b]) => a.localeCompare(b))
@@ -26,10 +29,10 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
 
     console.log('Data check string:', dataCheckString);
 
-    // Step 1: Create secret key = HMAC-SHA-256("WebAppData", bot_token)
-    const webAppDataKey = await crypto.subtle.importKey(
+    // Step 1: Create secret key = HMAC-SHA-256(key=bot_token, message="WebAppData")
+    const botTokenKey = await crypto.subtle.importKey(
       'raw',
-      encoder.encode('WebAppData'),
+      encoder.encode(botToken),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
@@ -37,11 +40,11 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
 
     const secretKeyBytes = await crypto.subtle.sign(
       'HMAC',
-      webAppDataKey,
-      encoder.encode(botToken)
+      botTokenKey,
+      encoder.encode('WebAppData')
     );
 
-    // Step 2: Calculate hash = HMAC-SHA-256(secret_key, data_check_string)
+    // Step 2: Calculate hash = HMAC-SHA-256(key=secret_key, message=data_check_string)
     const secretKey = await crypto.subtle.importKey(
       'raw',
       secretKeyBytes,
