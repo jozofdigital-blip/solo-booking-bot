@@ -209,6 +209,17 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           .single();
 
         if (createError) throw createError;
+        
+        // Создать рабочие часы по умолчанию
+        const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
+          ...hour,
+          profile_id: newProfile.id
+        }));
+        
+        await supabase
+          .from('working_hours')
+          .insert(defaultHours);
+        
         setProfile(newProfile);
         setBusinessName(newProfile.business_name);
       } else {
@@ -246,7 +257,21 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           .eq('profile_id', profileData.id)
           .order('day_of_week', { ascending: true });
 
-        setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
+        // Если нет рабочих часов, создать по умолчанию
+        if (!workingHoursData || workingHoursData.length === 0) {
+          const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
+            ...hour,
+            profile_id: profileData.id
+          }));
+          
+          await supabase
+            .from('working_hours')
+            .insert(defaultHours);
+          
+          setWorkingHours(DEFAULT_WORKING_HOURS);
+        } else {
+          setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
+        }
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
