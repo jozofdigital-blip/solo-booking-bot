@@ -7,51 +7,67 @@ const corsHeaders = {
 };
 
 async function verifyTelegramWebAppData(initData: string, botToken: string): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const urlParams = new URLSearchParams(initData);
-  const hash = urlParams.get('hash');
-  urlParams.delete('hash');
-  
-  const dataCheckString = Array.from(urlParams.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
+  try {
+    const encoder = new TextEncoder();
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    
+    if (!hash) {
+      console.error('No hash in initData');
+      return false;
+    }
+    
+    urlParams.delete('hash');
+    
+    const dataCheckString = Array.from(urlParams.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
 
-  // Create secret key
-  const secretKeyData = encoder.encode(botToken);
-  const secretKey = await crypto.subtle.importKey(
-    'raw',
-    await crypto.subtle.digest('SHA-256', encoder.encode('WebAppData')),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+    console.log('Data check string:', dataCheckString);
 
-  // Create data check key
-  const dataCheckKey = await crypto.subtle.sign(
-    'HMAC',
-    secretKey,
-    secretKeyData
-  );
+    // Step 1: Create secret key = HMAC-SHA-256("WebAppData", bot_token)
+    const webAppDataKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode('WebAppData'),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
 
-  const key = await crypto.subtle.importKey(
-    'raw',
-    dataCheckKey,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+    const secretKeyBytes = await crypto.subtle.sign(
+      'HMAC',
+      webAppDataKey,
+      encoder.encode(botToken)
+    );
 
-  const signature = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(dataCheckString)
-  );
+    // Step 2: Calculate hash = HMAC-SHA-256(secret_key, data_check_string)
+    const secretKey = await crypto.subtle.importKey(
+      'raw',
+      secretKeyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
 
-  const hashArray = Array.from(new Uint8Array(signature));
-  const calculatedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      secretKey,
+      encoder.encode(dataCheckString)
+    );
 
-  return calculatedHash === hash;
+    const hashArray = Array.from(new Uint8Array(signature));
+    const calculatedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Calculated hash:', calculatedHash);
+    console.log('Received hash:', hash);
+    console.log('Match:', calculatedHash === hash);
+
+    return calculatedHash === hash;
+  } catch (error: any) {
+    console.error('Verification error:', error);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -61,6 +77,8 @@ serve(async (req) => {
 
   try {
     const { initData } = await req.json();
+    
+    console.log('Received initData:', initData ? 'present' : 'missing');
     
     if (!initData) {
       throw new Error('No initData provided');
@@ -72,10 +90,15 @@ serve(async (req) => {
     }
 
     // Verify Telegram data
+    console.log('Starting verification...');
     const isValid = await verifyTelegramWebAppData(initData, BOT_TOKEN);
+    
     if (!isValid) {
-      throw new Error('Invalid Telegram data');
+      console.error('Telegram data verification failed');
+      throw new Error('Invalid Telegram data signature');
     }
+    
+    console.log('Telegram data verified successfully');
 
     const urlParams = new URLSearchParams(initData);
     const userJson = urlParams.get('user');
