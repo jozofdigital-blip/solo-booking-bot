@@ -107,13 +107,35 @@ serve(async (req) => {
     }
 
     const tokens = TOKENS_RAW.split(',').map((s) => s.trim()).filter(Boolean);
+    console.log('Available tokens count:', tokens.length);
+    console.log('Token endings:', tokens.map(t => '...' + t.slice(-8)));
 
-    // SECURITY NOTE: Temporarily disable signature verification
-    // In production, you should always verify the signature using the correct bot token
-    console.log('WARNING: Signature verification disabled - ensure you trust the source');
-    const matchedToken = tokens[0];
+    // Get bot info for debugging
+    const botsInfo = await getBotsInfo(tokens);
+    console.log('Bots info:', JSON.stringify(botsInfo));
+
+    // Try verification with detailed logging
+    console.log('Starting verification...');
+    let matchedToken = null;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      console.log(`Trying token ${i + 1}/${tokens.length} (ending: ...${token.slice(-8)})`);
+      const isValid = await verifyTelegramWebAppData(initData, token);
+      if (isValid) {
+        matchedToken = token;
+        console.log(`✅ Token ${i + 1} worked!`);
+        break;
+      } else {
+        console.log(`❌ Token ${i + 1} failed`);
+      }
+    }
     
-    console.log('Proceeding without signature verification (for development only)');
+    if (!matchedToken) {
+      console.error('All tokens failed verification');
+      throw new Error('Invalid Telegram data signature - no token matched');
+    }
+    
+    console.log('Telegram data verified successfully');
 
     const urlParams = new URLSearchParams(initData);
     const userJson = urlParams.get('user');
