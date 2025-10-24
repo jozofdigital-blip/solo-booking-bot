@@ -12,8 +12,8 @@ interface NotificationsSectionProps {
 export function NotificationsSection({ profileId, telegramChatId }: NotificationsSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Прямая ссылка в Telegram app
-  const tgLink = `tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`;
+  // Прямая ссылка в Telegram bot
+  const tgLink = `https://t.me/looktime_app_bot?start=connect_${profileId}`;
 
   return (
     <div className="space-y-4">

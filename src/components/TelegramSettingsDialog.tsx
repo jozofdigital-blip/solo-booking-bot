@@ -166,7 +166,7 @@ export const TelegramSettingsDialog = ({
                 className="bg-telegram hover:bg-telegram/90 w-full"
               >
                 <a
-                  href={`tg://resolve?domain=looktime_app_bot&start=connect_${profileId}`}
+                  href={`https://t.me/looktime_app_bot?start=connect_${profileId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
