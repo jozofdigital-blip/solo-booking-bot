@@ -71,6 +71,22 @@ async function verifyWithAnyToken(initData: string, tokens: string[]): Promise<s
   return null;
 }
 
+// duplicate removed
+
+async function getBotsInfo(tokens: string[]) {
+  const infos: { tokenTail: string; username?: string; ok: boolean }[] = [];
+  for (const t of tokens) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${t}/getMe`);
+      const json = await res.json();
+      infos.push({ tokenTail: t.slice(-6), username: json?.result?.username, ok: json.ok === true });
+    } catch (_e) {
+      infos.push({ tokenTail: t.slice(-6), ok: false });
+    }
+  }
+  return infos;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
