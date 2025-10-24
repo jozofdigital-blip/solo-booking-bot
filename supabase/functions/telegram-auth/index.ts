@@ -63,6 +63,14 @@ async function verifyTelegramWebAppData(initData: string, botToken: string): Pro
   }
 }
 
+async function verifyWithAnyToken(initData: string, tokens: string[]): Promise<string | null> {
+  for (const token of tokens) {
+    const ok = await verifyTelegramWebAppData(initData, token);
+    if (ok) return token;
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,21 +85,23 @@ serve(async (req) => {
       throw new Error('No initData provided');
     }
 
-    const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    if (!BOT_TOKEN) {
-      throw new Error('TELEGRAM_BOT_TOKEN not configured');
+    const TOKENS_RAW = Deno.env.get('TELEGRAM_BOT_TOKENS') || Deno.env.get('TELEGRAM_BOT_TOKEN');
+    if (!TOKENS_RAW) {
+      throw new Error('TELEGRAM_BOT_TOKEN(S) not configured');
     }
+
+    const tokens = TOKENS_RAW.split(',').map((s) => s.trim()).filter(Boolean);
 
     // Verify Telegram data
     console.log('Starting verification...');
-    const isValid = await verifyTelegramWebAppData(initData, BOT_TOKEN);
+    const matchedToken = await verifyWithAnyToken(initData, tokens);
     
-    if (!isValid) {
+    if (!matchedToken) {
       console.error('Telegram data verification failed');
       throw new Error('Invalid Telegram data signature');
     }
     
-    console.log('Telegram data verified successfully');
+    console.log('Telegram data verified successfully with one of the configured tokens');
 
     const urlParams = new URLSearchParams(initData);
     const userJson = urlParams.get('user');
@@ -148,9 +158,13 @@ serve(async (req) => {
 
     if (!profile) {
       const businessName = telegramUser.first_name || 'Мой бизнес';
+      const { data: slugRes, error: slugError } = await supabase.rpc('generate_unique_slug');
+      if (slugError) console.error('Slug generation error:', slugError);
+      const unique_slug = (slugRes as any) || `biz_${telegramId}`;
       const { error: profileError } = await supabase.from('profiles').insert({
         user_id: authUser.id,
         business_name: businessName,
+        unique_slug,
         telegram_chat_id: telegramId,
         avatar_url: telegramUser.photo_url || null,
       });
