@@ -15,10 +15,9 @@ export function NotificationsSection({ profileId, telegramChatId }: Notification
   const handleConnect = () => {
     const botUsername = "looktime_app_bot";
     const payload = `connect_${profileId}`;
-    const httpsLink = `https://t.me/${botUsername}?start=${payload}`;
-    
-    // Open in new window
-    window.open(httpsLink, '_blank', 'noopener,noreferrer');
+    const tgLink = `tg://resolve?domain=${botUsername}&start=${payload}`;
+    // Open directly in Telegram app (no extra windows)
+    window.location.href = tgLink;
   };
 
   return (
