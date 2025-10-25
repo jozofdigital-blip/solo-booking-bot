@@ -121,7 +121,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   className="hover:bg-muted/50 transition-colors text-destructive"
                 >
                   <div className="flex items-center gap-3">
-                    <LogOut className="h-5 w-5 text-telegram" />
+                    <LogOut className="h-5 w-5 text-destructive" />
                     {(!isCollapsed || isMobile) && <span className="text-base">Выйти</span>}
                   </div>
                 </SidebarMenuButton>
