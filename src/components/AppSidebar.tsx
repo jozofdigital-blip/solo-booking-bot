@@ -74,33 +74,67 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                           toggleSidebar();
                         }
                       }}
-                      className={isActive ? "bg-accent text-accent-foreground" : ""}
+                      className={`relative overflow-hidden group transition-all duration-300 ${
+                        isActive 
+                          ? "bg-gradient-to-r from-primary/20 to-primary/10 border-l-4 border-primary text-primary shadow-md" 
+                          : "hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30"
+                      }`}
                       >
-                        <Icon className="h-9 w-9" />
-                        {(!isCollapsed || isMobile) && <span className="text-base font-medium">{item.title}</span>}
+                        <div className={`flex items-center gap-3 ${isActive ? "scale-105" : ""} transition-transform`}>
+                          <div className={`p-2 rounded-lg ${isActive ? "bg-primary/10" : "bg-muted group-hover:bg-primary/5"} transition-colors`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          {(!isCollapsed || isMobile) && (
+                            <span className="text-base font-medium">{item.title}</span>
+                          )}
+                        </div>
+                        {isActive && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50" />
+                        )}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
 
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onOpenWorkingHours}>
-                  <CalendarCog className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Мой график</span>}
+                <SidebarMenuButton 
+                  onClick={onOpenWorkingHours}
+                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/5 transition-colors">
+                      <CalendarCog className="h-5 w-5" />
+                    </div>
+                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Мой график</span>}
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onEditBusinessName}>
-                  <Edit3 className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Изменить название</span>}
+                <SidebarMenuButton 
+                  onClick={onEditBusinessName}
+                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/5 transition-colors">
+                      <Edit3 className="h-5 w-5" />
+                    </div>
+                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Изменить название</span>}
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
-                  <LogOut className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Выйти</span>}
+                <SidebarMenuButton 
+                  onClick={onLogout} 
+                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-destructive/10 hover:to-transparent hover:border-l-4 hover:border-destructive/30 text-destructive transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted group-hover:bg-destructive/5 transition-colors">
+                      <LogOut className="h-5 w-5" />
+                    </div>
+                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Выйти</span>}
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -114,13 +148,16 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <Button 
                   onClick={onOpenSubscription}
-                  className="w-full justify-center bg-telegram hover:bg-telegram/90 text-white font-semibold text-base"
+                  className="w-full justify-center bg-gradient-to-r from-telegram via-telegram to-telegram/80 hover:from-telegram/90 hover:via-telegram/90 hover:to-telegram/70 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                   size={isCollapsed ? "icon" : "default"}
                 >
                   {(!isCollapsed || isMobile) ? (
-                    <span>Мой тариф</span>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      <span>Мой тариф</span>
+                    </div>
                   ) : (
-                    <CreditCard className="h-9 w-9" />
+                    <CreditCard className="h-5 w-5" />
                   )}
                 </Button>
               </SidebarMenuItem>

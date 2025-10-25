@@ -200,7 +200,6 @@ export const WeekCalendar = ({
           {/* Header with days */}
           <div className="grid grid-cols-8 border-b bg-muted/50 sticky top-0 z-10">
             <div className="p-1 md:p-2 text-xs md:text-sm font-medium border-r bg-muted/50 min-w-[50px] flex items-center justify-center">
-              Время
             </div>
             {weekDays.map((day) => {
               const isCurrentDay = isSameDay(day, new Date());

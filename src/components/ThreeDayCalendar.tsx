@@ -180,7 +180,7 @@ export const ThreeDayCalendar = ({
           ))}
         </div>
 
-        <div className="overflow-auto max-h-[600px]">
+        <div>
           {timeSlots.map((time, idx) => (
             <div key={time} className="grid grid-cols-[60px_1fr_1fr_1fr] border-t min-h-[60px]">
               <div className="p-2 text-xs text-muted-foreground border-r flex items-start">
