@@ -146,56 +146,43 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   useEffect(() => {
     checkAuth();
     loadData();
+  }, []);
 
-    // Real-time subscription для обновления профиля
-    const profileChannel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${profile?.id}`
-        },
-        (payload) => {
-          console.log('Profile updated:', payload);
-          setProfile(payload.new);
-        }
-      )
-      .subscribe();
+  // Separate effect for realtime subscriptions (only when profile exists)
+  useEffect(() => {
+    if (!profile?.id) return;
 
     // Real-time subscription для обновления appointments
     const appointmentsChannel = supabase
-      .channel('appointments-changes')
+      .channel('appointments-realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'appointments',
-          filter: `profile_id=eq.${profile?.id}`
+          filter: `profile_id=eq.${profile.id}`
         },
-        () => {
-          console.log('Appointments updated');
-          loadData();
+        async (payload) => {
+          console.log('Appointments realtime update:', payload.eventType);
+          
+          // Reload only appointments data instead of full loadData
+          const { data: appointmentsData } = await supabase
+            .from('appointments')
+            .select(`
+              *,
+              services (name, duration_minutes)
+            `)
+            .eq('profile_id', profile.id)
+            .order('appointment_date', { ascending: true });
+
+          setAppointments(appointmentsData || []);
         }
       )
       .subscribe();
 
-    // Обновление при возврате на страницу
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
-      supabase.removeChannel(profileChannel);
       supabase.removeChannel(appointmentsChannel);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [profile?.id]);
 

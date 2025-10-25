@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { ru } from "date-fns/locale";
 import { format } from "date-fns";
 import { Clock } from "lucide-react";
-import { hasEnoughContinuousTime } from "@/lib/utils";
+import { hasEnoughContinuousTime, hasAppointmentOverlap } from "@/lib/utils";
 import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
 
 export default function BookingPage() {
@@ -225,6 +225,24 @@ export default function BookingPage() {
 
     setLoading(true);
     try {
+      // Check for appointment overlap before inserting
+      const selectedServiceData = services.find(s => s.id === selectedService);
+      const serviceDuration = selectedServiceData?.duration_minutes || 60;
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+      const hasOverlap = hasAppointmentOverlap(
+        dateStr,
+        selectedTime,
+        serviceDuration,
+        appointments
+      );
+
+      if (hasOverlap) {
+        toast.error('Это время уже занято. Пожалуйста, выберите другое время.');
+        setLoading(false);
+        return;
+      }
+
       const { data: newAppointment, error } = await supabase
         .from('appointments')
         .insert({
@@ -232,7 +250,7 @@ export default function BookingPage() {
           profile_id: profile.id,
           client_name: clientName,
           client_phone: clientPhone,
-          appointment_date: format(selectedDate, 'yyyy-MM-dd'),
+          appointment_date: dateStr,
           appointment_time: selectedTime,
           status: 'pending'
         })
