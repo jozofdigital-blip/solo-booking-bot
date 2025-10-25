@@ -30,7 +30,7 @@ export default function BookingPage() {
   const [clientId, setClientId] = useState<string>("");
   const [clientHasTelegram, setClientHasTelegram] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [loadedDateKey, setLoadedDateKey] = useState<string | null>(null);
+  
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
@@ -148,7 +148,6 @@ export default function BookingPage() {
       }));
 
       setAppointments(appointmentsWithDuration);
-      setLoadedDateKey(dateStr);
     } catch (err) {
       // Silent fail - slots remain empty
     } finally {
@@ -157,12 +156,7 @@ export default function BookingPage() {
   };
   useEffect(() => {
     if (selectedDate && profile) {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      
-      // Only load if we haven't loaded this date yet
-      if (loadedDateKey !== dateStr) {
-        loadAppointments(selectedDate);
-      }
+      loadAppointments(selectedDate);
 
       // Subscribe to real-time updates for this profile's appointments
       const channel = supabase
@@ -175,10 +169,10 @@ export default function BookingPage() {
             table: 'appointments',
             filter: `profile_id=eq.${profile.id}`
           },
-          (payload) => {
+          () => {
             // Force immediate reload on any appointment change
             loadAppointments(selectedDate).then(() => {
-              setSelectedTime(''); // Reset selected time if slot becomes unavailable
+              setSelectedTime('');
             });
           }
         )
@@ -188,7 +182,7 @@ export default function BookingPage() {
         supabase.removeChannel(channel);
       };
     }
-  }, [selectedDate, profile, loadedDateKey]);
+  }, [selectedDate, profile]);
 
   // Auto-reload slots when service changes (to recalculate available slots with correct duration)
   useEffect(() => {
@@ -197,6 +191,34 @@ export default function BookingPage() {
     }
   }, [selectedService, services]);
 
+  // Reload slots when page regains focus or becomes visible
+  useEffect(() => {
+    if (!selectedDate || !profile) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadAppointments(selectedDate);
+      }
+    };
+    const handleFocus = () => loadAppointments(selectedDate);
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [selectedDate, profile]);
+
+  // Lightweight polling to keep slots in sync for public pages
+  useEffect(() => {
+    if (!selectedDate || !profile) return;
+    const interval = setInterval(() => {
+      loadAppointments(selectedDate);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [selectedDate, profile]);
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
       return [];
