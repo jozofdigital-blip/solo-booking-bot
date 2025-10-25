@@ -438,7 +438,10 @@ export const AppointmentDialog = ({
 
         {/* Client Selection Dialog */}
         <Dialog open={selectClientDialogOpen} onOpenChange={setSelectClientDialogOpen}>
-          <DialogContent className="max-w-md max-h-[70vh]">
+          <DialogContent 
+            className="max-w-md max-h-[70vh]"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle>Выбрать клиента</DialogTitle>
             </DialogHeader>
