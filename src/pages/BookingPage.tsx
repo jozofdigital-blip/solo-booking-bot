@@ -103,22 +103,21 @@ export default function BookingPage() {
       if (error) throw error;
       setProfile(profileData);
 
-      const { data: servicesData } = await supabase
-        .from('services')
-        .select('*')
-        .eq('profile_id', profileData.id)
-        .eq('is_active', true);
+      // Параллельная загрузка услуг и рабочих часов
+      const [servicesResult, workingHoursResult] = await Promise.all([
+        supabase
+          .from('services')
+          .select('*')
+          .eq('profile_id', profileData.id)
+          .eq('is_active', true),
+        supabase
+          .from('working_hours')
+          .select('*')
+          .eq('profile_id', profileData.id)
+      ]);
 
-      setServices(servicesData || []);
-
-      // Load working hours
-      const { data: workingData } = await supabase
-        .from('working_hours')
-        .select('*')
-        .eq('profile_id', profileData.id);
-      
-      console.log('Working hours loaded:', workingData);
-      setWorkingHours(workingData || []);
+      setServices(servicesResult.data || []);
+      setWorkingHours(workingHoursResult.data || []);
     } catch (error) {
       toast.error('Профиль не найден');
     }

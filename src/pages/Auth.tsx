@@ -25,14 +25,14 @@ export default function Auth() {
 
   const authenticateWithTelegram = async () => {
     try {
-      // Check if already authenticated
+      // Быстрая проверка авторизации
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate('/dashboard');
         return;
       }
 
-      // Check if Telegram Web App is available
+      // Проверка Telegram Web App
       if (!window.Telegram?.WebApp) {
         toast.error('Это приложение работает только в Telegram');
         setLoading(false);
@@ -53,28 +53,25 @@ export default function Auth() {
       const user = tg.initDataUnsafe?.user;
       setTelegramUser(user);
 
-      // Authenticate with backend
+      // Оптимизированная авторизация через backend
       const { data, error } = await supabase.functions.invoke('telegram-auth', {
         body: { initData }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
-        const tokenHash = data.hashed_token;
-        if (tokenHash) {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: 'magiclink',
-          });
+      if (data?.success && data?.hashed_token) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.hashed_token,
+          type: 'magiclink',
+        });
 
-          if (verifyError) throw verifyError;
-          
-          toast.success('Добро пожаловать!');
-          navigate('/dashboard');
-        } else {
-          throw new Error('Invalid magic link');
-        }
+        if (verifyError) throw verifyError;
+        
+        toast.success('Добро пожаловать!');
+        navigate('/dashboard');
+      } else {
+        throw new Error('Invalid authentication response');
       }
     } catch (error: any) {
       console.error('Auth error:', error);

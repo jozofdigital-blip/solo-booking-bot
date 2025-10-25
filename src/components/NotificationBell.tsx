@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Bell, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,13 +37,28 @@ export const NotificationBell = ({
   services,
 }: NotificationBellProps) => {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Appointment[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [locallyReadIds, setLocallyReadIds] = useState<Set<string>>(new Set());
 
+  // Мемоизация для оптимизации
+  const { notifications, unreadCount } = useMemo(() => {
+    const unviewed = appointments.filter(apt =>
+      !apt.notification_viewed &&
+      (apt.status === 'pending' || apt.status === 'cancelled' || apt.status === 'confirmed') &&
+      !locallyReadIds.has(apt.id)
+    );
+
+    const sorted = [...unviewed].sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    return {
+      notifications: sorted,
+      unreadCount: sorted.length
+    };
+  }, [appointments, locallyReadIds]);
+
   useEffect(() => {
-    // If backend reset notification_viewed to false (e.g., after cancellation),
-    // allow this notification to reappear by removing it from local read set
+    // Синхронизация локального состояния с сервером
     setLocallyReadIds((prev) => {
       let changed = false;
       const next = new Set(prev);
@@ -55,32 +70,21 @@ export const NotificationBell = ({
       });
       return changed ? next : prev;
     });
-
-    const unviewed = appointments.filter(apt =>
-      !apt.notification_viewed &&
-      (apt.status === 'pending' || apt.status === 'cancelled' || apt.status === 'confirmed') &&
-      !locallyReadIds.has(apt.id)
-    );
-
-    const sorted = [...unviewed].sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    setNotifications(sorted);
-    setUnreadCount(sorted.length);
-  }, [appointments, locallyReadIds]);
+  }, [appointments]);
 
   const markAsReadById = async (id: string) => {
-    // Optimistically mark as read locally
+    // Оптимистичное обновление
     setLocallyReadIds((prev) => {
       const next = new Set(prev);
       next.add(id);
       return next;
     });
+    
     const { error } = await supabase
       .from("appointments")
       .update({ notification_viewed: true })
       .eq("id", id);
+      
     if (error) {
       setLocallyReadIds((prev) => {
         const next = new Set(prev);

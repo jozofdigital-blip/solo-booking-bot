@@ -165,19 +165,45 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           filter: `profile_id=eq.${profile.id}`
         },
         async (payload) => {
-          // Realtime update received
-          
-          // Reload only appointments data instead of full loadData
-          const { data: appointmentsData } = await supabase
-            .from('appointments')
-            .select(`
-              *,
-              services (name, duration_minutes)
-            `)
-            .eq('profile_id', profile.id)
-            .order('appointment_date', { ascending: true });
-
-          setAppointments(appointmentsData || []);
+          // Оптимизированное обновление без полной перезагрузки
+          if (payload.eventType === 'INSERT') {
+            // Добавляем новую запись
+            const { data } = await supabase
+              .from('appointments')
+              .select(`
+                *,
+                services (name, duration_minutes)
+              `)
+              .eq('id', payload.new.id)
+              .single();
+            
+            if (data) {
+              setAppointments(prev => [...prev, data].sort((a, b) => 
+                new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()
+              ));
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Обновляем существующую запись
+            const { data } = await supabase
+              .from('appointments')
+              .select(`
+                *,
+                services (name, duration_minutes)
+              `)
+              .eq('id', payload.new.id)
+              .single();
+            
+            if (data) {
+              setAppointments(prev => 
+                prev.map(apt => apt.id === data.id ? data : apt)
+              );
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Удаляем запись
+            setAppointments(prev => 
+              prev.filter(apt => apt.id !== payload.old.id)
+            );
+          }
         }
       )
       .subscribe();
@@ -250,40 +276,37 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       // Check subscription status for all users
       checkSubscriptionStatus(currentProfile);
 
-      // Load services
-      if (profileData?.id) {
-        const { data: servicesData } = await supabase
-          .from('services')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .order('created_at', { ascending: false });
+      // Параллельная загрузка всех данных для ускорения
+      if (currentProfile?.id) {
+        const [servicesResult, appointmentsResult, workingHoursResult] = await Promise.all([
+          supabase
+            .from('services')
+            .select('*')
+            .eq('profile_id', currentProfile.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('appointments')
+            .select(`
+              *,
+              services (name, duration_minutes)
+            `)
+            .eq('profile_id', currentProfile.id)
+            .order('appointment_date', { ascending: true }),
+          supabase
+            .from('working_hours')
+            .select('*')
+            .eq('profile_id', currentProfile.id)
+            .order('day_of_week', { ascending: true })
+        ]);
 
-        setServices(servicesData || []);
-
-        // Load appointments with service duration
-        const { data: appointmentsData } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            services (name, duration_minutes)
-          `)
-          .eq('profile_id', profileData.id)
-          .order('appointment_date', { ascending: true });
-
-        setAppointments(appointmentsData || []);
-
-        // Load working hours
-        const { data: workingHoursData } = await supabase
-          .from('working_hours')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .order('day_of_week', { ascending: true });
+        setServices(servicesResult.data || []);
+        setAppointments(appointmentsResult.data || []);
 
         // Если нет рабочих часов, создать по умолчанию
-        if (!workingHoursData || workingHoursData.length === 0) {
+        if (!workingHoursResult.data || workingHoursResult.data.length === 0) {
           const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
             ...hour,
-            profile_id: profileData.id
+            profile_id: currentProfile.id
           }));
           
           await supabase
@@ -292,7 +315,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           
           setWorkingHours(DEFAULT_WORKING_HOURS);
         } else {
-          setWorkingHours(mergeWithDefaultWorkingHours(workingHoursData));
+          setWorkingHours(mergeWithDefaultWorkingHours(workingHoursResult.data));
         }
       }
     } catch (error: any) {
