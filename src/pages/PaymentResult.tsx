@@ -9,7 +9,6 @@ export default function PaymentResult() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'pending' | 'failed' | null>(null);
-  const [telegramBotLink, setTelegramBotLink] = useState<string>("");
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -18,12 +17,6 @@ export default function PaymentResult() {
         if (!user) {
           navigate("/auth");
           return;
-        }
-
-        // Load bot info
-        const { data: botInfo } = await supabase.functions.invoke('get-bot-info');
-        if (botInfo?.username) {
-          setTelegramBotLink(`https://t.me/${botInfo.username}`);
         }
 
         // Get user's profile
@@ -128,19 +121,8 @@ export default function PaymentResult() {
         )}
 
         <div className="space-y-3">
-          {telegramBotLink && (
-            <Button
-              onClick={() => window.open(telegramBotLink, '_blank')}
-              className="w-full bg-telegram hover:bg-telegram/90"
-              size="lg"
-            >
-              Перейти в Telegram-бот
-            </Button>
-          )}
-          
           <Button
             onClick={() => navigate('/dashboard')}
-            variant="outline"
             className="w-full"
             size="lg"
           >
