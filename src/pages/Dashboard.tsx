@@ -22,8 +22,9 @@ import {
   WorkingHoursDialog,
 } from "@/components/WorkingHoursDialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Calendar, MapPin, TrendingUp, ArrowLeft, Share2 } from "lucide-react";
+import { Calendar, MapPin, TrendingUp, ArrowLeft, Share2, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -739,17 +740,25 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   На главную
                 </Button>
               ) : (
-                <div className="flex flex-col gap-1">
-                  <h1 
-                    className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => navigate('/dashboard')}
-                    title="Перейти на дашборд"
-                  >
-                    {profile?.business_name}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(), "d MMMM", { locale: ru })}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.business_name} />
+                    <AvatarFallback className="bg-primary/10">
+                      <User className="h-5 w-5 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5">
+                    <h1 
+                      className="text-xl font-bold cursor-pointer hover:text-primary transition-colors leading-tight"
+                      onClick={() => navigate('/dashboard')}
+                      title="Перейти на дашборд"
+                    >
+                      {profile?.business_name}
+                    </h1>
+                    <p className="text-sm text-muted-foreground leading-tight">
+                      {format(new Date(), "d MMMM", { locale: ru })}
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="flex items-center gap-1">
