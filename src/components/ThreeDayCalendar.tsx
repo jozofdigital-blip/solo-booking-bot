@@ -100,6 +100,8 @@ export const ThreeDayCalendar = ({
   const getAppointmentsForTimeSlot = (date: Date, time: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
+      // Exclude cancelled appointments
+      if (apt.status === 'cancelled') return false;
       if (apt.appointment_date !== dateStr) return false;
       
       const aptTime = apt.appointment_time.substring(0, 5);
@@ -219,19 +221,18 @@ export const ThreeDayCalendar = ({
                     )}
                     
                     {dayAppointments.length > 0 && (() => {
+                      // Only show appointments that START in this slot
                       const firstSlotAppointments = dayAppointments.filter(apt => isFirstSlotOfAppointment(day, time, apt));
                       
                       return firstSlotAppointments.map((apt, index) => {
                         const durationSlots = getAppointmentDurationSlots(apt);
                         const height = durationSlots * 60;
                         const isHighlighted = apt.id === highlightedAppointmentId;
-                        const leftOffset = index * 4;
-                        const widthReduction = firstSlotAppointments.length > 1 ? (firstSlotAppointments.length - 1) * 4 : 0;
                         
                         return (
                           <div
                             key={apt.id}
-                            className={`absolute p-2 rounded cursor-pointer overflow-hidden ${
+                            className={`absolute inset-x-0 p-2 rounded cursor-pointer overflow-hidden ${
                               isPast 
                                 ? "bg-gray-200 border-l-4 border-gray-400" 
                                 : isHighlighted && highlightColor === 'green'
@@ -242,8 +243,6 @@ export const ThreeDayCalendar = ({
                             }`}
                             style={{ 
                               height: `${height}px`,
-                              left: `${leftOffset}px`,
-                              right: `${widthReduction - leftOffset}px`,
                               top: 0,
                               zIndex: 10 + index
                             }}

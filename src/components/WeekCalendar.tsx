@@ -127,6 +127,8 @@ export const WeekCalendar = ({
     const slotTime = hour * 60 + minute;
     
     return appointments.filter((apt) => {
+      // Exclude cancelled appointments
+      if (apt.status === 'cancelled') return false;
       if (apt.appointment_date !== dateStr) return false;
       
       const [aptHour, aptMinute] = apt.appointment_time.split(':').map(Number);
@@ -275,26 +277,23 @@ export const WeekCalendar = ({
                       )}
 
                       {slotAppointments.length > 0 && (() => {
+                        // Only show appointments that START in this slot
                         const firstSlotAppointments = slotAppointments.filter(apt => isFirstSlotOfAppointment(day, hour, minute, apt));
                         
                         return firstSlotAppointments.map((apt, index) => {
                           const durationSlots = getAppointmentDurationSlots(apt);
                           const height = durationSlots * 50;
-                          const leftOffset = index * 3;
-                          const widthReduction = firstSlotAppointments.length > 1 ? (firstSlotAppointments.length - 1) * 3 : 0;
                           
                           return (
                             <div
                               key={apt.id}
-                              className={`absolute p-1 md:p-2 rounded cursor-pointer overflow-hidden ${
+                              className={`absolute inset-x-0 p-1 md:p-2 rounded cursor-pointer overflow-hidden ${
                                 isPast
                                   ? "bg-gray-200 border-l-4 border-gray-400"
                                   : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
                               }`}
                               style={{ 
                                 height: `${height}px`,
-                                left: `${leftOffset}px`,
-                                right: `${widthReduction - leftOffset}px`,
                                 top: 0,
                                 zIndex: 10 + index
                               }}
