@@ -384,18 +384,17 @@ export default function BookingPage() {
         }
       }
 
-      // Try to find existing client by phone to check Telegram status
-      const { data: existingClients } = await supabase
-        .from('profiles')
-        .select(`
-          clients!inner(telegram_chat_id)
-        `)
-        .eq('id', profile.id)
-        .eq('clients.phone', clientPhone);
+      // Check if client has Telegram by querying clients table directly
+      const { data: clientWithTelegram } = await supabase
+        .from('clients')
+        .select('telegram_chat_id')
+        .eq('phone', clientPhone)
+        .eq('profile_id', profile.id)
+        .not('telegram_chat_id', 'is', null)
+        .maybeSingle();
       
-      const hasTelegram = existingClients && existingClients.length > 0 && 
-                         existingClients[0].clients?.some((c: any) => c.telegram_chat_id);
-      
+      const hasTelegram = !!clientWithTelegram?.telegram_chat_id;
+      console.log('Client Telegram status check:', { phone: clientPhone, hasTelegram, chatId: clientWithTelegram?.telegram_chat_id });
       setClientHasTelegram(hasTelegram);
 
       // Force immediate reload of appointments to update available slots for all users
