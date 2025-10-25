@@ -169,71 +169,19 @@ export default function BookingPage() {
       setSlotsLoading(false);
     }
   };
+  // Load appointments only when date changes
   useEffect(() => {
     if (selectedDate && profile) {
       loadAppointments(selectedDate);
-
-      // Subscribe to real-time updates for this profile's appointments
-      const channel = supabase
-        .channel(`appointments_${profile.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'appointments',
-            filter: `profile_id=eq.${profile.id}`
-          },
-          () => {
-            // Force immediate reload on any appointment change
-            loadAppointments(selectedDate).then(() => {
-              setSelectedTime('');
-            });
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [selectedDate, profile]);
 
-  // Auto-reload slots when service changes (to recalculate available slots with correct duration)
+  // Reload slots when service changes (to recalculate available slots with correct duration)
   useEffect(() => {
     if (selectedDate && selectedService && profile && services.length > 0) {
       loadAppointments(selectedDate);
     }
-  }, [selectedService, services]);
-
-  // Reload slots when page regains focus or becomes visible
-  useEffect(() => {
-    if (!selectedDate || !profile) return;
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        loadAppointments(selectedDate);
-      }
-    };
-    const handleFocus = () => loadAppointments(selectedDate);
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [selectedDate, profile]);
-
-  // Lightweight polling to keep slots in sync for public pages
-  useEffect(() => {
-    if (!selectedDate || !profile) return;
-    const interval = setInterval(() => {
-      loadAppointments(selectedDate);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [selectedDate, profile]);
+  }, [selectedService]);
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
       return [];
