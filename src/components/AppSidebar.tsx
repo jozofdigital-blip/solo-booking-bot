@@ -76,7 +76,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                       }}
                       className={isActive ? "bg-accent text-accent-foreground" : ""}
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-8 w-8" />
                         {(!isCollapsed || isMobile) && <span>{item.title}</span>}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -85,21 +85,21 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onOpenWorkingHours}>
-                  <CalendarCog className="h-5 w-5" />
+                  <CalendarCog className="h-8 w-8" />
                   {(!isCollapsed || isMobile) && <span>Мой график</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onEditBusinessName}>
-                  <Edit3 className="h-5 w-5" />
+                  <Edit3 className="h-8 w-8" />
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
-                  <LogOut className="h-5 w-5" />
+                  <LogOut className="h-8 w-8" />
                   {(!isCollapsed || isMobile) && <span>Выйти</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -120,7 +120,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   {(!isCollapsed || isMobile) ? (
                     <span>Мой тариф</span>
                   ) : (
-                    <CreditCard className="h-5 w-5" />
+                    <CreditCard className="h-8 w-8" />
                   )}
                 </Button>
               </SidebarMenuItem>
