@@ -67,6 +67,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [initialCalendarDate, setInitialCalendarDate] = useState<Date | undefined>(undefined);
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -82,11 +83,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       setCurrentSection('calendar');
       setCalendarView('3days');
       
-      // Set the date from URL param
+      // Set the date from URL param for calendar navigation
       if (dateParam) {
         try {
           const targetDate = new Date(dateParam);
           setSelectedDate(targetDate);
+          setInitialCalendarDate(targetDate);
         } catch (e) {
           console.error('Invalid date in URL param:', e);
         }
@@ -816,6 +818,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                             })}
                             workingHours={workingHours}
                             minServiceDuration={minServiceDuration}
+                            initialDate={initialCalendarDate}
                             onCreateAppointment={(date, time) => {
                               setSelectedDate(new Date(date));
                               setSelectedTime(time);
@@ -853,6 +856,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                         minServiceDuration={minServiceDuration}
                         highlightedAppointmentId={highlightedAppointmentId}
                         highlightColor={highlightColor}
+                        initialDate={initialCalendarDate}
                         onClearHighlight={() => {
                           setHighlightedAppointmentId(null);
                           setHighlightColor(null);

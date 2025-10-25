@@ -30,6 +30,7 @@ interface WeekCalendarProps {
   onAppointmentClick?: (appointment: Appointment) => void;
   onCreateAppointment?: (date: string, time: string) => void;
   minServiceDuration?: number;
+  initialDate?: Date;
 }
 
 export const WeekCalendar = ({
@@ -39,10 +40,14 @@ export const WeekCalendar = ({
   onAppointmentClick,
   onCreateAppointment,
   minServiceDuration = 60,
+  initialDate,
 }: WeekCalendarProps) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    if (initialDate) {
+      return startOfWeek(initialDate, { weekStartsOn: 1 });
+    }
+    return startOfWeek(new Date(), { weekStartsOn: 1 });
+  });
 
   const weekDays = Array.from({ length: 7 }, (_, i) =>
     addDays(currentWeekStart, i)

@@ -32,6 +32,7 @@ interface ThreeDayCalendarProps {
   highlightedAppointmentId?: string | null;
   highlightColor?: 'green' | 'red' | null;
   onClearHighlight?: () => void;
+  initialDate?: Date;
 }
 
 export const ThreeDayCalendar = ({
@@ -43,8 +44,14 @@ export const ThreeDayCalendar = ({
   highlightedAppointmentId,
   highlightColor,
   onClearHighlight,
+  initialDate,
 }: ThreeDayCalendarProps) => {
-  const [currentDayStart, setCurrentDayStart] = useState(startOfDay(new Date()));
+  const [currentDayStart, setCurrentDayStart] = useState(() => {
+    if (initialDate) {
+      return startOfDay(initialDate);
+    }
+    return startOfDay(new Date());
+  });
 
   const threeDays = [0, 1, 2].map((i) => addDays(currentDayStart, i));
 
