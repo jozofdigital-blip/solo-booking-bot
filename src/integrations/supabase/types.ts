@@ -184,6 +184,7 @@ export type Database = {
           id: string
           notify_1h_before: boolean | null
           notify_24h_before: boolean | null
+          phone: string | null
           subscription_end_date: string | null
           telegram_chat_id: string | null
           trial_end_date: string | null
@@ -200,6 +201,7 @@ export type Database = {
           id?: string
           notify_1h_before?: boolean | null
           notify_24h_before?: boolean | null
+          phone?: string | null
           subscription_end_date?: string | null
           telegram_chat_id?: string | null
           trial_end_date?: string | null
@@ -216,6 +218,7 @@ export type Database = {
           id?: string
           notify_1h_before?: boolean | null
           notify_24h_before?: boolean | null
+          phone?: string | null
           subscription_end_date?: string | null
           telegram_chat_id?: string | null
           trial_end_date?: string | null

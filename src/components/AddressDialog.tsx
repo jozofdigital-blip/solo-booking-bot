@@ -8,25 +8,29 @@ interface AddressDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentAddress?: string;
-  onSave: (address: string) => void;
+  currentPhone?: string;
+  onSave: (address: string, phone: string) => void;
 }
 
-export const AddressDialog = ({ open, onOpenChange, currentAddress, onSave }: AddressDialogProps) => {
+export const AddressDialog = ({ open, onOpenChange, currentAddress, currentPhone, onSave }: AddressDialogProps) => {
   const [address, setAddress] = useState(currentAddress || "");
+  const [phone, setPhone] = useState(currentPhone || "");
 
   useEffect(() => {
     setAddress(currentAddress || "");
-  }, [currentAddress, open]);
+    setPhone(currentPhone || "");
+  }, [currentAddress, currentPhone, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(address);
+    onSave(address, phone);
     onOpenChange(false);
   };
 
   const handleClear = () => {
     setAddress("");
-    onSave("");
+    setPhone("");
+    onSave("", "");
     onOpenChange(false);
   };
 
@@ -34,14 +38,22 @@ export const AddressDialog = ({ open, onOpenChange, currentAddress, onSave }: Ad
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Ваш адрес</DialogTitle>
+          <DialogTitle>Контактная информация</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Введите свой адрес, чтобы клиенты всегда помнили куда им приходить. 
-              Адрес будет виден в уведомлении клиентам.
+              Укажите свои контактные данные. Клиенты увидят их в своих записях и уведомлениях.
             </p>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Телефон</Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+7 (___) ___-__-__"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="address">Адрес</Label>
               <Input
@@ -53,9 +65,9 @@ export const AddressDialog = ({ open, onOpenChange, currentAddress, onSave }: Ad
             </div>
           </div>
           <DialogFooter className="gap-2">
-            {currentAddress && (
+            {(currentAddress || currentPhone) && (
               <Button type="button" variant="destructive" onClick={handleClear}>
-                Удалить
+                Удалить всё
               </Button>
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

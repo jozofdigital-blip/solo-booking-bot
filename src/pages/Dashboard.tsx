@@ -542,18 +542,18 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
   };
 
-  const handleSaveAddress = async (address: string) => {
+  const handleSaveAddress = async (address: string, phone: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ address })
+        .update({ address, phone })
         .eq('id', profile.id);
 
       if (error) throw error;
-      toast.success('Адрес сохранен');
+      toast.success('Контактная информация сохранена');
       loadData();
     } catch (error: any) {
-      toast.error('Ошибка сохранения адреса');
+      toast.error('Ошибка сохранения');
       console.error(error);
     }
   };
@@ -987,14 +987,23 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
               {currentSection === "address" && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-4">Мой адрес</h2>
-                  <Card className="p-6">
-                    <p className="text-muted-foreground mb-4">
-                      {profile?.address || "Адрес не указан"}
-                    </p>
+                  <h2 className="text-2xl font-bold mb-4">Контактная информация</h2>
+                  <Card className="p-6 space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Телефон</p>
+                      <p className="text-muted-foreground">
+                        {profile?.phone || "Телефон не указан"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Адрес</p>
+                      <p className="text-muted-foreground">
+                        {profile?.address || "Адрес не указан"}
+                      </p>
+                    </div>
                     <Button onClick={() => setAddressDialogOpen(true)}>
                       <MapPin className="w-4 h-4 mr-2" />
-                      Изменить адрес
+                      Изменить контакты
                     </Button>
                   </Card>
                 </div>
@@ -1065,6 +1074,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           open={addressDialogOpen}
           onOpenChange={setAddressDialogOpen}
           currentAddress={profile?.address}
+          currentPhone={profile?.phone}
           onSave={handleSaveAddress}
         />
 

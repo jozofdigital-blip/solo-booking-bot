@@ -36,6 +36,7 @@ interface Appointment {
   profiles: {
     business_name: string;
     address?: string;
+    phone?: string;
   };
 }
 
@@ -85,7 +86,7 @@ export default function MyAppointments() {
         .select(`
           *,
           services (name, duration_minutes, price),
-          profiles (business_name, address)
+          profiles (business_name, address, phone)
         `)
         .eq("client_phone", phone.trim())
         .order("appointment_date", { ascending: true })
@@ -306,21 +307,32 @@ export default function MyAppointments() {
                       </div>
                     </div>
 
-                    {appointment.profiles.address && (
-                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg sm:col-span-2">
-                        <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Адрес</p>
-                          <p className="font-medium">{appointment.profiles.address}</p>
-                        </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg sm:col-span-2">
+                      <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Адрес</p>
+                        <p className="font-medium">
+                          {appointment.profiles.address || "Мастер не указал адрес"}
+                        </p>
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg sm:col-span-2">
                       <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Контакт</p>
-                        <p className="font-medium">{appointment.client_phone}</p>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Контакт мастера</p>
+                        {appointment.profiles.phone ? (
+                          <a 
+                            href={`tel:${appointment.profiles.phone}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {appointment.profiles.phone}
+                          </a>
+                        ) : (
+                          <p className="font-medium text-muted-foreground">
+                            Мастер не указал контакт
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
