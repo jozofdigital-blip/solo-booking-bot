@@ -351,13 +351,6 @@ export const AppointmentDialog = ({
                 Удалить
               </Button>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Отмена
-            </Button>
             <Button type="submit">
               {appointment ? "Сохранить" : "Создать запись"}
             </Button>

@@ -45,26 +45,26 @@ export function AppointmentDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
         {/* Header with gradient */}
-        <div className="relative bg-gradient-to-br from-telegram to-telegram/80 p-6 pb-8">
+        <div className="relative bg-gradient-to-br from-telegram to-telegram/80 px-5 py-4">
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute right-4 top-4 rounded-full p-1.5 bg-white/20 hover:bg-white/30 transition-colors"
+            className="absolute right-3 top-3 rounded-full p-1 bg-white/20 hover:bg-white/30 transition-colors"
           >
             <X className="h-4 w-4 text-white" />
           </button>
           
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{appointment.client_name}</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-white truncate">{appointment.client_name}</h2>
               <Button 
                 variant="link" 
                 onClick={handleCall}
-                className="p-0 h-auto text-white/90 hover:text-white text-sm font-normal"
+                className="p-0 h-auto text-white/90 hover:text-white text-sm font-normal -ml-1"
               >
-                <Phone className="w-3.5 h-3.5 mr-1.5" />
+                <Phone className="w-3.5 h-3.5 mr-1" />
                 {appointment.client_phone}
               </Button>
             </div>
@@ -72,48 +72,43 @@ export function AppointmentDetailsDialog({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
-          {/* Service Card with modern design */}
-          <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-background to-muted/30 p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-telegram/10 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-telegram" />
-                  </div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Услуга</p>
+        <div className="p-5 space-y-3">
+          {/* Service Card - Compact */}
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3.5">
+            <div className="flex items-center justify-between gap-3 mb-2.5">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-telegram/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 text-telegram" />
                 </div>
-                <p className="text-lg font-bold">{appointment.service_name}</p>
+                <p className="font-semibold truncate">{appointment.service_name}</p>
               </div>
-              
-              <div className="flex flex-col gap-2 items-end">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-telegram/10">
-                  <Calendar className="w-3.5 h-3.5 text-telegram" />
-                  <span className="text-sm font-medium text-telegram">
-                    {format(new Date(appointment.appointment_date), "d MMM", { locale: ru })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="text-sm font-semibold">
-                    {appointment.appointment_time.substring(0, 5)}
-                  </span>
-                </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-telegram/10 flex-shrink-0">
+                <Calendar className="w-3 h-3 text-telegram" />
+                <span className="text-xs font-medium text-telegram">
+                  {format(new Date(appointment.appointment_date), "d MMM", { locale: ru })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background flex-shrink-0">
+                <Clock className="w-3 h-3" />
+                <span className="text-xs font-semibold">
+                  {appointment.appointment_time.substring(0, 5)}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Notes Section */}
+          {/* Notes Section - Compact */}
           {(client?.notes || appointment.notes) && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {client?.notes && (
-                <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md bg-background flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      О клиенте
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Информация о клиенте
                     </p>
                   </div>
                   <p className="text-sm leading-relaxed">{client.notes}</p>
@@ -121,12 +116,10 @@ export function AppointmentDetailsDialog({
               )}
 
               {appointment.notes && (
-                <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md bg-background flex items-center justify-center">
-                      <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <FileText className="w-3 h-3 text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground">
                       Комментарий
                     </p>
                   </div>
@@ -136,22 +129,22 @@ export function AppointmentDetailsDialog({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          {/* Action Buttons - Compact */}
+          <div className="flex gap-2 pt-1">
             <Button
               variant="outline"
-              className="flex-1 h-11 rounded-xl font-medium hover:bg-muted"
+              className="flex-1 h-10 rounded-lg font-medium hover:bg-muted"
               onClick={onEdit}
             >
-              <Edit className="w-4 h-4 mr-2" />
+              <Edit className="w-4 h-4 mr-1.5" />
               Изменить
             </Button>
             <Button
               variant="destructive"
-              className="flex-1 h-11 rounded-xl font-medium"
+              className="flex-1 h-10 rounded-lg font-medium"
               onClick={onDelete}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <Trash2 className="w-4 h-4 mr-1.5" />
               Удалить
             </Button>
           </div>
