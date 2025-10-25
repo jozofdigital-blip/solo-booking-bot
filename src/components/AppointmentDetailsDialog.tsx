@@ -105,7 +105,7 @@ export function AppointmentDetailsDialog({
             <div className="p-4 bg-muted rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Комментарий клиента</p>
+                <p className="text-sm text-muted-foreground">Заметка о клиенте</p>
               </div>
               <p className="text-sm whitespace-pre-wrap">{client.notes}</p>
             </div>
