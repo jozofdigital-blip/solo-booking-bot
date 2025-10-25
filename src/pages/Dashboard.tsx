@@ -895,9 +895,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                 </div>
               )}
               <div className="flex items-center gap-1">
-                <SidebarTrigger className="w-14 h-14 rounded-full bg-transparent hover:bg-muted/50 text-foreground transition-all shadow-sm hover:shadow-md hover:scale-105 flex items-center justify-center">
-                  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <SidebarTrigger className="w-14 h-14 rounded-full bg-transparent hover:bg-muted/50 text-foreground transition-all shadow-sm hover:shadow-md hover:scale-105 flex items-center justify-center p-0">
+                  <svg className="w-14 h-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </SidebarTrigger>
               </div>
