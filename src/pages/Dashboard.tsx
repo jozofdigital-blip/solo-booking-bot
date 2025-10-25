@@ -197,6 +197,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (profileError) throw profileError;
 
+      let currentProfile = profileData;
+      
       if (!profileData) {
         // Create profile if doesn't exist
         const slug = await generateSlug();
@@ -222,15 +224,14 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           .from('working_hours')
           .insert(defaultHours);
         
-        setProfile(newProfile);
-        setBusinessName(newProfile.business_name);
-      } else {
-        setProfile(profileData);
-        setBusinessName(profileData.business_name);
-        
-        // Check subscription status
-        checkSubscriptionStatus(profileData);
+        currentProfile = newProfile;
       }
+      
+      setProfile(currentProfile);
+      setBusinessName(currentProfile.business_name);
+      
+      // Check subscription status for all users
+      checkSubscriptionStatus(currentProfile);
 
       // Load services
       if (profileData?.id) {

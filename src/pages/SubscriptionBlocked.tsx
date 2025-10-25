@@ -15,12 +15,12 @@ export default function SubscriptionBlocked() {
           </div>
         </div>
         
-        <h1 className="text-2xl font-bold mb-4">
+        <h1 className="text-2xl font-bold mb-2">
           Пожалуйста, оплатите тариф
         </h1>
         
         <p className="text-muted-foreground mb-6">
-          Чтобы продолжить пользоваться приложением, необходимо оплатить тариф
+          Ваш пробный период истек. Чтобы продолжить пользоваться приложением, необходимо оплатить тариф.
         </p>
 
         <Button
