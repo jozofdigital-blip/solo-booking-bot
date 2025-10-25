@@ -98,6 +98,26 @@ async function getBotsInfo(tokens: string[]) {
   return infos;
 }
 
+async function getTelegramAvatar(botToken: string, userId: number): Promise<string | null> {
+  try {
+    const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${userId}&limit=1`);
+    const photosData = await photosRes.json();
+    
+    if (photosData.ok && photosData.result?.photos?.length > 0) {
+      const fileId = photosData.result.photos[0][0].file_id;
+      const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+      const fileData = await fileRes.json();
+      
+      if (fileData.ok && fileData.result?.file_path) {
+        return `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+      }
+    }
+  } catch (e) {
+    console.error('Error fetching Telegram avatar:', e);
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -178,6 +198,10 @@ serve(async (req) => {
       console.log('New user created:', authUser.id);
     }
 
+    // Get avatar from Telegram
+    const avatarUrl = await getTelegramAvatar(matchedToken, telegramUser.id);
+    console.log('Avatar URL:', avatarUrl || 'not found');
+
     // Create or update profile
     const { data: profile } = await supabase
       .from('profiles')
@@ -195,14 +219,14 @@ serve(async (req) => {
         business_name: businessName,
         unique_slug,
         telegram_chat_id: telegramId,
-        avatar_url: telegramUser.photo_url || null,
+        avatar_url: avatarUrl,
       });
       if (profileError) console.error('Profile creation error:', profileError);
       console.log('Profile created');
     } else {
       const { error: updateError } = await supabase.from('profiles').update({
         telegram_chat_id: telegramId,
-        avatar_url: telegramUser.photo_url || profile.avatar_url,
+        avatar_url: avatarUrl || profile.avatar_url,
       }).eq('id', profile.id);
       if (updateError) console.error('Profile update error:', updateError);
       console.log('Profile updated');
