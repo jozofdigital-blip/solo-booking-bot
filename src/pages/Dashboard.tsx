@@ -164,7 +164,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           filter: `profile_id=eq.${profile.id}`
         },
         async (payload) => {
-          console.log('Appointments realtime update:', payload.eventType);
+          // Realtime update received
           
           // Reload only appointments data instead of full loadData
           const { data: appointmentsData } = await supabase

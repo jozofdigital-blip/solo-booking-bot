@@ -211,7 +211,7 @@ export default function BookingPage() {
       }
     }
 
-    console.log('Available slots:', slots);
+    
     return slots;
   };
 

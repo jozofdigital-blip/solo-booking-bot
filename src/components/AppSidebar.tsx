@@ -74,10 +74,10 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                         }
                       }}
                       className={isActive ? "bg-accent text-accent-foreground" : ""}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {(!isCollapsed || isMobile) && <span>{item.title}</span>}
-                    </SidebarMenuButton>
+                      >
+                        <Icon className="h-5 w-5" />
+                        {(!isCollapsed || isMobile) && <span>{item.title}</span>}
+                      </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
