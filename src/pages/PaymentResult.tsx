@@ -24,14 +24,10 @@ export default function PaymentResult() {
         return;
       }
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("telegram_bot_username")
-        .eq("user_id", user.id)
-        .single();
-
-      if (profileData?.telegram_bot_username) {
-        setTelegramBotLink(`https://t.me/${profileData.telegram_bot_username}`);
+      const { data: botInfo } = await supabase.functions.invoke('get-bot-info');
+      
+      if (botInfo?.username) {
+        setTelegramBotLink(`https://t.me/${botInfo.username}`);
       }
     } catch (error) {
       console.error("Error loading bot info:", error);

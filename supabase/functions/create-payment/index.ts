@@ -52,7 +52,7 @@ serve(async (req) => {
         },
         confirmation: {
           type: 'redirect',
-          return_url: 'https://looktime.pro/subscription?payment=success'
+          return_url: 'https://looktime.pro/payment-result?payment=success'
         },
         capture: true,
         description: description,

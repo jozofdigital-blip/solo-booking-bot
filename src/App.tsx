@@ -13,6 +13,7 @@ const BookingPage = lazy(() => import("./pages/BookingPage"));
 const MyAppointments = lazy(() => import("./pages/MyAppointments"));
 const Subscription = lazy(() => import("./pages/Subscription"));
 const SubscriptionBlocked = lazy(() => import("./pages/SubscriptionBlocked"));
+const PaymentResult = lazy(() => import("./pages/PaymentResult"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/subscription-blocked" element={<SubscriptionBlocked />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
             <Route path="/book/:slug" element={<BookingPage />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="*" element={<NotFound />} />
