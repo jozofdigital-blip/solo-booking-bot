@@ -144,7 +144,7 @@ export default function BookingPage() {
         appointment_time: apt.appointment_time,
         service_id: apt.service_id,
         status: apt.status,
-        duration_minutes: (services.find(s => s.id === apt.service_id)?.duration_minutes) || 60,
+        duration_minutes: apt.services?.duration_minutes || (services.find(s => s.id === apt.service_id)?.duration_minutes) || 60,
       }));
 
       setAppointments(appointmentsWithDuration);
@@ -276,9 +276,7 @@ export default function BookingPage() {
       const isToday = format(selectedDateInMasterTz, 'yyyy-MM-dd') === format(nowInMasterTz, 'yyyy-MM-dd');
 
       const slots: string[] = [];
-      const busyStarts = new Set(
-        appointments.map((a: any) => (a.appointment_time || '').substring(0, 5))
-      );
+      
       for (let hour = startHour; hour <= endHour; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
           const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
@@ -286,11 +284,6 @@ export default function BookingPage() {
           
           // Skip past time slots if it's today
           if (isToday && slotTimeInMinutes <= currentTimeInMinutes) {
-            continue;
-          }
-
-          // Always hide starts of existing appointments
-          if (busyStarts.has(time)) {
             continue;
           }
           

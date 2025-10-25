@@ -31,7 +31,7 @@ serve(async (req) => {
     // Fetch only minimal fields to avoid exposing PII
     const { data, error } = await supabase
       .from('appointments')
-      .select('appointment_time, service_id, status')
+      .select('appointment_time, service_id, status, services(duration_minutes)')
       .eq('profile_id', profileId)
       .eq('appointment_date', date)
       .in('status', ['pending', 'confirmed']);
