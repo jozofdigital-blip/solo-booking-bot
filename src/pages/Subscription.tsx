@@ -148,8 +148,14 @@ export default function Subscription() {
       console.log('Confirmation URL:', confirmationUrl);
 
       if (confirmationUrl) {
-        // Redirect to YooKassa payment page
-        window.location.href = confirmationUrl;
+        // Open YooKassa in a new tab to avoid iframe/navigation blocking
+        const win = window.open(confirmationUrl, '_blank', 'noopener,noreferrer');
+        if (!win) {
+          // Fallback: same-tab navigation
+          window.location.href = confirmationUrl;
+        } else {
+          toast.success('Окно оплаты ЮКассы открыто в новой вкладке');
+        }
       } else {
         console.error('Full response data:', JSON.stringify(data, null, 2));
         throw new Error('No confirmation URL received');
