@@ -60,7 +60,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
         {/* Main navigation items */}
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-3">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentSection === item.id;

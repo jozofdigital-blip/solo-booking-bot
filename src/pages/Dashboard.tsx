@@ -873,8 +873,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   На главную
                 </Button>
               ) : (
-                <div className="flex items-center gap-3">
-                  <Avatar key={profile?.avatar_url || 'no-avatar'} className="h-10 w-10">
+                <div className="flex items-start gap-3">
+                  <Avatar key={profile?.avatar_url || 'no-avatar'} className="h-10 w-10 self-center">
                     <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.business_name} />
                     <AvatarFallback className="bg-primary/10">
                       <User className="h-5 w-5 text-primary" />
@@ -895,8 +895,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                 </div>
               )}
               <div className="flex items-center gap-1">
-                <SidebarTrigger className="w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-white transition-all shadow-md hover:shadow-lg hover:scale-105 flex items-center justify-center">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <SidebarTrigger className="w-14 h-14 rounded-full bg-transparent hover:bg-muted/50 text-foreground transition-all shadow-sm hover:shadow-md hover:scale-105 flex items-center justify-center">
+                  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </SidebarTrigger>
