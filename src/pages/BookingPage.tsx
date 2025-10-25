@@ -130,25 +130,30 @@ export default function BookingPage() {
     const dateStr = format(date, 'yyyy-MM-dd');
     console.log('Loading appointments for date:', dateStr, 'profile:', profile.id);
     
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*, services(duration_minutes)')
-      .eq('profile_id', profile.id)
-      .eq('appointment_date', dateStr)
-      .neq('status', 'cancelled');
+    try {
+      const { data, error } = await supabase.functions.invoke('get-busy-slots', {
+        body: { profileId: profile.id, date: dateStr },
+      });
 
-    if (error) {
-      console.error('Error loading appointments:', error);
-      return;
+      if (error) {
+        console.error('Error loading busy slots via function:', error);
+        return;
+      }
+
+      const raw = (data as any)?.slots ?? [];
+      const appointmentsWithDuration = raw.map((apt: any) => ({
+        appointment_date: dateStr,
+        appointment_time: apt.appointment_time,
+        service_id: apt.service_id,
+        status: apt.status,
+        duration_minutes: (services.find(s => s.id === apt.service_id)?.duration_minutes) || 60,
+      }));
+
+      console.log('Loaded appointments (via function):', appointmentsWithDuration.length, appointmentsWithDuration);
+      setAppointments(appointmentsWithDuration);
+    } catch (err) {
+      console.error('Error invoking get-busy-slots:', err);
     }
-
-    const appointmentsWithDuration = data?.map(apt => ({
-      ...apt,
-      duration_minutes: (apt.services as any)?.duration_minutes || 60
-    })) || [];
-
-    console.log('Loaded appointments:', appointmentsWithDuration.length, appointmentsWithDuration);
-    setAppointments(appointmentsWithDuration);
   };
 
   useEffect(() => {

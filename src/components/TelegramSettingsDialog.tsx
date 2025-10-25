@@ -37,6 +37,12 @@ export const TelegramSettingsDialog = ({
     setIsConnected(!!currentChatId);
     if (open) {
       loadNotificationSettings();
+      // Ensure Telegram webhooks are configured (owner and client) before connecting
+      if (!currentChatId) {
+        supabase.functions
+          .invoke('setup-telegram-webhook')
+          .catch((e) => console.warn('Webhook setup skipped/failed:', e?.message || e));
+      }
     }
   }, [currentChatId, open]);
 

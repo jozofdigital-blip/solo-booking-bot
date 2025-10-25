@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.yookassa-webhook]
 verify_jwt = false
+
+[functions.get-bot-info]
+verify_jwt = false
+
+[functions.get-busy-slots]
+verify_jwt = false
