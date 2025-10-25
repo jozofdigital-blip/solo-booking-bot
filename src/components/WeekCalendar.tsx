@@ -255,14 +255,12 @@ export const WeekCalendar = memo(({
                     <div
                       key={`${day.toISOString()}-${hour}-${minute}`}
                       className={`p-1 border-r last:border-r-0 relative flex-1 ${
-                        !inWorkingHours 
-                          ? "bg-muted/20" 
-                          : isPast || dayFull || !hasEnoughTime
-                            ? "bg-muted/40" 
-                            : "hover:bg-muted/50 cursor-pointer bg-background"
+                        isPast || dayFull || !hasEnoughTime
+                          ? "bg-muted/40" 
+                          : "hover:bg-muted/50 cursor-pointer bg-background"
                       }`}
                       onClick={() => {
-                        if (inWorkingHours && !isPast && !dayFull && !isOccupied && hasEnoughTime) {
+                        if (!isPast && !dayFull && !isOccupied && hasEnoughTime) {
                           const dateStr = format(day, "yyyy-MM-dd");
                           const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
                           onCreateAppointment?.(dateStr, timeStr);
@@ -270,7 +268,15 @@ export const WeekCalendar = memo(({
                       }}
                     >
                       {!inWorkingHours && (
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center cursor-pointer hover:bg-accent/50 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const dateStr = format(day, "yyyy-MM-dd");
+                            const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                            onCreateAppointment?.(dateStr, timeStr);
+                          }}
+                        >
                           <Lock className="h-3 w-3 text-muted-foreground opacity-50" />
                         </div>
                       )}
@@ -326,7 +332,7 @@ export const WeekCalendar = memo(({
                         });
                       })()}
 
-                      {inWorkingHours && !isPast && !isOccupied && hasEnoughTime && (
+                      {!isPast && !isOccupied && hasEnoughTime && (
                         <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
                           <Plus 
                             className="w-4 h-4 text-muted-foreground cursor-pointer"

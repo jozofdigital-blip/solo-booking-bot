@@ -698,6 +698,25 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleAppointmentClick = async (apt: any) => {
+    // If this is a blocked slot, delete it immediately
+    if (apt.status === 'blocked') {
+      try {
+        const { error } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', apt.id);
+
+        if (error) throw error;
+        
+        toast.success('Время разблокировано');
+        loadData();
+      } catch (error) {
+        console.error('Error unblocking time:', error);
+        toast.error('Ошибка при разблокировке времени');
+      }
+      return;
+    }
+    
     setSelectedAppointment(apt);
     
     // Mark notification as viewed
