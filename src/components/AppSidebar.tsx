@@ -27,11 +27,11 @@ interface AppSidebarProps {
 }
 
 const navigationItems = [
-  { id: "services", title: "Мои услуги", icon: Package },
-  { id: "clients", title: "Мои клиенты", icon: Users },
-  { id: "notifications", title: "Уведомления", icon: Bell },
-  { id: "address", title: "Мои контакты", icon: MapPin },
-  { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
+  { id: "services", title: "Мои услуги", icon: Package, color: "text-purple-500" },
+  { id: "clients", title: "Мои клиенты", icon: Users, color: "text-blue-500" },
+  { id: "notifications", title: "Уведомления", icon: Bell, color: "text-green-500" },
+  { id: "address", title: "Мои контакты", icon: MapPin, color: "text-orange-500" },
+  { id: "booking-link", title: "Ссылка для клиентов", icon: Share2, color: "text-cyan-500" },
 ];
 
 export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial, userId, profileSlug }: AppSidebarProps) {
@@ -74,23 +74,18 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                           toggleSidebar();
                         }
                       }}
-                      className={`relative overflow-hidden group transition-all duration-300 ${
+                      className={`transition-colors ${
                         isActive 
-                          ? "bg-gradient-to-r from-primary/20 to-primary/10 border-l-4 border-primary text-primary shadow-md" 
-                          : "hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30"
+                          ? "bg-muted" 
+                          : "hover:bg-muted/50"
                       }`}
                       >
-                        <div className={`flex items-center gap-3 ${isActive ? "scale-105" : ""} transition-transform`}>
-                          <div className={`p-2 rounded-lg ${isActive ? "bg-primary/10" : "bg-muted group-hover:bg-primary/5"} transition-colors`}>
-                            <Icon className="h-5 w-5" />
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <Icon className={`h-5 w-5 ${item.color}`} />
                           {(!isCollapsed || isMobile) && (
-                            <span className="text-base font-medium">{item.title}</span>
+                            <span className={`text-base ${isActive ? "font-medium" : ""}`}>{item.title}</span>
                           )}
                         </div>
-                        {isActive && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50" />
-                        )}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -99,13 +94,11 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={onOpenWorkingHours}
-                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30 transition-all duration-300"
+                  className="hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/5 transition-colors">
-                      <CalendarCog className="h-5 w-5" />
-                    </div>
-                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Мой график</span>}
+                    <CalendarCog className="h-5 w-5 text-indigo-500" />
+                    {(!isCollapsed || isMobile) && <span className="text-base">Мой график</span>}
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -113,13 +106,11 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={onEditBusinessName}
-                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-muted/50 hover:to-transparent hover:border-l-4 hover:border-primary/30 transition-all duration-300"
+                  className="hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/5 transition-colors">
-                      <Edit3 className="h-5 w-5" />
-                    </div>
-                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Изменить название</span>}
+                    <Edit3 className="h-5 w-5 text-pink-500" />
+                    {(!isCollapsed || isMobile) && <span className="text-base">Изменить название</span>}
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -127,13 +118,11 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={onLogout} 
-                  className="relative overflow-hidden group hover:bg-gradient-to-r hover:from-destructive/10 hover:to-transparent hover:border-l-4 hover:border-destructive/30 text-destructive transition-all duration-300"
+                  className="hover:bg-muted/50 transition-colors text-destructive"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted group-hover:bg-destructive/5 transition-colors">
-                      <LogOut className="h-5 w-5" />
-                    </div>
-                    {(!isCollapsed || isMobile) && <span className="text-base font-medium">Выйти</span>}
+                    <LogOut className="h-5 w-5 text-red-500" />
+                    {(!isCollapsed || isMobile) && <span className="text-base">Выйти</span>}
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>

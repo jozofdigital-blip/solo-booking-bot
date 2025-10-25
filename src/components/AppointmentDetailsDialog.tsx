@@ -49,47 +49,35 @@ export function AppointmentDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Service */}
+          {/* Service with Date and Time */}
           <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Услуга</p>
-            <p className="font-medium">{appointment.service_name}</p>
-          </div>
-
-          {/* Date and Time */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Дата</p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground mb-1">Услуга</p>
+                <p className="font-medium">{appointment.service_name}</p>
               </div>
-              <p className="font-medium">
-                {format(new Date(appointment.appointment_date), "d MMMM", { locale: ru })}
-              </p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Время</p>
+              <div className="text-right">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{format(new Date(appointment.appointment_date), "d MMM", { locale: ru })}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{appointment.appointment_time.substring(0, 5)}</span>
+                </div>
               </div>
-              <p className="font-medium">{appointment.appointment_time.substring(0, 5)}</p>
             </div>
           </div>
 
           {/* Client Info */}
-          <div className="p-4 bg-muted rounded-lg space-y-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Клиент</p>
-              </div>
+          <div className="p-4 bg-muted rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
               <p className="font-medium">{appointment.client_name}</p>
             </div>
             
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Телефон</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-muted-foreground" />
               <Button 
                 variant="link" 
                 onClick={handleCall}
