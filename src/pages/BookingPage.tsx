@@ -213,8 +213,18 @@ export default function BookingPage() {
       return { start, end };
     });
 
+    // Check if selected date is today
+    const now = new Date();
+    const isToday = format(selectedDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
+    const currentMins = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
+
     const slots: string[] = [];
     for (let t = startMins; t + serviceDuration <= endMins; t += 30) {
+      // Skip past time slots for today
+      if (isToday && t <= currentMins) {
+        continue;
+      }
+
       const slotEnd = t + serviceDuration;
       const overlap = busy.some(b => t < b.end && b.start < slotEnd);
       
