@@ -435,7 +435,7 @@ export default function BookingPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-6 bg-primary rounded-full"></div>
-            <h2 className="text-xl font-bold">Услуги</h2>
+            <h2 className="text-xl font-bold">Выберите услугу</h2>
           </div>
           
           <div className="grid gap-3">
@@ -497,7 +497,7 @@ export default function BookingPage() {
           <div className="space-y-3 animate-fade-in" ref={calendarRef}>
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-xl font-bold">Дата</h2>
+              <h2 className="text-xl font-bold">Выберите дату</h2>
             </div>
             
             <Card className="p-4 border-2 shadow-sm hover:shadow-md transition-shadow">
