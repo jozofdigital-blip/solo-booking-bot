@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { ru } from "date-fns/locale";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { Clock } from "lucide-react";
 import { hasEnoughContinuousTime, hasAppointmentOverlap } from "@/lib/utils";
 import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
 
@@ -431,18 +430,6 @@ export default function BookingPage() {
                     <span className="font-medium">{profile.phone}</span>
                   </a>
                 )}
-                
-                {profile.address && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <span className="line-clamp-1">{profile.address}</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -457,48 +444,66 @@ export default function BookingPage() {
             <h2 className="text-xl font-bold">Выберите услугу</h2>
           </div>
           
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             {services.map((service) => {
               const isSelected = selectedService === service.id;
               return (
                 <button
                   key={service.id}
                   onClick={() => setSelectedService(service.id)}
-                  className={`group relative p-4 rounded-2xl border-2 text-left transition-all duration-300 overflow-hidden ${
+                  className={`group relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden ${
                     isSelected
-                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20'
-                      : 'border-border hover:border-primary/50 hover:shadow-md'
+                      ? 'bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 border-2 border-primary shadow-lg shadow-primary/20 scale-[1.02]'
+                      : 'bg-card border-2 border-border hover:border-primary/30 hover:shadow-xl hover:scale-[1.01]'
                   }`}
                 >
+                  {/* Animated background effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isSelected ? 'opacity-100' : ''}`}></div>
+                  
+                  {/* Decorative corner accent */}
                   {isSelected && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full"></div>
                   )}
                   
-                  <div className="relative flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
-                        {service.name}
+                  <div className="relative flex justify-between items-center gap-4">
+                    <div className="flex-1 space-y-3">
+                      {/* Service name with icon */}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                          isSelected 
+                            ? 'bg-primary text-primary-foreground shadow-md' 
+                            : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
+                        }`}>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                        </div>
+                        <h3 className={`font-bold text-lg transition-colors ${
+                          isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary'
+                        }`}>
+                          {service.name}
+                        </h3>
                       </div>
+                      
+                      {/* Description */}
                       {service.description && (
-                        <div className="text-xs text-muted-foreground line-clamp-2">
+                        <p className="text-sm text-muted-foreground leading-relaxed pl-[52px]">
                           {service.description}
-                        </div>
+                        </p>
                       )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{service.duration_minutes} мин</span>
-                        </div>
-                      </div>
                     </div>
                     
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="text-xl font-bold text-primary">
+                    {/* Price section */}
+                    <div className="flex flex-col items-end gap-2">
+                      <div className={`text-3xl font-bold bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent ${
+                        isSelected ? 'scale-110' : ''
+                      } transition-transform duration-300`}>
                         {service.price} ₽
                       </div>
+                      
                       {isSelected && (
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center animate-scale-in">
-                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center animate-scale-in shadow-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
@@ -643,29 +648,63 @@ export default function BookingPage() {
                 </div>
 
                 <div className="border-t pt-4 mt-4">
-                  <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 rounded-xl mb-4 border border-primary/20">
-                    <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Детали записи
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Услуга:</span>
-                        <span className="font-medium">{selectedServiceData?.name}</span>
+                  {/* Modern booking summary card */}
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-6 mb-4 border-2 border-primary/30 shadow-xl">
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/30 to-transparent rounded-bl-full"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-primary/20 to-transparent rounded-tr-full"></div>
+                    
+                    <div className="relative space-y-4">
+                      {/* Service */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-0.5">Услуга</div>
+                            <div className="font-semibold">{selectedServiceData?.name}</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Дата:</span>
-                        <span className="font-medium">{format(selectedDate, 'd MMMM yyyy', { locale: ru })}</span>
+
+                      {/* Date & Time */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-0.5">Дата</div>
+                            <div className="font-semibold text-sm">{format(selectedDate, 'd MMMM', { locale: ru })}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-0.5">Время</div>
+                            <div className="font-semibold text-sm">{selectedTime}</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Время:</span>
-                        <span className="font-medium">{selectedTime}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t">
-                        <span className="text-muted-foreground">Итого:</span>
-                        <span className="font-bold text-lg text-primary">{selectedServiceData?.price} ₽</span>
+
+                      {/* Price */}
+                      <div className="pt-4 border-t-2 border-primary/30">
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-medium text-muted-foreground">Итого</span>
+                          <span className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                            {selectedServiceData?.price} ₽
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -673,15 +712,20 @@ export default function BookingPage() {
                   <Button
                     onClick={handleBooking}
                     disabled={loading}
-                    className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold text-base shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-[1.02]"
+                    className="w-full h-14 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary/90 hover:to-primary/80 font-bold text-lg shadow-2xl shadow-primary/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-primary/50 rounded-xl"
                   >
                     {loading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                         <span>Создание записи...</span>
                       </div>
                     ) : (
-                      'Записаться'
+                      <div className="flex items-center gap-2">
+                        <span>Записаться</span>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </div>
                     )}
                   </Button>
                 </div>
