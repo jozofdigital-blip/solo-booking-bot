@@ -151,68 +151,77 @@ export default function BookingPage() {
 
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
-      console.log('No date or service selected');
       return [];
     }
 
-    const dayOfWeek = selectedDate.getDay();
-    console.log('Day of week:', dayOfWeek, 'Working hours:', workingHours);
-    
-    const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
-    
-    if (!workingDay) {
-      console.log('No working hours for this day');
-      return [];
-    }
+    try {
+      const dayOfWeek = selectedDate.getDay();
+      
+      const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
+      
+      if (!workingDay) {
+        return [];
+      }
 
-    console.log('Working day found:', workingDay);
+      const selectedServiceData = services.find(s => s.id === selectedService);
+      const serviceDuration = selectedServiceData?.duration_minutes || 60;
 
-    const selectedServiceData = services.find(s => s.id === selectedService);
-    const serviceDuration = selectedServiceData?.duration_minutes || 60;
+      const startHour = parseInt(workingDay.start_time.split(':')[0]);
+      const endHour = parseInt(workingDay.end_time.split(':')[0]);
+      const endMinute = parseInt(workingDay.end_time.split(':')[1]);
 
-    const startHour = parseInt(workingDay.start_time.split(':')[0]);
-    const endHour = parseInt(workingDay.end_time.split(':')[0]);
-    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+      // Get current time in master's timezone with fallback
+      const profileTimezone = profile?.timezone || 'Europe/Moscow';
+      const now = new Date();
+      let nowInMasterTz: Date;
+      let selectedDateInMasterTz: Date;
+      
+      try {
+        nowInMasterTz = toZonedTime(now, profileTimezone);
+        selectedDateInMasterTz = toZonedTime(selectedDate, profileTimezone);
+      } catch (tzError) {
+        console.error('Timezone conversion error:', tzError);
+        // Fallback to local time if timezone conversion fails
+        nowInMasterTz = now;
+        selectedDateInMasterTz = selectedDate;
+      }
+      
+      const currentHour = nowInMasterTz.getHours();
+      const currentMinute = nowInMasterTz.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      
+      // Check if selected date is today in master's timezone
+      const isToday = format(selectedDateInMasterTz, 'yyyy-MM-dd') === format(nowInMasterTz, 'yyyy-MM-dd');
 
-    // Get current time in master's timezone
-    const profileTimezone = profile?.timezone || 'Europe/Moscow';
-    const now = new Date();
-    const nowInMasterTz = toZonedTime(now, profileTimezone);
-    
-    const currentHour = nowInMasterTz.getHours();
-    const currentMinute = nowInMasterTz.getMinutes();
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
-    
-    // Check if selected date is today in master's timezone
-    const selectedDateInMasterTz = toZonedTime(selectedDate, profileTimezone);
-    const isToday = format(selectedDateInMasterTz, 'yyyy-MM-dd') === format(nowInMasterTz, 'yyyy-MM-dd');
-
-    const slots: string[] = [];
-    for (let hour = startHour; hour <= endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        const slotTimeInMinutes = hour * 60 + minute;
-        
-        // Skip past time slots if it's today
-        if (isToday && slotTimeInMinutes <= currentTimeInMinutes) {
-          continue;
-        }
-        
-        // Check if slot has enough continuous time for the service
-        if (hasEnoughContinuousTime(
-          format(selectedDate, 'yyyy-MM-dd'),
-          time,
-          serviceDuration,
-          appointments,
-          workingDay.end_time.substring(0, 5)
-        )) {
-          slots.push(time);
+      const slots: string[] = [];
+      for (let hour = startHour; hour <= endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+          const slotTimeInMinutes = hour * 60 + minute;
+          
+          // Skip past time slots if it's today
+          if (isToday && slotTimeInMinutes <= currentTimeInMinutes) {
+            continue;
+          }
+          
+          // Check if slot has enough continuous time for the service
+          if (hasEnoughContinuousTime(
+            format(selectedDate, 'yyyy-MM-dd'),
+            time,
+            serviceDuration,
+            appointments,
+            workingDay.end_time.substring(0, 5)
+          )) {
+            slots.push(time);
+          }
         }
       }
+      
+      return slots;
+    } catch (error) {
+      console.error('Error calculating time slots:', error);
+      return [];
     }
-
-    
-    return slots;
   };
 
   const availableTimeSlots = getAvailableTimeSlots();
@@ -220,6 +229,18 @@ export default function BookingPage() {
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !clientName || !clientPhone) {
       toast.error('Заполните все обязательные поля');
+      return;
+    }
+
+    // Validate phone format
+    if (clientPhone.length < 12) {
+      toast.error('Введите корректный номер телефона');
+      return;
+    }
+
+    // Validate name
+    if (clientName.trim().length < 2) {
+      toast.error('Введите корректное имя');
       return;
     }
 
@@ -364,7 +385,9 @@ export default function BookingPage() {
       setSelectedService(null);
       setSelectedTime('');
     } catch (error: any) {
-      toast.error('Ошибка при создании записи');
+      console.error('Booking error:', error);
+      const errorMessage = error?.message || 'Ошибка при создании записи';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
