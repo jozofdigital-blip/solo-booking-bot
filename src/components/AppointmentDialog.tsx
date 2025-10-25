@@ -247,33 +247,35 @@ export const AppointmentDialog = ({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Дата *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.appointment_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, appointment_date: e.target.value })
-                }
-                required
-              />
-            </div>
+          {appointment && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Дата *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.appointment_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointment_date: e.target.value })
+                  }
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="time">Время *</Label>
-              <Input
-                id="time"
-                type="time"
-                value={formData.appointment_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, appointment_time: e.target.value })
-                }
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="time">Время *</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={formData.appointment_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointment_time: e.target.value })
+                  }
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="client_name">Имя клиента *</Label>
@@ -341,16 +343,23 @@ export const AppointmentDialog = ({
             />
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Отмена
-            </Button>
-            <Button type="submit">
-              {appointment ? "Сохранить" : "Создать запись"}
+          <DialogFooter className="flex-row gap-2">
+            {!appointment && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  // TODO: Implement block time logic
+                  console.log("Block time:", formData.appointment_date, formData.appointment_time);
+                  onOpenChange(false);
+                }}
+                className="flex-1"
+              >
+                Заблокировать время
+              </Button>
+            )}
+            <Button type="submit" className="flex-1">
+              {appointment ? "Сохранить" : "Создать"}
             </Button>
           </DialogFooter>
         </form>
