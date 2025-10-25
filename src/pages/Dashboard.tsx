@@ -494,6 +494,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .insert({
           ...appointmentData,
           profile_id: profile.id,
+          notification_viewed: false,
           status: 'confirmed',
         })
         .select()
