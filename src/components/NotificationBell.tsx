@@ -42,6 +42,20 @@ export const NotificationBell = ({
   const [locallyReadIds, setLocallyReadIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // If backend reset notification_viewed to false (e.g., after cancellation),
+    // allow this notification to reappear by removing it from local read set
+    setLocallyReadIds((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      appointments.forEach((apt) => {
+        if (!apt.notification_viewed && next.has(apt.id)) {
+          next.delete(apt.id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+
     const unviewed = appointments.filter(apt =>
       !apt.notification_viewed &&
       (apt.status === 'pending' || apt.status === 'cancelled' || apt.status === 'confirmed') &&
