@@ -15,7 +15,6 @@ import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
 import { AppointmentDetailsDialog } from "@/components/AppointmentDetailsDialog";
-import { NotificationBell } from "@/components/NotificationBell";
 import { TimezoneDialog } from "@/components/TimezoneDialog";
 import {
   DEFAULT_WORKING_HOURS,
@@ -99,14 +98,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         }
       }
       
-      // Clear highlight after marking as viewed
-      const markAsViewed = async () => {
-        await supabase
-          .from('appointments')
-          .update({ notification_viewed: true })
-          .eq('id', appointmentId);
-      };
-      markAsViewed();
+      // Удалите этот блок, notification_viewed больше не используется
       
       // Clear URL params
       window.history.replaceState({}, '', window.location.pathname);
@@ -496,8 +488,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .insert({
           ...appointmentData,
           profile_id: profile.id,
-          notification_viewed: false,
-          status: 'confirmed',
+          status: 'confirmed'
         })
         .select()
         .single();
@@ -609,8 +600,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       const { error } = await supabase
         .from('appointments')
         .update({
-          ...updates,
-          notification_viewed: false
+          ...updates
         })
         .eq('id', appointmentId);
 
@@ -692,8 +682,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .from('appointments')
         .update({ 
           status: 'cancelled',
-          cancellation_reason: reason,
-          notification_viewed: false // Reset to show cancellation notification
+          cancellation_reason: reason
         })
         .eq('id', cancellingAppointmentId);
 
@@ -833,11 +822,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                 </div>
               )}
               <div className="flex items-center gap-1">
-                <NotificationBell
-                  profileId={profile?.id}
-                  appointments={appointments}
-                  services={services}
-                />
                 <SidebarTrigger />
               </div>
             </div>
