@@ -34,7 +34,10 @@ serve(async (req) => {
       .select('appointment_time, service_id, status, services(duration_minutes)')
       .eq('profile_id', profileId)
       .eq('appointment_date', date)
-      .in('status', ['pending', 'confirmed']);
+      .neq('status', 'cancelled');
+
+    // Debug log for visibility in function logs
+    console.log('get-busy-slots query', { profileId, date, count: data?.length ?? 0, statuses: (data ?? []).map((d: any) => d.status) });
 
     if (error) throw error;
 
