@@ -53,29 +53,56 @@ serve(async (req) => {
         ),
         services!inner(
           name
-        ),
-        clients!inner(
-          name,
-          telegram_chat_id
         )
       `)
       .in('appointment_date', [todayStr, tomorrowStr])
-      .eq('status', 'pending')
-      .not('clients.telegram_chat_id', 'is', null);
+      .eq('status', 'pending');
 
     if (appointmentsError) {
       console.error('Error fetching appointments:', appointmentsError);
       throw appointmentsError;
     }
 
-    console.log(`Found ${appointments?.length || 0} appointments with Telegram notifications enabled`);
+    console.log(`Found ${appointments?.length || 0} appointments to check`);
+
+    // Get all unique profile_ids to fetch clients
+    const profileIds = [...new Set(appointments?.map(a => a.profile_id) || [])];
+    
+    // Get all clients with telegram_chat_id for these profiles
+    const { data: clients, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .in('profile_id', profileIds)
+      .not('telegram_chat_id', 'is', null);
+
+    if (clientsError) {
+      console.error('Error fetching clients:', clientsError);
+      throw clientsError;
+    }
+
+    console.log(`Found ${clients?.length || 0} clients with Telegram`);
+
+    // Create a map of clients by profile_id and phone for quick lookup
+    const clientMap = new Map();
+    clients?.forEach(client => {
+      const key = `${client.profile_id}_${client.phone}`;
+      clientMap.set(key, client);
+    });
 
     let sentCount = 0;
 
     for (const appointment of appointments || []) {
       const profile = appointment.profiles;
       const service = appointment.services;
-      const client = appointment.clients;
+      
+      // Find client by profile_id and phone
+      const clientKey = `${appointment.profile_id}_${appointment.client_phone}`;
+      const client = clientMap.get(clientKey);
+      
+      // Skip if client doesn't have Telegram
+      if (!client || !client.telegram_chat_id) {
+        continue;
+      }
       
       // Parse appointment time
       const [aptHour, aptMinute] = appointment.appointment_time.split(':').map(Number);
