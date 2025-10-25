@@ -425,23 +425,51 @@ export default function BookingPage() {
       {/* Modern Compact Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             {profile.avatar_url ? (
               <img 
                 src={profile.avatar_url} 
                 alt={profile.business_name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-primary/20"
+                className="w-14 h-14 rounded-full object-cover border-2 border-primary/20 shadow-sm"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                 {profile.business_name.charAt(0)}
               </div>
             )}
-            <div className="flex-1">
-              <h1 className="text-lg font-bold">{profile.business_name}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold mb-1">{profile.business_name}</h1>
               {profile.description && (
-                <p className="text-xs text-muted-foreground line-clamp-1">{profile.description}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{profile.description}</p>
               )}
+              
+              <div className="flex flex-col gap-1.5">
+                {profile.phone && (
+                  <a 
+                    href={`tel:${profile.phone}`}
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors group w-fit"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">{profile.phone}</span>
+                  </a>
+                )}
+                
+                {profile.address && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <span className="line-clamp-1">{profile.address}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
