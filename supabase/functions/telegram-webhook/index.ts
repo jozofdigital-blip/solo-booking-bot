@@ -52,9 +52,33 @@ serve(async (req) => {
           } else {
             const profileId = param.replace('connect_', '');
 
+            // Get user profile photos from Telegram
+            let avatarUrl: string | null = null;
+            if (botToken) {
+              try {
+                const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${chatId}&limit=1`);
+                const photosData = await photosRes.json();
+                
+                if (photosData.ok && photosData.result?.photos?.length > 0) {
+                  const fileId = photosData.result.photos[0][0].file_id;
+                  const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+                  const fileData = await fileRes.json();
+                  
+                  if (fileData.ok && fileData.result?.file_path) {
+                    avatarUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+                  }
+                }
+              } catch (e) {
+                console.error('Error fetching user photo:', e);
+              }
+            }
+
             const { error } = await supabase
               .from('profiles')
-              .update({ telegram_chat_id: chatId.toString() })
+              .update({ 
+                telegram_chat_id: chatId.toString(),
+                avatar_url: avatarUrl
+              })
               .eq('id', profileId);
 
             if (error) {
@@ -156,9 +180,34 @@ serve(async (req) => {
           }
         } else {
           const profileId = text.replace('connect_', '');
+          
+          // Get user profile photos from Telegram
+          let avatarUrl: string | null = null;
+          if (botToken) {
+            try {
+              const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${chatId}&limit=1`);
+              const photosData = await photosRes.json();
+              
+              if (photosData.ok && photosData.result?.photos?.length > 0) {
+                const fileId = photosData.result.photos[0][0].file_id;
+                const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+                const fileData = await fileRes.json();
+                
+                if (fileData.ok && fileData.result?.file_path) {
+                  avatarUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+                }
+              }
+            } catch (e) {
+              console.error('Error fetching user photo:', e);
+            }
+          }
+          
           const { error } = await supabase
             .from('profiles')
-            .update({ telegram_chat_id: chatId.toString() })
+            .update({ 
+              telegram_chat_id: chatId.toString(),
+              avatar_url: avatarUrl
+            })
             .eq('id', profileId);
           if (error) {
             console.error('Error updating profile via fallback:', error);
