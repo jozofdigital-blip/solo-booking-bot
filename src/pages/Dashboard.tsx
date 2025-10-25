@@ -154,6 +154,24 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   useEffect(() => {
     if (!profile?.id) return;
 
+    // Real-time subscription для обновления профиля (аватарка, уведомления и т.д.)
+    const profileChannel = supabase
+      .channel('profile-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${profile.id}`
+        },
+        (payload) => {
+          console.log('Profile updated in realtime:', payload);
+          setProfile((prev: any) => ({ ...prev, ...payload.new }));
+        }
+      )
+      .subscribe();
+
     // Real-time subscription для обновления appointments
     const appointmentsChannel = supabase
       .channel('appointments-realtime')
@@ -210,6 +228,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       .subscribe();
 
     return () => {
+      supabase.removeChannel(profileChannel);
       supabase.removeChannel(appointmentsChannel);
     };
   }, [profile?.id]);
