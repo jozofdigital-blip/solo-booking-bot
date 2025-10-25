@@ -24,11 +24,11 @@ verify_jwt = false
 [functions.get-bot-info]
 verify_jwt = false
 
-[functions.get-bot-info]
-verify_jwt = false
-
 [functions.get-busy-slots]
 verify_jwt = false
 
 [functions.get-busy-days]
+verify_jwt = false
+
+[functions.get-available-slots]
 verify_jwt = false

@@ -33,6 +33,7 @@ export default function BookingPage() {
   const [appointmentsLoadedDate, setAppointmentsLoadedDate] = useState<string | null>(null);
   const [busyCounts, setBusyCounts] = useState<Record<string, number>>({});
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
@@ -229,85 +230,39 @@ export default function BookingPage() {
       loadAppointments(selectedDate);
     }
   }, [selectedService]);
-  const getAvailableTimeSlots = () => {
-    if (!selectedDate || !selectedService) {
-      console.log('[booking] skip slots: no date or service', { selectedDate: !!selectedDate, selectedService: !!selectedService });
-      return [];
+
+  // Fetch busy days when month or profile changes
+  useEffect(() => {
+    if (profile) {
+      fetchBusyDays(currentMonth);
     }
+  }, [profile, currentMonth]);
 
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    // Do not show slots until appointments for this date are loaded
-    if (slotsLoading || appointmentsLoadedDate !== dateStr) {
-      console.log('[booking] waiting slots load', { slotsLoading, appointmentsLoadedDate, dateStr, appointmentsCount: appointments.length });
-      return [];
-    }
-
-    try {
-      const dayOfWeek = selectedDate.getDay();
-      
-      const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
-      
-      if (!workingDay) return [];
-
-      const selectedServiceData = services.find(s => s.id === selectedService);
-      const serviceDuration = selectedServiceData?.duration_minutes || 60;
-
-      const startHour = parseInt(workingDay.start_time.split(':')[0]);
-      const endHour = parseInt(workingDay.end_time.split(':')[0]);
-      const endMinute = parseInt(workingDay.end_time.split(':')[1]);
-
-      // Get current time in master's timezone with fallback
-      const profileTimezone = profile?.timezone || 'Europe/Moscow';
-      const now = new Date();
-      let nowInMasterTz: Date;
-      let selectedDateInMasterTz: Date;
-      
+  // Load available slots from backend to ensure parity with master calendar
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (!selectedDate || !selectedService || !profile) return;
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
       try {
-        nowInMasterTz = toZonedTime(now, profileTimezone);
-        selectedDateInMasterTz = toZonedTime(selectedDate, profileTimezone);
-      } catch (tzError) {
-        // Fallback to local time if timezone conversion fails
-        nowInMasterTz = now;
-        selectedDateInMasterTz = selectedDate;
+        setSlotsLoading(true);
+        const { data, error } = await supabase.functions.invoke('get-available-slots', {
+          body: { profileId: profile.id, date: dateStr, serviceId: selectedService },
+        });
+        if (error) throw error;
+        const slots = (data as any)?.slots || [];
+        setAvailableSlots(slots);
+      } catch (e) {
+        console.error('[booking] load available slots error', e);
+        setAvailableSlots([]);
+      } finally {
+        setSlotsLoading(false);
       }
-      
-      const currentHour = nowInMasterTz.getHours();
-      const currentMinute = nowInMasterTz.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      
-      // Check if selected date is today in master's timezone
-      const isToday = format(selectedDateInMasterTz, 'yyyy-MM-dd') === format(nowInMasterTz, 'yyyy-MM-dd');
+    };
+    loadSlots();
+  }, [selectedDate, selectedService, profile]);
 
-      const slots: string[] = [];
-      
-      for (let hour = startHour; hour <= endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-          const slotTimeInMinutes = hour * 60 + minute;
-          
-          // Skip past time slots if it's today
-          if (isToday && slotTimeInMinutes <= currentTimeInMinutes) {
-            continue;
-          }
-          
-          // Check if slot has enough continuous time for the service
-          if (hasEnoughContinuousTime(
-            format(selectedDate, 'yyyy-MM-dd'),
-            time,
-            serviceDuration,
-            appointments,
-            workingDay.end_time.substring(0, 5)
-          )) {
-            slots.push(time);
-          }
-        }
-      }
-      
-      console.log('[booking] available slots computed', { dateStr: format(selectedDate, 'yyyy-MM-dd'), count: slots.length });
-      return slots;
-    } catch (error) {
-      return [];
-    }
+  const getAvailableTimeSlots = () => {
+    return availableSlots;
   };
 
   const availableTimeSlots = getAvailableTimeSlots();
