@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Calendar, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -116,30 +116,6 @@ export const NotificationBell = ({
     }
   };
 
-  const handleMarkAllRead = async () => {
-    const ids = notifications.map((n) => n.id);
-    if (ids.length === 0) return;
-    // Optimistically mark all as read locally
-    setLocallyReadIds((prev) => new Set([...Array.from(prev), ...ids]));
-    const { error } = await supabase
-      .from("appointments")
-      .update({ notification_viewed: true })
-      .in("id", ids);
-    if (error) {
-      // Rollback on error
-      setLocallyReadIds((prev) => {
-        const next = new Set(prev);
-        ids.forEach((id) => next.delete(id));
-        return next;
-      });
-      toast({
-        title: "Не удалось отметить все как прочитанные",
-        description: "Попробуйте ещё раз.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const getServiceName = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
     return service?.name || 'Услуга не найдена';
@@ -163,62 +139,84 @@ export const NotificationBell = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Уведомления</h3>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={async (e) => { e.stopPropagation(); await handleMarkAllRead(); }}>
-                Прочитать все
-              </Button>
-            )}
-            {unreadCount > 0 && (
-              <Badge variant="destructive">{unreadCount}</Badge>
-            )}
-          </div>
+        <div className="flex items-center justify-between p-4 border-b bg-background">
+          <h3 className="font-semibold text-lg">Уведомления</h3>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="px-2.5 py-0.5">{unreadCount}</Badge>
+          )}
         </div>
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Нет новых уведомлений
+            <div className="flex flex-col items-center justify-center p-12 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Bell className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">Нет новых уведомлений</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-border/50">
               {notifications.map((notification) => (
-                <button
+                <div
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
-                  className="w-full p-4 text-left hover:bg-accent transition-colors"
+                  className="group relative p-4 hover:bg-accent/50 transition-all duration-200 cursor-pointer"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-1 rounded-full p-2 ${
+                      notification.status === 'cancelled' 
+                        ? 'bg-destructive/10' 
+                        : 'bg-primary/10'
+                    }`}>
+                      {notification.status === 'cancelled' ? (
+                        <X className="h-4 w-4 text-destructive" />
+                      ) : (
+                        <Calendar className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
                         <Badge 
                           variant={notification.status === 'cancelled' ? 'destructive' : 'default'}
+                          className="text-xs"
                         >
                           {getNotificationText(notification)}
                         </Badge>
-                        <span
-                          onClick={(e) => { e.stopPropagation(); markAsReadById(notification.id); }}
-                          className="text-xs px-2 py-1 rounded border bg-background hover:bg-accent transition-colors cursor-pointer"
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            markAsReadById(notification.id); 
+                          }}
+                          className="h-7 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          Прочитать
-                        </span>
+                          <Check className="h-3 w-3 mr-1" />
+                          Прочитано
+                        </Button>
                       </div>
-                      <p className="font-medium">{notification.client_name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      
+                      <p className="font-semibold text-foreground">{notification.client_name}</p>
+                      
+                      <p className="text-sm text-muted-foreground truncate">
                         {getServiceName(notification.service_id)}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(notification.appointment_date), "d MMMM", { locale: ru })} 
-                        {' в '}
-                        {notification.appointment_time.slice(0, 5)}
-                      </p>
-                      <p className="text-xs text-muted-foreground/60">
-                        Создано: {format(new Date(notification.created_at), "d MMM, HH:mm", { locale: ru })}
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>
+                          {format(new Date(notification.appointment_date), "d MMMM", { locale: ru })} 
+                          {' в '}
+                          {notification.appointment_time.slice(0, 5)}
+                        </span>
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground/70">
+                        {format(new Date(notification.created_at), "d MMM, HH:mm", { locale: ru })}
                       </p>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
