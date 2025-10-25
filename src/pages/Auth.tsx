@@ -24,60 +24,110 @@ export default function Auth() {
   }, []);
 
   const authenticateWithTelegram = async () => {
-    try {
-      // Быстрая проверка авторизации
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/dashboard');
-        return;
-      }
+    let retryCount = 0;
+    const maxRetries = 3;
 
-      // Проверка Telegram Web App
-      if (!window.Telegram?.WebApp) {
-        toast.error('Это приложение работает только в Telegram');
-        setLoading(false);
-        return;
-      }
+    const attemptAuth = async (): Promise<void> => {
+      try {
+        // Быстрая проверка авторизации
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate('/dashboard');
+          return;
+        }
 
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
+        // Проверка Telegram Web App
+        if (!window.Telegram?.WebApp) {
+          toast.error('Это приложение работает только в Telegram');
+          setLoading(false);
+          return;
+        }
 
-      const initData = tg.initData;
-      if (!initData) {
-        toast.error('Не удалось получить данные Telegram');
-        setLoading(false);
-        return;
-      }
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-      const user = tg.initDataUnsafe?.user;
-      setTelegramUser(user);
+        const initData = tg.initData;
+        if (!initData) {
+          toast.error('Не удалось получить данные Telegram');
+          setLoading(false);
+          return;
+        }
 
-      // Оптимизированная авторизация через backend
-      const { data, error } = await supabase.functions.invoke('telegram-auth', {
-        body: { initData }
-      });
+        const user = tg.initDataUnsafe?.user;
+        setTelegramUser(user);
 
-      if (error) throw error;
+        console.log('Attempting authentication, retry:', retryCount);
 
-      if (data?.success && data?.hashed_token) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: data.hashed_token,
-          type: 'magiclink',
+        // Авторизация через backend с увеличенным таймаутом
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
+
+        try {
+          const { data, error } = await supabase.functions.invoke('telegram-auth', {
+            body: { initData },
+          });
+
+          clearTimeout(timeoutId);
+
+          if (error) {
+            console.error('Edge function error:', error);
+            throw error;
+          }
+
+          if (data?.success && data?.hashed_token) {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: data.hashed_token,
+              type: 'magiclink',
+            });
+
+            if (verifyError) {
+              console.error('Verify OTP error:', verifyError);
+              throw verifyError;
+            }
+            
+            toast.success('Добро пожаловать!');
+            navigate('/dashboard');
+          } else {
+            throw new Error('Invalid authentication response');
+          }
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          
+          // Обработка сетевых ошибок
+          if (fetchError.name === 'AbortError' || 
+              fetchError.message?.includes('Failed to fetch') ||
+              fetchError.message?.includes('network') ||
+              fetchError.message?.includes('Load failed')) {
+            
+            if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`Retrying authentication (${retryCount}/${maxRetries})...`);
+              toast.info(`Повторная попытка ${retryCount}/${maxRetries}...`);
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Пауза 2 секунды
+              return attemptAuth();
+            }
+          }
+          
+          throw fetchError;
+        }
+      } catch (error: any) {
+        console.error('Auth error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
         });
-
-        if (verifyError) throw verifyError;
         
-        toast.success('Добро пожаловать!');
-        navigate('/dashboard');
-      } else {
-        throw new Error('Invalid authentication response');
+        if (retryCount >= maxRetries) {
+          toast.error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
+        } else {
+          toast.error(error.message || 'Ошибка авторизации');
+        }
+        setLoading(false);
       }
-    } catch (error: any) {
-      console.error('Auth error:', error);
-      toast.error(error.message || 'Ошибка авторизации');
-      setLoading(false);
-    }
+    };
+
+    await attemptAuth();
   };
 
   return (
