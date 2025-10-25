@@ -19,9 +19,50 @@ serve(async (req) => {
     const notification = await req.json();
     console.log('Received YooKassa notification:', notification);
 
+    const eventType = notification.event;
     const payment = notification.object;
-    const paymentId = payment.id;
+    const paymentId = payment.payment_id || payment.id;
     const status = payment.status;
+
+    // Handle refund event
+    if (eventType === 'refund.succeeded') {
+      console.log('Refund succeeded, cancelling subscription');
+      
+      // Get payment details
+      const { data: paymentData } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('payment_id', paymentId)
+        .single();
+
+      if (paymentData) {
+        // Cancel subscription by removing subscription_end_date
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ subscription_end_date: null })
+          .eq('id', paymentData.profile_id);
+
+        if (updateError) {
+          console.error('Error cancelling subscription:', updateError);
+        } else {
+          console.log('Subscription cancelled for profile:', paymentData.profile_id);
+        }
+        
+        // Update payment status to refunded
+        await supabase
+          .from('payments')
+          .update({ status: 'refunded' })
+          .eq('payment_id', paymentId);
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
 
     // Update payment status in database
     await supabase
