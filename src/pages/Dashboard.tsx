@@ -14,6 +14,7 @@ import { WeekCalendar } from "@/components/WeekCalendar";
 import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
+import { AppointmentDetailsDialog } from "@/components/AppointmentDetailsDialog";
 import {
   DEFAULT_WORKING_HOURS,
   WorkingHour,
@@ -63,6 +64,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [isTrial, setIsTrial] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -544,6 +548,39 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     setCancelDialogOpen(true);
   };
 
+  const handleAppointmentClick = async (apt: any) => {
+    setSelectedAppointment(apt);
+    
+    // Load client info
+    if (apt.client_phone) {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('phone', apt.client_phone)
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+      
+      setSelectedClient(clientData);
+    } else {
+      setSelectedClient(null);
+    }
+    
+    setAppointmentDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    setAppointmentDetailsOpen(false);
+    setEditingAppointment(selectedAppointment);
+    setAppointmentDialogOpen(true);
+  };
+
+  const handleDeleteFromDetails = () => {
+    setAppointmentDetailsOpen(false);
+    if (selectedAppointment?.id) {
+      handleDeleteAppointment(selectedAppointment.id);
+    }
+  };
+
   const handleConfirmCancel = async (reason?: string) => {
     if (!cancellingAppointmentId) return;
 
@@ -785,10 +822,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                               setEditingAppointment(null);
                               setAppointmentDialogOpen(true);
                             }}
-                            onAppointmentClick={(apt) => {
-                              setEditingAppointment(apt);
-                              setAppointmentDialogOpen(true);
-                            }}
+                            onAppointmentClick={handleAppointmentClick}
                           />
                          ) : (
                           <BookingCalendar
@@ -829,10 +863,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                           setEditingAppointment(null);
                           setAppointmentDialogOpen(true);
                         }}
-                        onAppointmentClick={(apt) => {
-                          setEditingAppointment(apt);
-                          setAppointmentDialogOpen(true);
-                        }}
+                        onAppointmentClick={handleAppointmentClick}
                       />
                     )}
                   </div>
@@ -1029,6 +1060,15 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AppointmentDetailsDialog
+          open={appointmentDetailsOpen}
+          onOpenChange={setAppointmentDetailsOpen}
+          appointment={selectedAppointment}
+          client={selectedClient}
+          onEdit={handleEditFromDetails}
+          onDelete={handleDeleteFromDetails}
+        />
 
       </div>
     </SidebarProvider>
