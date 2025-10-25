@@ -739,7 +739,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   На главную
                 </Button>
               ) : (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   <h1 
                     className="text-xl font-bold cursor-pointer hover:text-primary transition-colors"
                     onClick={() => navigate('/dashboard')}
@@ -747,9 +747,26 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   >
                     {profile?.business_name}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(), "d MMMM", { locale: ru })}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(), "d MMMM", { locale: ru })}
+                    </p>
+                    {profile?.unique_slug && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(profile.unique_slug);
+                            toast.success('ID скопирован!');
+                          }}
+                          className="text-sm font-mono bg-muted px-2 py-0.5 rounded hover:bg-muted/80 transition-colors cursor-pointer"
+                          title="Нажмите, чтобы скопировать ID"
+                        >
+                          {profile.unique_slug}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="flex items-center gap-1">
