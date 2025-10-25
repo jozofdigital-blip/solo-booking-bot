@@ -252,7 +252,8 @@ export default function BookingPage() {
           client_phone: clientPhone,
           appointment_date: dateStr,
           appointment_time: selectedTime,
-          status: 'pending'
+          status: 'pending',
+          notification_viewed: false
         })
         .select()
         .single();

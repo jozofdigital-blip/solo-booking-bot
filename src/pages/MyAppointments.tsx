@@ -25,6 +25,7 @@ interface Appointment {
   client_name: string;
   client_phone: string;
   status: string;
+  profile_id: string;
   notes?: string;
   cancellation_reason?: string;
   services: {
@@ -148,7 +149,7 @@ export default function MyAppointments() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select("telegram_chat_id")
-        .eq("id", appointment.profiles.business_name)
+        .eq("id", appointment.profile_id)
         .maybeSingle();
 
       if (profileData?.telegram_chat_id) {
