@@ -342,15 +342,13 @@ export const AppointmentDialog = ({
           </div>
 
           <DialogFooter className="gap-2">
-            {appointment && onDelete && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleDelete}
-              >
-                Удалить
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Отмена
+            </Button>
             <Button type="submit">
               {appointment ? "Сохранить" : "Создать запись"}
             </Button>
