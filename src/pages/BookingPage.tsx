@@ -264,9 +264,12 @@ export default function BookingPage() {
         return;
       }
 
-      const { data: newAppointment, error } = await supabase
+      const appointmentId = crypto.randomUUID();
+
+      const { error: insertError } = await supabase
         .from('appointments')
         .insert({
+          id: appointmentId,
           service_id: selectedService,
           profile_id: profile.id,
           client_name: clientName,
@@ -275,49 +278,27 @@ export default function BookingPage() {
           appointment_time: selectedTime,
           status: 'pending',
           notification_viewed: false
-        })
-        .select()
-        .single();
+        });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       // Save client data to localStorage
       saveClientDataToLocalStorage(clientName, clientPhone);
 
-      // Save or update client in the clients table
-      const { data: existingClient } = await supabase
+      // Create client record without returning (RLS blocks public SELECT)
+      const clientId = crypto.randomUUID();
+      await supabase
         .from('clients')
-        .select('id')
-        .eq('phone', clientPhone)
-        .eq('profile_id', profile.id)
-        .maybeSingle();
-
-      let clientId: string;
-
-      if (existingClient) {
-        // Update last_visit for existing client
-        await supabase
-          .from('clients')
-          .update({ last_visit: new Date().toISOString(), name: clientName })
-          .eq('id', existingClient.id);
-        clientId = existingClient.id;
-      } else {
-        // Create new client
-        const { data: newClient } = await supabase
-          .from('clients')
-          .insert({
-            profile_id: profile.id,
-            name: clientName,
-            phone: clientPhone,
-            last_visit: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-        clientId = newClient!.id;
-      }
+        .insert({
+          id: clientId,
+          profile_id: profile.id,
+          name: clientName,
+          phone: clientPhone,
+          last_visit: new Date().toISOString()
+        });
 
       // Send telegram notification to owner if chat_id is configured
-      if (profile?.telegram_chat_id && newAppointment?.id) {
+      if (profile?.telegram_chat_id) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
           const dashboardUrl = 'https://looktime.pro/dashboard';
@@ -330,7 +311,7 @@ export default function BookingPage() {
               date: format(selectedDate, 'dd.MM.yyyy', { locale: ru }),
               time: selectedTime,
               phone: clientPhone,
-              appointmentId: newAppointment.id,
+              appointmentId: appointmentId,
               appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
               type: 'new',
               bookingUrl: dashboardUrl,
@@ -341,36 +322,8 @@ export default function BookingPage() {
         }
       }
 
-      // Check if client has telegram and send confirmation
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('telegram_chat_id')
-        .eq('id', clientId)
-        .maybeSingle();
-
-      const hasTelegram = !!clientData?.telegram_chat_id;
-      setClientHasTelegram(hasTelegram);
-
-      if (hasTelegram) {
-        try {
-          const serviceData = services.find(s => s.id === selectedService);
-          await supabase.functions.invoke('send-client-notification', {
-            body: {
-              chatId: clientData.telegram_chat_id,
-              type: 'confirmation',
-              clientName: clientName,
-              serviceName: serviceData?.name || '',
-              date: format(selectedDate, 'dd MMMM yyyy', { locale: ru }),
-              time: selectedTime,
-              businessName: profile.business_name,
-              address: profile.address,
-              myAppointmentsUrl: 'https://looktime.pro/my-appointments',
-            },
-          });
-        } catch (notificationError) {
-          console.error('Failed to send client notification:', notificationError);
-        }
-      }
+      // Public booking flow: we can't read client data due to RLS, so skip Telegram client notification
+      setClientHasTelegram(false);
 
       // Reload appointments to update available slots
       await loadAppointments(selectedDate);
