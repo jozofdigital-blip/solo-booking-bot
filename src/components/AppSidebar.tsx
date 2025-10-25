@@ -27,11 +27,11 @@ interface AppSidebarProps {
 }
 
 const navigationItems = [
-  { id: "services", title: "Мои услуги", icon: Package, color: "text-purple-500" },
-  { id: "clients", title: "Мои клиенты", icon: Users, color: "text-blue-500" },
-  { id: "notifications", title: "Уведомления", icon: Bell, color: "text-green-500" },
-  { id: "address", title: "Мои контакты", icon: MapPin, color: "text-orange-500" },
-  { id: "booking-link", title: "Ссылка для клиентов", icon: Share2, color: "text-cyan-500" },
+  { id: "services", title: "Мои услуги", icon: Package, color: "text-telegram" },
+  { id: "clients", title: "Мои клиенты", icon: Users, color: "text-telegram" },
+  { id: "notifications", title: "Уведомления", icon: Bell, color: "text-telegram" },
+  { id: "address", title: "Мои контакты", icon: MapPin, color: "text-telegram" },
+  { id: "booking-link", title: "Ссылка для клиентов", icon: Share2, color: "text-telegram" },
 ];
 
 export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial, userId, profileSlug }: AppSidebarProps) {
@@ -97,7 +97,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   className="hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <CalendarCog className="h-5 w-5 text-indigo-500" />
+                    <CalendarCog className="h-5 w-5 text-telegram" />
                     {(!isCollapsed || isMobile) && <span className="text-base">Мой график</span>}
                   </div>
                 </SidebarMenuButton>
@@ -109,7 +109,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   className="hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <Edit3 className="h-5 w-5 text-pink-500" />
+                    <Edit3 className="h-5 w-5 text-telegram" />
                     {(!isCollapsed || isMobile) && <span className="text-base">Изменить название</span>}
                   </div>
                 </SidebarMenuButton>
@@ -121,7 +121,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   className="hover:bg-muted/50 transition-colors text-destructive"
                 >
                   <div className="flex items-center gap-3">
-                    <LogOut className="h-5 w-5 text-red-500" />
+                    <LogOut className="h-5 w-5 text-telegram" />
                     {(!isCollapsed || isMobile) && <span className="text-base">Выйти</span>}
                   </div>
                 </SidebarMenuButton>
@@ -141,12 +141,9 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   size={isCollapsed ? "icon" : "default"}
                 >
                   {(!isCollapsed || isMobile) ? (
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5" />
-                      <span>Мой тариф</span>
-                    </div>
+                    <span>Мой тариф</span>
                   ) : (
-                    <CreditCard className="h-5 w-5" />
+                    <span className="text-xs">Тариф</span>
                   )}
                 </Button>
               </SidebarMenuItem>
