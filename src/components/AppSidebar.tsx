@@ -1,4 +1,4 @@
-import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2, CreditCard } from "lucide-react";
+import { LogOut, Package, Users, Bell, MapPin, Calendar, CalendarCog, Edit3, X, Share2, CreditCard, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -23,6 +23,7 @@ interface AppSidebarProps {
   daysLeft?: number | null;
   isTrial?: boolean;
   userId?: string;
+  profileSlug?: string;
 }
 
 const navigationItems = [
@@ -33,7 +34,7 @@ const navigationItems = [
   { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial, userId }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial, userId, profileSlug }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
@@ -84,21 +85,21 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onOpenWorkingHours}>
-                  <CalendarCog className="h-4 w-4" />
+                  <CalendarCog className="h-5 w-5" />
                   {(!isCollapsed || isMobile) && <span>Мой график</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onEditBusinessName}>
-                  <Edit3 className="h-4 w-4" />
+                  <Edit3 className="h-5 w-5" />
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-5 w-5" />
                   {(!isCollapsed || isMobile) && <span>Выйти</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -119,7 +120,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   {(!isCollapsed || isMobile) ? (
                     <span>Мой тариф</span>
                   ) : (
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="h-5 w-5" />
                   )}
                 </Button>
               </SidebarMenuItem>
@@ -139,15 +140,22 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* User ID at the bottom */}
-        {(!isCollapsed || isMobile) && userId && (
+        {/* Profile ID at the bottom */}
+        {(!isCollapsed || isMobile) && profileSlug && (
           <SidebarGroup className="pb-4">
             <SidebarGroupContent>
-              <div className="px-2 text-center">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(profileSlug);
+                }}
+                className="w-full px-3 py-2 flex items-center justify-center gap-2 hover:bg-muted rounded transition-colors cursor-pointer group"
+                title="Нажмите, чтобы скопировать ID"
+              >
                 <p className="text-xs text-muted-foreground font-mono">
-                  ID: {userId.slice(0, 8)}...
+                  {profileSlug}
                 </p>
-              </div>
+                <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
