@@ -131,7 +131,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                 <p className="text-xs text-muted-foreground">
                   {isTrial 
                     ? `Осталось ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
-                    : `Активна ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
+                    : `Активен ${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`
                   }
                 </p>
               </div>
