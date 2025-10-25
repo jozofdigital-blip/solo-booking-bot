@@ -62,6 +62,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [isTrial, setIsTrial] = useState(false);
+  const [userId, setUserId] = useState<string>("");
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -187,6 +188,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         navigate('/auth');
         return;
       }
+
+      setUserId(user.id);
 
       // Load profile
       const { data: profileData, error: profileError } = await supabase
@@ -907,6 +910,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onOpenSubscription={() => navigate('/subscription')}
           daysLeft={daysLeft}
           isTrial={isTrial}
+          userId={userId}
         />
         {/* Dialogs */}
         <ServiceDialog

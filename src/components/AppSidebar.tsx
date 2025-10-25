@@ -22,6 +22,7 @@ interface AppSidebarProps {
   onOpenSubscription: () => void;
   daysLeft?: number | null;
   isTrial?: boolean;
+  userId?: string;
 }
 
 const navigationItems = [
@@ -32,7 +33,7 @@ const navigationItems = [
   { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
 ];
 
-export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial }: AppSidebarProps) {
+export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWorkingHours, onEditBusinessName, onOpenSubscription, daysLeft, isTrial, userId }: AppSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
@@ -94,6 +95,13 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                   {(!isCollapsed || isMobile) && <span>Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  {(!isCollapsed || isMobile) && <span>Выйти</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -131,19 +139,18 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Logout button */}
-        <SidebarGroup className="pb-4">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  {(!isCollapsed || isMobile) && <span>Выйти</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* User ID at the bottom */}
+        {(!isCollapsed || isMobile) && userId && (
+          <SidebarGroup className="pb-4">
+            <SidebarGroupContent>
+              <div className="px-2 text-center">
+                <p className="text-xs text-muted-foreground font-mono">
+                  ID: {userId.slice(0, 8)}...
+                </p>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         </SidebarContent>
       </div>
     </Sidebar>
