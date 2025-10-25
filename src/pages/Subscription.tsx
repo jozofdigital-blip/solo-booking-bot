@@ -130,6 +130,39 @@ export default function Subscription() {
 
     setLoading(true);
     try {
+      // If 100% discount, activate subscription directly
+      if (finalPrice === 0) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + plan.months);
+
+        // Update subscription
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ subscription_end_date: endDate.toISOString() })
+          .eq("id", profile.id);
+
+        if (updateError) throw updateError;
+
+        // Create payment record
+        const { error: paymentError } = await supabase
+          .from("payments")
+          .insert({
+            profile_id: profile.id,
+            payment_id: `promo-${Date.now()}`,
+            amount: 0,
+            status: "succeeded",
+            plan_id: plan.id,
+            months: plan.months
+          });
+
+        if (paymentError) throw paymentError;
+
+        toast.success("Подписка успешно активирована!");
+        setLoading(false);
+        await loadProfile();
+        return;
+      }
+
       // Create payment via YooKassa
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
