@@ -444,70 +444,49 @@ export default function BookingPage() {
             <h2 className="text-xl font-bold">Выберите услугу</h2>
           </div>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {services.map((service) => {
               const isSelected = selectedService === service.id;
               return (
                 <button
                   key={service.id}
                   onClick={() => setSelectedService(service.id)}
-                  className={`group relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden ${
+                  className={`group relative p-4 rounded-xl text-left transition-all duration-300 overflow-hidden ${
                     isSelected
-                      ? 'bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 border-2 border-primary shadow-lg shadow-primary/20 scale-[1.02]'
-                      : 'bg-card border-2 border-border hover:border-primary/30 hover:shadow-xl hover:scale-[1.01]'
+                      ? 'bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 border-2 border-primary shadow-lg shadow-primary/20'
+                      : 'bg-card border-2 border-border hover:border-primary/30 hover:shadow-md hover:scale-[1.01]'
                   }`}
                 >
-                  {/* Animated background effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isSelected ? 'opacity-100' : ''}`}></div>
+                  {/* Animated background effect on selection */}
+                  <div className={`absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 transition-opacity duration-500 ${isSelected ? 'opacity-100' : ''}`}></div>
                   
-                  {/* Decorative corner accent */}
+                  {/* Decorative corner accent when selected */}
                   {isSelected && (
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full"></div>
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full"></div>
                   )}
                   
-                  <div className="relative flex justify-between items-center gap-4">
-                    <div className="flex-1 space-y-3">
-                      {/* Service name with icon */}
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                          isSelected 
-                            ? 'bg-primary text-primary-foreground shadow-md' 
-                            : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
-                        }`}>
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
-                        </div>
-                        <h3 className={`font-bold text-lg transition-colors ${
-                          isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary'
-                        }`}>
-                          {service.name}
-                        </h3>
-                      </div>
+                  <div className="relative flex justify-between items-center gap-3">
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-base mb-1 transition-colors ${
+                        isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary'
+                      }`}>
+                        {service.name}
+                      </h3>
                       
-                      {/* Description */}
                       {service.description && (
-                        <p className="text-sm text-muted-foreground leading-relaxed pl-[52px]">
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                           {service.description}
                         </p>
                       )}
                     </div>
                     
                     {/* Price section */}
-                    <div className="flex flex-col items-end gap-2">
-                      <div className={`text-3xl font-bold bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent ${
-                        isSelected ? 'scale-110' : ''
-                      } transition-transform duration-300`}>
-                        {service.price} ₽
-                      </div>
-                      
-                      {isSelected && (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center animate-scale-in shadow-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      )}
+                    <div className={`text-2xl font-bold transition-all duration-300 ${
+                      isSelected 
+                        ? 'bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent scale-105' 
+                        : 'text-primary'
+                    }`}>
+                      {service.price} ₽
                     </div>
                   </div>
                 </button>
