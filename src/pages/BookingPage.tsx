@@ -73,7 +73,7 @@ export default function BookingPage() {
         setClientName(name || '');
         setClientPhone(phone || '+7');
       } catch (error) {
-        console.error('Error loading client data:', error);
+        // Ignore parsing errors
       }
     }
   };
@@ -89,7 +89,7 @@ export default function BookingPage() {
         setBotUsername(data.username);
       }
     } catch (error) {
-      console.error('Error loading bot info:', error);
+      // Silent fail - bot username is optional
     }
   };
 
@@ -128,17 +128,13 @@ export default function BookingPage() {
     if (!profile) return;
     
     const dateStr = format(date, 'yyyy-MM-dd');
-    console.log('Loading appointments for date:', dateStr, 'profile:', profile.id);
     
     try {
       const { data, error } = await supabase.functions.invoke('get-busy-slots', {
         body: { profileId: profile.id, date: dateStr },
       });
 
-      if (error) {
-        console.error('Error loading busy slots via function:', error);
-        return;
-      }
+      if (error) return;
 
       const raw = (data as any)?.slots ?? [];
       const appointmentsWithDuration = raw.map((apt: any) => ({
@@ -149,10 +145,9 @@ export default function BookingPage() {
         duration_minutes: (services.find(s => s.id === apt.service_id)?.duration_minutes) || 60,
       }));
 
-      console.log('Loaded appointments (via function):', appointmentsWithDuration.length, appointmentsWithDuration);
       setAppointments(appointmentsWithDuration);
     } catch (err) {
-      console.error('Error invoking get-busy-slots:', err);
+      // Silent fail - slots remain empty
     }
   };
 
@@ -172,10 +167,8 @@ export default function BookingPage() {
             filter: `profile_id=eq.${profile.id}`
           },
           (payload) => {
-            console.log('Real-time appointment change:', payload);
             // Force reload appointments immediately and recalculate slots
             loadAppointments(selectedDate).then(() => {
-              // Force re-render of available slots by updating a state
               setSelectedTime(''); // Reset selected time if slot becomes unavailable
             });
           }
@@ -198,17 +191,10 @@ export default function BookingPage() {
       
       const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
       
-      if (!workingDay) {
-        console.log('No working hours for day:', dayOfWeek);
-        return [];
-      }
+      if (!workingDay) return [];
 
       const selectedServiceData = services.find(s => s.id === selectedService);
       const serviceDuration = selectedServiceData?.duration_minutes || 60;
-      
-      console.log('Calculating slots for date:', format(selectedDate, 'yyyy-MM-dd'), 
-                  'service duration:', serviceDuration, 
-                  'appointments count:', appointments.length);
 
       const startHour = parseInt(workingDay.start_time.split(':')[0]);
       const endHour = parseInt(workingDay.end_time.split(':')[0]);
@@ -224,7 +210,6 @@ export default function BookingPage() {
         nowInMasterTz = toZonedTime(now, profileTimezone);
         selectedDateInMasterTz = toZonedTime(selectedDate, profileTimezone);
       } catch (tzError) {
-        console.error('Timezone conversion error:', tzError);
         // Fallback to local time if timezone conversion fails
         nowInMasterTz = now;
         selectedDateInMasterTz = selectedDate;
@@ -263,7 +248,6 @@ export default function BookingPage() {
       
       return slots;
     } catch (error) {
-      console.error('Error calculating time slots:', error);
       return [];
     }
   };
@@ -290,41 +274,7 @@ export default function BookingPage() {
 
     setLoading(true);
     try {
-      // Check for appointment overlap before inserting
-      const selectedServiceData = services.find(s => s.id === selectedService);
-      const serviceDuration = selectedServiceData?.duration_minutes || 60;
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
-
-      const hasOverlap = hasAppointmentOverlap(
-        dateStr,
-        selectedTime,
-        serviceDuration,
-        appointments
-      );
-
-      if (hasOverlap) {
-        toast.error('Это время уже занято. Пожалуйста, выберите другое время.');
-        setLoading(false);
-        return;
-      }
-
-      // Double-check for overlap right before insert (race condition protection)
-      await loadAppointments(selectedDate);
-      
-      const hasOverlapFinal = hasAppointmentOverlap(
-        dateStr,
-        selectedTime,
-        serviceDuration,
-        appointments
-      );
-
-      if (hasOverlapFinal) {
-        toast.error('Это время только что было занято. Пожалуйста, выберите другое время.');
-        setLoading(false);
-        // Reload to show updated slots
-        await loadAppointments(selectedDate);
-        return;
-      }
 
       const appointmentId = crypto.randomUUID();
 
@@ -359,10 +309,7 @@ export default function BookingPage() {
           last_visit: new Date().toISOString()
         });
 
-      // Ignore duplicate errors - client may already exist
-      if (clientError && !clientError.message.includes('duplicate')) {
-        console.error('Client insert error:', clientError);
-      }
+      // Ignore errors - client may already exist or be created by another session
 
       // Send telegram notification to owner if chat_id is configured
       if (profile?.telegram_chat_id) {
@@ -385,7 +332,7 @@ export default function BookingPage() {
             },
           });
         } catch (notificationError) {
-          console.error('Failed to send telegram notification:', notificationError);
+          // Silent fail - notification is not critical
         }
       }
 
@@ -398,9 +345,7 @@ export default function BookingPage() {
         .not('telegram_chat_id', 'is', null)
         .maybeSingle();
       
-      const hasTelegram = !!clientWithTelegram?.telegram_chat_id;
-      console.log('Client Telegram status check:', { phone: clientPhone, hasTelegram, chatId: clientWithTelegram?.telegram_chat_id });
-      setClientHasTelegram(hasTelegram);
+      setClientHasTelegram(!!clientWithTelegram?.telegram_chat_id);
 
       // Force immediate reload of appointments to update available slots for all users
       await loadAppointments(selectedDate);
@@ -415,15 +360,12 @@ export default function BookingPage() {
       setSelectedService(null);
       setSelectedTime('');
     } catch (error: any) {
-      console.error('Booking error:', error);
-      
       // Handle specific overlap error from database trigger
       if (error?.message?.includes('OVERLAP_TIME_SLOT')) {
         toast.error('Это время уже занято. Выберите другое время.');
         await loadAppointments(selectedDate);
       } else {
-        const errorMessage = error?.message || 'Ошибка при создании записи';
-        toast.error(errorMessage);
+        toast.error(error?.message || 'Ошибка при создании записи');
       }
     } finally {
       setLoading(false);

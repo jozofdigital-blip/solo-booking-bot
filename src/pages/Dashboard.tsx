@@ -95,7 +95,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           setSelectedDate(targetDate);
           setInitialCalendarDate(targetDate);
         } catch (e) {
-          console.error('Invalid date in URL param:', e);
+          // Invalid date format - ignore
         }
       }
       

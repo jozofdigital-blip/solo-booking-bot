@@ -61,7 +61,7 @@ export const TelegramSettingsDialog = ({
         setNotify1h(data.notify_1h_before ?? false);
       }
     } catch (error) {
-      console.error('Error loading notification settings:', error);
+      // Silent fail - use defaults
     }
   };
 
@@ -81,7 +81,6 @@ export const TelegramSettingsDialog = ({
       toast.success('Настройки сохранены');
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving notification settings:', error);
       toast.error('Ошибка при сохранении настроек');
     } finally {
       setLoading(false);
@@ -104,7 +103,6 @@ export const TelegramSettingsDialog = ({
       onOpenChange(false);
       window.location.reload();
     } catch (error) {
-      console.error('Error disconnecting notifications:', error);
       toast.error('Ошибка при отключении уведомлений');
     } finally {
       setLoading(false);
