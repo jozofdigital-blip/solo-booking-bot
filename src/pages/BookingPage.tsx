@@ -625,23 +625,11 @@ export default function BookingPage() {
                 <div className="border-t pt-4 mt-4">
                   {/* Modern booking summary card */}
                   <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-6 mb-4 border-2 border-primary/30 shadow-xl">
-                    {/* Decorative elements */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/30 to-transparent rounded-bl-full"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-primary/20 to-transparent rounded-tr-full"></div>
-                    
                     <div className="relative space-y-4">
                       {/* Service */}
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-0.5">Услуга</div>
-                            <div className="font-semibold">{selectedServiceData?.name}</div>
-                          </div>
+                        <div>
+                          <div className="font-semibold">{selectedServiceData?.name}</div>
                         </div>
                       </div>
 
@@ -654,7 +642,6 @@ export default function BookingPage() {
                             </svg>
                           </div>
                           <div>
-                            <div className="text-xs text-muted-foreground mb-0.5">Дата</div>
                             <div className="font-semibold text-sm">{format(selectedDate, 'd MMMM', { locale: ru })}</div>
                           </div>
                         </div>
@@ -666,7 +653,6 @@ export default function BookingPage() {
                             </svg>
                           </div>
                           <div>
-                            <div className="text-xs text-muted-foreground mb-0.5">Время</div>
                             <div className="font-semibold text-sm">{selectedTime}</div>
                           </div>
                         </div>
