@@ -91,6 +91,55 @@ export const NotificationBell = ({
     }
   };
 
+  const markAsReadById = async (id: string) => {
+    // Optimistically mark as read locally
+    setLocallyReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    const { error } = await supabase
+      .from("appointments")
+      .update({ notification_viewed: true })
+      .eq("id", id);
+    if (error) {
+      setLocallyReadIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      toast({
+        title: "Не удалось отметить как прочитанное",
+        description: "Попробуйте ещё раз.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const ids = notifications.map((n) => n.id);
+    if (ids.length === 0) return;
+    // Optimistically mark all as read locally
+    setLocallyReadIds((prev) => new Set([...Array.from(prev), ...ids]));
+    const { error } = await supabase
+      .from("appointments")
+      .update({ notification_viewed: true })
+      .in("id", ids);
+    if (error) {
+      // Rollback on error
+      setLocallyReadIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast({
+        title: "Не удалось отметить все как прочитанные",
+        description: "Попробуйте ещё раз.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getServiceName = (serviceId: string) => {
     const service = services.find(s => s.id === serviceId);
     return service?.name || 'Услуга не найдена';
@@ -116,9 +165,16 @@ export const NotificationBell = ({
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold">Уведомления</h3>
-          {unreadCount > 0 && (
-            <Badge variant="destructive">{unreadCount}</Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={async (e) => { e.stopPropagation(); await handleMarkAllRead(); }}>
+                Прочитать все
+              </Button>
+            )}
+            {unreadCount > 0 && (
+              <Badge variant="destructive">{unreadCount}</Badge>
+            )}
+          </div>
         </div>
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
@@ -141,6 +197,12 @@ export const NotificationBell = ({
                         >
                           {getNotificationText(notification)}
                         </Badge>
+                        <span
+                          onClick={(e) => { e.stopPropagation(); markAsReadById(notification.id); }}
+                          className="text-xs px-2 py-1 rounded border bg-background hover:bg-accent transition-colors cursor-pointer"
+                        >
+                          Прочитать
+                        </span>
                       </div>
                       <p className="font-medium">{notification.client_name}</p>
                       <p className="text-sm text-muted-foreground">
