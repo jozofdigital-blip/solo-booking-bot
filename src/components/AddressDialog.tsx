@@ -14,11 +14,11 @@ interface AddressDialogProps {
 
 export const AddressDialog = ({ open, onOpenChange, currentAddress, currentPhone, onSave }: AddressDialogProps) => {
   const [address, setAddress] = useState(currentAddress || "");
-  const [phone, setPhone] = useState(currentPhone || "");
+  const [phone, setPhone] = useState(currentPhone || "+7");
 
   useEffect(() => {
     setAddress(currentAddress || "");
-    setPhone(currentPhone || "");
+    setPhone(currentPhone || "+7");
   }, [currentAddress, currentPhone, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,9 +49,26 @@ export const AddressDialog = ({ open, onOpenChange, currentAddress, currentPhone
               <Label htmlFor="phone">Телефон</Label>
               <Input
                 id="phone"
+                type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+7 (___) ___-__-__"
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Remove all non-digits
+                  value = value.replace(/\D/g, '');
+                  // Add +7 prefix if not present
+                  if (!value.startsWith('7') && value.length > 0) {
+                    value = '7' + value;
+                  }
+                  if (value.length > 0) {
+                    value = '+' + value;
+                  }
+                  // Limit to +7 + 10 digits
+                  if (value.length > 12) {
+                    value = value.substring(0, 12);
+                  }
+                  setPhone(value);
+                }}
+                placeholder="+79998887766"
               />
             </div>
             <div className="space-y-2">
