@@ -87,35 +87,41 @@ serve(async (req) => {
       // Get payment details
       const { data: paymentData } = await supabase
         .from('payments')
-        .select('*, profiles!inner(user_id)')
+        .select('*, profiles!inner(user_id, trial_end_date, subscription_end_date)')
         .eq('payment_id', paymentId)
         .single();
 
       if (paymentData) {
         console.log('Activating for Profile ID:', paymentData.profile_id, 'User ID:', paymentData.profiles?.user_id, 'Months:', paymentData.months);
         
-        // Calculate subscription end date
         const now = new Date();
-        
-        // Check if there's an existing active subscription
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_end_date')
-          .eq('id', paymentData.profile_id)
-          .single();
-
         let endDate = new Date();
         
+        // Check if trial period is still active
+        const trialEndDate = paymentData.profiles?.trial_end_date ? new Date(paymentData.profiles.trial_end_date) : null;
+        const subscriptionEndDate = paymentData.profiles?.subscription_end_date ? new Date(paymentData.profiles.subscription_end_date) : null;
+        
+        // Calculate remaining trial days
+        let bonusDays = 0;
+        if (trialEndDate && trialEndDate > now) {
+          bonusDays = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          console.log('Remaining trial days to add:', bonusDays);
+        }
+        
         // If there's an active subscription, extend from its end date
-        if (profile?.subscription_end_date) {
-          const existingEndDate = new Date(profile.subscription_end_date);
-          if (existingEndDate > now) {
-            endDate = existingEndDate;
-          }
+        if (subscriptionEndDate && subscriptionEndDate > now) {
+          endDate = subscriptionEndDate;
+          console.log('Extending existing subscription from:', subscriptionEndDate);
         }
         
         // Add months to the end date
         endDate.setMonth(endDate.getMonth() + paymentData.months);
+        
+        // Add bonus trial days
+        if (bonusDays > 0) {
+          endDate.setDate(endDate.getDate() + bonusDays);
+          console.log('Added bonus trial days, new end date:', endDate);
+        }
 
         // Update profile with new subscription end date
         const { error: updateError } = await supabase
