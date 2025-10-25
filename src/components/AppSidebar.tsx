@@ -77,7 +77,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
                       className={isActive ? "bg-accent text-accent-foreground" : ""}
                       >
                         <Icon className="h-9 w-9" />
-                        {(!isCollapsed || isMobile) && <span>{item.title}</span>}
+                        {(!isCollapsed || isMobile) && <span className="text-base font-medium">{item.title}</span>}
                       </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -86,21 +86,21 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onOpenWorkingHours}>
                   <CalendarCog className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span>Мой график</span>}
+                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Мой график</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onEditBusinessName}>
                   <Edit3 className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span>Изменить название</span>}
+                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Изменить название</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={onLogout} className="text-destructive hover:text-destructive">
                   <LogOut className="h-9 w-9" />
-                  {(!isCollapsed || isMobile) && <span>Выйти</span>}
+                  {(!isCollapsed || isMobile) && <span className="text-base font-medium">Выйти</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -114,7 +114,7 @@ export function AppSidebar({ currentSection, onSectionChange, onLogout, onOpenWo
               <SidebarMenuItem>
                 <Button 
                   onClick={onOpenSubscription}
-                  className="w-full justify-center bg-telegram hover:bg-telegram/90 text-white font-semibold"
+                  className="w-full justify-center bg-telegram hover:bg-telegram/90 text-white font-semibold text-base"
                   size={isCollapsed ? "icon" : "default"}
                 >
                   {(!isCollapsed || isMobile) ? (
