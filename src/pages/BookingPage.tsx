@@ -128,18 +128,26 @@ export default function BookingPage() {
     if (!profile) return;
     
     const dateStr = format(date, 'yyyy-MM-dd');
-    const { data } = await supabase
+    console.log('Loading appointments for date:', dateStr, 'profile:', profile.id);
+    
+    const { data, error } = await supabase
       .from('appointments')
       .select('*, services(duration_minutes)')
       .eq('profile_id', profile.id)
       .eq('appointment_date', dateStr)
       .neq('status', 'cancelled');
 
+    if (error) {
+      console.error('Error loading appointments:', error);
+      return;
+    }
+
     const appointmentsWithDuration = data?.map(apt => ({
       ...apt,
       duration_minutes: (apt.services as any)?.duration_minutes || 60
     })) || [];
 
+    console.log('Loaded appointments:', appointmentsWithDuration.length, appointmentsWithDuration);
     setAppointments(appointmentsWithDuration);
   };
 
@@ -160,11 +168,16 @@ export default function BookingPage() {
       const workingDay = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
       
       if (!workingDay) {
+        console.log('No working hours for day:', dayOfWeek);
         return [];
       }
 
       const selectedServiceData = services.find(s => s.id === selectedService);
       const serviceDuration = selectedServiceData?.duration_minutes || 60;
+      
+      console.log('Calculating slots for date:', format(selectedDate, 'yyyy-MM-dd'), 
+                  'service duration:', serviceDuration, 
+                  'appointments count:', appointments.length);
 
       const startHour = parseInt(workingDay.start_time.split(':')[0]);
       const endHour = parseInt(workingDay.end_time.split(':')[0]);
