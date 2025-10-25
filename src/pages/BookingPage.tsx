@@ -152,8 +152,31 @@ export default function BookingPage() {
   };
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && profile) {
       loadAppointments(selectedDate);
+
+      // Subscribe to real-time updates for this profile's appointments
+      const channel = supabase
+        .channel(`appointments_${profile.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments',
+            filter: `profile_id=eq.${profile.id}`
+          },
+          (payload) => {
+            console.log('Real-time appointment change:', payload);
+            // Reload appointments when any change happens
+            loadAppointments(selectedDate);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [selectedDate, profile]);
 
@@ -274,6 +297,24 @@ export default function BookingPage() {
       if (hasOverlap) {
         toast.error('Это время уже занято. Пожалуйста, выберите другое время.');
         setLoading(false);
+        return;
+      }
+
+      // Double-check for overlap right before insert (race condition protection)
+      await loadAppointments(selectedDate);
+      
+      const hasOverlapFinal = hasAppointmentOverlap(
+        dateStr,
+        selectedTime,
+        serviceDuration,
+        appointments
+      );
+
+      if (hasOverlapFinal) {
+        toast.error('Это время только что было занято. Пожалуйста, выберите другое время.');
+        setLoading(false);
+        // Reload to show updated slots
+        await loadAppointments(selectedDate);
         return;
       }
 
