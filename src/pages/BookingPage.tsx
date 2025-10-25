@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { ru } from "date-fns/locale";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { Clock } from "lucide-react";
 import { hasEnoughContinuousTime, hasAppointmentOverlap } from "@/lib/utils";
@@ -31,6 +31,8 @@ export default function BookingPage() {
   const [clientHasTelegram, setClientHasTelegram] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [appointmentsLoadedDate, setAppointmentsLoadedDate] = useState<string | null>(null);
+  const [busyCounts, setBusyCounts] = useState<Record<string, number>>({});
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
@@ -124,6 +126,44 @@ export default function BookingPage() {
     } catch (error) {
       toast.error('Профиль не найден');
     }
+  };
+  
+  const fetchBusyDays = async (monthDate: Date) => {
+    if (!profile) return;
+    try {
+      const startDate = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+      const { data, error } = await supabase.functions.invoke('get-busy-days', {
+        body: { profileId: profile.id, startDate, endDate },
+      });
+      if (error) throw error;
+      const counts = (data as any)?.counts || {};
+      setBusyCounts(counts);
+      console.log('[booking] busy days loaded', { month: monthDate.getMonth() + 1, countDays: Object.keys(counts).length });
+    } catch (err) {
+      console.error('[booking] busy days load error', err);
+    }
+  };
+
+  const isDayBlocked = (date: Date) => {
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours?.find((wh: any) => wh.day_of_week === dayOfWeek);
+    return !workingDay?.is_working;
+  };
+
+  const isDayFull = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours?.find((wh: any) => wh.day_of_week === dayOfWeek && wh.is_working);
+    if (!workingDay) return false;
+    const startHour = parseInt(workingDay.start_time.split(':')[0]);
+    const startMinute = parseInt(workingDay.start_time.split(':')[1]);
+    const endHour = parseInt(workingDay.end_time.split(':')[0]);
+    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+    const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+    const totalSlots = Math.floor(totalMinutes / 30);
+    const bookedSlots = busyCounts[dateStr] || 0;
+    return bookedSlots >= totalSlots && totalSlots > 0;
   };
 
   const loadAppointments = async (date: Date, attempt: number = 1) => {
@@ -531,10 +571,24 @@ export default function BookingPage() {
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 locale={ru}
+                month={currentMonth}
+                onMonthChange={(month) => {
+                  setCurrentMonth(month);
+                  fetchBusyDays(month);
+                }}
                 disabled={(date) => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
-                  return date < today;
+                  const isPast = date < today;
+                  return isPast || isDayBlocked(date) || isDayFull(date);
+                }}
+                modifiers={{
+                  blocked: (date) => isDayBlocked(date),
+                  full: (date) => isDayFull(date)
+                }}
+                modifiersClassNames={{
+                  blocked: "bg-muted text-muted-foreground opacity-50",
+                  full: "bg-muted text-muted-foreground opacity-50"
                 }}
                 className="rounded-lg w-full pointer-events-auto"
               />
