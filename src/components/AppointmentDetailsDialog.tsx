@@ -54,7 +54,7 @@ export function AppointmentDetailsDialog({
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground mb-1">Услуга</p>
-                <p className="font-medium">{appointment.service_name}</p>
+                <p className="text-lg font-semibold">{appointment.service_name}</p>
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
@@ -72,16 +72,16 @@ export function AppointmentDetailsDialog({
           {/* Client Info */}
           <div className="p-4 bg-muted rounded-lg space-y-2">
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <p className="font-medium">{appointment.client_name}</p>
+              <User className="w-5 h-5 text-muted-foreground" />
+              <p className="text-lg font-semibold">{appointment.client_name}</p>
             </div>
             
             <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-muted-foreground" />
+              <Phone className="w-5 h-5 text-muted-foreground" />
               <Button 
                 variant="link" 
                 onClick={handleCall}
-                className="p-0 h-auto font-medium text-telegram"
+                className="p-0 h-auto text-base font-medium text-telegram"
               >
                 {appointment.client_phone}
               </Button>
