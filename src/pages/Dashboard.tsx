@@ -15,6 +15,7 @@ import { ThreeDayCalendar } from "@/components/ThreeDayCalendar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
 import { AppointmentDetailsDialog } from "@/components/AppointmentDetailsDialog";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   DEFAULT_WORKING_HOURS,
   WorkingHour,
@@ -147,7 +148,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     loadData();
 
     // Real-time subscription для обновления профиля
-    const channel = supabase
+    const profileChannel = supabase
       .channel('profile-changes')
       .on(
         'postgres_changes',
@@ -164,6 +165,24 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       )
       .subscribe();
 
+    // Real-time subscription для обновления appointments
+    const appointmentsChannel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `profile_id=eq.${profile?.id}`
+        },
+        () => {
+          console.log('Appointments updated');
+          loadData();
+        }
+      )
+      .subscribe();
+
     // Обновление при возврате на страницу
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -174,7 +193,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
+      supabase.removeChannel(appointmentsChannel);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [profile?.id]);
@@ -260,7 +280,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
             services (name, duration_minutes)
           `)
           .eq('profile_id', profileData.id)
-          .neq('status', 'cancelled')
           .order('appointment_date', { ascending: true });
 
         setAppointments(appointmentsData || []);
@@ -553,6 +572,14 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const handleAppointmentClick = async (apt: any) => {
     setSelectedAppointment(apt);
     
+    // Mark notification as viewed
+    if (!apt.notification_viewed) {
+      await supabase
+        .from('appointments')
+        .update({ notification_viewed: true })
+        .eq('id', apt.id);
+    }
+    
     // Load client info
     if (apt.client_phone) {
       const { data: clientData } = await supabase
@@ -732,7 +759,18 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </p>
                 </div>
               )}
-              <SidebarTrigger />
+              <div className="flex items-center gap-2">
+                <NotificationBell
+                  profileId={profile?.id}
+                  appointments={appointments}
+                  services={services}
+                  onAppointmentClick={(appointment) => {
+                    setSelectedAppointment(appointment);
+                    setAppointmentDetailsOpen(true);
+                  }}
+                />
+                <SidebarTrigger />
+              </div>
             </div>
           </header>
 
