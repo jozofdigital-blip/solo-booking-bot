@@ -17,25 +17,31 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const notification = await req.json();
-    console.log('Received YooKassa notification:', notification);
+    console.log('Received YooKassa notification:', JSON.stringify(notification, null, 2));
 
     const eventType = notification.event;
     const payment = notification.object;
     const paymentId = payment.payment_id || payment.id;
     const status = payment.status;
 
+    console.log('Event type:', eventType, 'Payment ID:', paymentId, 'Status:', status);
+
     // Handle refund event
     if (eventType === 'refund.succeeded') {
-      console.log('Refund succeeded, cancelling subscription');
+      console.log('Processing refund for payment:', paymentId);
       
       // Get payment details
-      const { data: paymentData } = await supabase
+      const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
-        .select('*')
+        .select('*, profiles!inner(user_id)')
         .eq('payment_id', paymentId)
         .single();
 
+      console.log('Payment data found:', paymentData ? 'Yes' : 'No', 'Error:', paymentError);
+
       if (paymentData) {
+        console.log('Profile ID:', paymentData.profile_id, 'User ID:', paymentData.profiles?.user_id);
+        
         // Cancel subscription by removing subscription_end_date
         const { error: updateError } = await supabase
           .from('profiles')
@@ -45,7 +51,7 @@ serve(async (req) => {
         if (updateError) {
           console.error('Error cancelling subscription:', updateError);
         } else {
-          console.log('Subscription cancelled for profile:', paymentData.profile_id);
+          console.log('✅ Subscription cancelled for profile:', paymentData.profile_id);
         }
         
         // Update payment status to refunded
@@ -53,6 +59,10 @@ serve(async (req) => {
           .from('payments')
           .update({ status: 'refunded' })
           .eq('payment_id', paymentId);
+        
+        console.log('✅ Payment status updated to refunded');
+      } else {
+        console.error('❌ Payment not found for ID:', paymentId);
       }
       
       return new Response(
@@ -77,11 +87,13 @@ serve(async (req) => {
       // Get payment details
       const { data: paymentData } = await supabase
         .from('payments')
-        .select('*')
+        .select('*, profiles!inner(user_id)')
         .eq('payment_id', paymentId)
         .single();
 
       if (paymentData) {
+        console.log('Activating for Profile ID:', paymentData.profile_id, 'User ID:', paymentData.profiles?.user_id, 'Months:', paymentData.months);
+        
         // Calculate subscription end date
         const now = new Date();
         
@@ -114,7 +126,7 @@ serve(async (req) => {
         if (updateError) {
           console.error('Error updating subscription:', updateError);
         } else {
-          console.log('Subscription activated until:', endDate);
+          console.log('✅ Subscription activated until:', endDate);
         }
       }
     }
