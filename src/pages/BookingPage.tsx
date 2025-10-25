@@ -380,160 +380,252 @@ export default function BookingPage() {
   const selectedServiceData = services.find(s => s.id === selectedService);
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Card className="p-6 mb-6 bg-telegram/5 border-telegram/20">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2 text-foreground">
-              {profile.business_name}
-            </h1>
-            {profile.description && (
-              <p className="text-muted-foreground text-sm">{profile.description}</p>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Modern Compact Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
+        <div className="container mx-auto px-4 py-4 max-w-4xl">
+          <div className="flex items-center gap-4">
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.business_name}
+                className="w-12 h-12 rounded-full object-cover border-2 border-primary/20"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-lg">
+                {profile.business_name.charAt(0)}
+              </div>
             )}
+            <div className="flex-1">
+              <h1 className="text-lg font-bold">{profile.business_name}</h1>
+              {profile.description && (
+                <p className="text-xs text-muted-foreground line-clamp-1">{profile.description}</p>
+              )}
+            </div>
           </div>
-        </Card>
+        </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
         {/* Services Selection */}
-        <Card className="p-5 mb-6">
-          <h2 className="text-lg font-semibold mb-3">Выберите услугу</h2>
-          <div className="space-y-2">
-            {services.map((service) => (
-              <button
-                key={service.id}
-                onClick={() => setSelectedService(service.id)}
-                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                  selectedService === service.id
-                    ? 'border-telegram bg-telegram/5'
-                    : 'border-border hover:border-telegram/30'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-medium mb-1">{service.name}</div>
-                    {service.description && (
-                      <div className="text-xs text-muted-foreground mb-1">
-                        {service.description}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-6 bg-primary rounded-full"></div>
+            <h2 className="text-xl font-bold">Услуги</h2>
+          </div>
+          
+          <div className="grid gap-3">
+            {services.map((service) => {
+              const isSelected = selectedService === service.id;
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => setSelectedService(service.id)}
+                  className={`group relative p-4 rounded-2xl border-2 text-left transition-all duration-300 overflow-hidden ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20'
+                      : 'border-border hover:border-primary/50 hover:shadow-md'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
+                  )}
+                  
+                  <div className="relative flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
+                        {service.name}
                       </div>
-                    )}
-                  </div>
-                  <div className="text-right ml-3">
-                    <div className="font-semibold text-telegram">{service.price} ₽</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {service.duration_minutes} мин
+                      {service.description && (
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {service.description}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{service.duration_minutes} мин</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="text-xl font-bold text-primary">
+                        {service.price} ₽
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center animate-scale-in">
+                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
-        </Card>
+        </div>
 
         {/* Date Selection */}
         {selectedService && (
-          <Card className="p-5 mb-6" ref={calendarRef}>
-            <h2 className="text-lg font-semibold mb-3">Выберите дату</h2>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              locale={ru}
-              disabled={(date) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return date < today;
-              }}
-              className="rounded-md border w-full"
-            />
-          </Card>
+          <div className="space-y-3 animate-fade-in" ref={calendarRef}>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-xl font-bold">Дата</h2>
+            </div>
+            
+            <Card className="p-4 border-2 shadow-sm hover:shadow-md transition-shadow">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                locale={ru}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }}
+                className="rounded-lg w-full pointer-events-auto"
+              />
+            </Card>
+          </div>
         )}
 
         {/* Time Selection */}
         {selectedDate && selectedService && (
-          <Card className="p-5 mb-6" ref={timeRef}>
-            <h2 className="text-lg font-semibold mb-3">Выберите время</h2>
-            {workingHours.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Рабочие часы не настроены. Пожалуйста, обратитесь к администратору.
-              </p>
-            ) : availableTimeSlots.length > 0 ? (
-              <div className="grid grid-cols-4 gap-2">
-                {availableTimeSlots.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    onClick={() => setSelectedTime(time)}
-                    className={selectedTime === time ? "bg-telegram hover:bg-telegram/90" : ""}
-                    size="sm"
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                На выбранную дату нет доступных слотов для этой услуги
-              </p>
-            )}
-          </Card>
+          <div className="space-y-3 animate-fade-in" ref={timeRef}>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-xl font-bold">Время</h2>
+            </div>
+            
+            <Card className="p-4 border-2 shadow-sm">
+              {workingHours.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Рабочие часы не настроены
+                </p>
+              ) : availableTimeSlots.length > 0 ? (
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                  {availableTimeSlots.map((time) => {
+                    const isSelected = selectedTime === time;
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        className={`relative py-2.5 px-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
+                            : 'bg-muted hover:bg-muted/80 hover:scale-105'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  На выбранную дату нет доступных слотов
+                </p>
+              )}
+            </Card>
+          </div>
         )}
 
         {/* Client Info */}
         {selectedService && selectedDate && selectedTime && (
-          <Card className="p-5 mb-6" ref={contactRef}>
-            <h2 className="text-lg font-semibold mb-3">Ваши контактные данные</h2>
-            <div className="space-y-4">
-              <Input
-                placeholder="Ваше имя *"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                required
-              />
-              <Input
-                type="tel"
-                placeholder="Телефон *"
-                value={clientPhone}
-                onChange={(e) => {
-                  let value = e.target.value;
-                  // Remove all non-digits
-                  value = value.replace(/\D/g, '');
-                  // Add +7 prefix if not present
-                  if (!value.startsWith('7') && value.length > 0) {
-                    value = '7' + value;
-                  }
-                  if (value.length > 0) {
-                    value = '+' + value;
-                  }
-                  // Limit to +7 + 10 digits
-                  if (value.length > 12) {
-                    value = value.substring(0, 12);
-                  }
-                  setClientPhone(value);
-                }}
-                required
-              />
-
-              <div className="border-t pt-3 mt-3">
-                <div className="bg-telegram/5 p-3 rounded-lg mb-3 border border-telegram/20">
-                  <h3 className="font-semibold mb-2 text-sm">Детали записи:</h3>
-                  <div className="space-y-1">
-                    <p className="text-sm"><strong>Услуга:</strong> {selectedServiceData?.name}</p>
-                    <p className="text-sm"><strong>Дата:</strong> {format(selectedDate, 'd MMMM yyyy', { locale: ru })}</p>
-                    <p className="text-sm"><strong>Время:</strong> {selectedTime}</p>
-                    <p className="text-sm"><strong>Цена:</strong> {selectedServiceData?.price} ₽</p>
-                  </div>
+          <div className="space-y-3 animate-fade-in" ref={contactRef}>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-xl font-bold">Контакты</h2>
+            </div>
+            
+            <Card className="p-5 border-2 shadow-sm">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Ваше имя</label>
+                  <Input
+                    placeholder="Введите имя"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className="h-11"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Телефон</label>
+                  <Input
+                    type="tel"
+                    placeholder="+7"
+                    value={clientPhone}
+                    onChange={(e) => {
+                      let value = e.target.value;
+                      value = value.replace(/\D/g, '');
+                      if (!value.startsWith('7') && value.length > 0) {
+                        value = '7' + value;
+                      }
+                      if (value.length > 0) {
+                        value = '+' + value;
+                      }
+                      if (value.length > 12) {
+                        value = value.substring(0, 12);
+                      }
+                      setClientPhone(value);
+                    }}
+                    className="h-11"
+                    required
+                  />
                 </div>
 
-                <Button
-                  onClick={handleBooking}
-                  disabled={loading}
-                  className="w-full h-11 bg-telegram hover:bg-telegram/90 font-semibold"
-                >
-                  {loading ? 'Отправка...' : 'Записаться'}
-                </Button>
+                <div className="border-t pt-4 mt-4">
+                  <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 rounded-xl mb-4 border border-primary/20">
+                    <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Детали записи
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Услуга:</span>
+                        <span className="font-medium">{selectedServiceData?.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Дата:</span>
+                        <span className="font-medium">{format(selectedDate, 'd MMMM yyyy', { locale: ru })}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Время:</span>
+                        <span className="font-medium">{selectedTime}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="text-muted-foreground">Итого:</span>
+                        <span className="font-bold text-lg text-primary">{selectedServiceData?.price} ₽</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleBooking}
+                    disabled={loading}
+                    className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold text-base shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Создание записи...</span>
+                      </div>
+                    ) : (
+                      'Записаться'
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         )}
       </div>
 
