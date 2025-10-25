@@ -7,7 +7,7 @@ import bookingMockup from "@/assets/booking-mockup.png";
 
 const Index = () => {
   const [activeScreen, setActiveScreen] = useState<'owner' | 'client'>('owner');
-  const TELEGRAM_CHANNEL = "https://t.me/looktime_app";
+  const TELEGRAM_CHANNEL = "https://t.me/looktime_online";
 
   useEffect(() => {
     document.title = "LookTime - Сервис онлайн-записи в Telegram";
