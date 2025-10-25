@@ -19,12 +19,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-telegram-light via-background to-telegram-light/30">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="container mx-auto px-4 py-6 sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="LookTime" className="w-10 h-10" />
+            <img src={logo} alt="LookTime" className="w-10 h-10" loading="eager" decoding="async" />
             <h2 className="text-2xl font-bold text-telegram">LookTime</h2>
           </div>
           
@@ -53,7 +53,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-telegram/10 mb-6 animate-pulse">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-telegram/10 mb-6">
             <Calendar className="w-10 h-10 text-telegram" />
           </div>
           
@@ -97,6 +97,8 @@ const Index = () => {
                     src={dashboardMockup} 
                     alt="Личный кабинет владельца" 
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
@@ -111,6 +113,8 @@ const Index = () => {
                     src={bookingMockup} 
                     alt="Страница записи для клиента" 
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
@@ -152,7 +156,7 @@ const Index = () => {
             return (
               <div
                 key={index}
-                className="bg-card p-8 rounded-2xl border border-border hover:shadow-xl transition-all hover:-translate-y-1"
+                className="bg-card p-8 rounded-2xl border border-border"
               >
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-telegram/10 mb-4">
                   <Icon className="w-7 h-7 text-telegram" />
