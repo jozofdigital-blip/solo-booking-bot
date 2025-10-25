@@ -57,11 +57,9 @@ export default function Auth() {
         const user = tg.initDataUnsafe?.user;
         setTelegramUser(user);
 
-        console.log('Attempting authentication, retry:', retryCount);
-
-        // Авторизация через backend с увеличенным таймаутом
+        // Авторизация через backend с таймаутом 15 секунд
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         try {
           const { data, error } = await supabase.functions.invoke('telegram-auth', {
@@ -74,12 +72,12 @@ export default function Auth() {
 
           if (error || !respData) {
             console.warn('invoke failed, trying direct fetch fallback...', error);
-            // Fallback: direct HTTP call to the Edge Function (in case some ISPs block invoke)
+            // Fallback: direct HTTP call
             const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
             const fallbackUrl = `https://${projectId}.functions.supabase.co/telegram-auth`;
 
             const fallbackController = new AbortController();
-            const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
+            const fallbackTimeout = setTimeout(() => fallbackController.abort(), 15000);
 
             const resp = await fetch(fallbackUrl, {
               method: 'POST',

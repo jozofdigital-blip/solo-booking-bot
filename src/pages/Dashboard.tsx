@@ -253,7 +253,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       const tgDisplayName = [first, last].filter(Boolean).join(' ') || username || '';
       setDisplayName(tgDisplayName);
 
-      // Load profile - ВСЕГДА загружаем свежие данные с сервера, без кеша
+      // Load profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -295,28 +295,26 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       setProfile(currentProfile);
       setBusinessName(currentProfile.business_name);
       
-      // Check subscription status for all users
+      // Check subscription status
       checkSubscriptionStatus(currentProfile);
 
-      // Параллельная загрузка всех данных для ускорения
+      // Parallel loading - fast!
       if (currentProfile?.id) {
         const [servicesResult, appointmentsResult, workingHoursResult] = await Promise.all([
           supabase
             .from('services')
-            .select('*')
+            .select('id, name, duration_minutes, price, is_active, description')
             .eq('profile_id', currentProfile.id)
             .order('created_at', { ascending: false }),
           supabase
             .from('appointments')
-            .select(`
-              *,
-              services (name, duration_minutes)
-            `)
+            .select('*, services!inner(name, duration_minutes)')
             .eq('profile_id', currentProfile.id)
+            .gte('appointment_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
             .order('appointment_date', { ascending: true }),
           supabase
             .from('working_hours')
-            .select('*')
+            .select('day_of_week, start_time, end_time, is_working')
             .eq('profile_id', currentProfile.id)
             .order('day_of_week', { ascending: true })
         ]);
@@ -324,7 +322,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         setServices(servicesResult.data || []);
         setAppointments(appointmentsResult.data || []);
 
-        // Если нет рабочих часов, создать по умолчанию
+        // Create default working hours if none exist
         if (!workingHoursResult.data || workingHoursResult.data.length === 0) {
           const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
             ...hour,
