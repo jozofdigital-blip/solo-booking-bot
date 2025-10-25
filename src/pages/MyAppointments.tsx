@@ -136,7 +136,10 @@ export default function MyAppointments() {
 
       const { error } = await supabase
         .from("appointments")
-        .update({ status: "cancelled" })
+        .update({ 
+          status: "cancelled",
+          notification_viewed: false // Reset to show cancellation notification
+        })
         .eq("id", cancellingId);
 
       if (error) throw error;

@@ -633,7 +633,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .from('appointments')
         .update({ 
           status: 'cancelled',
-          cancellation_reason: reason
+          cancellation_reason: reason,
+          notification_viewed: false // Reset to show cancellation notification
         })
         .eq('id', cancellingAppointmentId);
 
