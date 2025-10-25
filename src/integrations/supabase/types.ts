@@ -187,6 +187,7 @@ export type Database = {
           phone: string | null
           subscription_end_date: string | null
           telegram_chat_id: string | null
+          timezone: string | null
           trial_end_date: string | null
           unique_slug: string
           updated_at: string
@@ -204,6 +205,7 @@ export type Database = {
           phone?: string | null
           subscription_end_date?: string | null
           telegram_chat_id?: string | null
+          timezone?: string | null
           trial_end_date?: string | null
           unique_slug: string
           updated_at?: string
@@ -221,6 +223,7 @@ export type Database = {
           phone?: string | null
           subscription_end_date?: string | null
           telegram_chat_id?: string | null
+          timezone?: string | null
           trial_end_date?: string | null
           unique_slug?: string
           updated_at?: string

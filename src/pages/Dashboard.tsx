@@ -16,6 +16,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
 import { AppointmentDetailsDialog } from "@/components/AppointmentDetailsDialog";
 import { NotificationBell } from "@/components/NotificationBell";
+import { TimezoneDialog } from "@/components/TimezoneDialog";
 import {
   DEFAULT_WORKING_HOURS,
   WorkingHour,
@@ -71,6 +72,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [initialCalendarDate, setInitialCalendarDate] = useState<Date | undefined>(undefined);
+  const [timezoneDialogOpen, setTimezoneDialogOpen] = useState(false);
   const isCalendarPage = mode === "calendar";
 
   // Check URL params for appointment highlight
@@ -586,6 +588,22 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     setBusinessNameDialogOpen(true);
   };
 
+  const handleSaveTimezone = async (timezone: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ timezone })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+      toast.success('Часовой пояс обновлён');
+      loadData();
+    } catch (error: any) {
+      toast.error('Ошибка сохранения часового пояса');
+      console.error(error);
+    }
+  };
+
   const handleUpdateAppointment = async (appointmentId: string, updates: any) => {
     try {
       const { error } = await supabase
@@ -1005,10 +1023,21 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                         {profile?.address || "Адрес не указан"}
                       </p>
                     </div>
-                    <Button onClick={() => setAddressDialogOpen(true)}>
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Изменить контакты
-                    </Button>
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Часовой пояс</p>
+                      <p className="text-muted-foreground">
+                        {profile?.timezone || "Europe/Moscow"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => setAddressDialogOpen(true)}>
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Изменить контакты
+                      </Button>
+                      <Button onClick={() => setTimezoneDialogOpen(true)} variant="outline">
+                        Часовой пояс
+                      </Button>
+                    </div>
                   </Card>
                 </div>
               )}
@@ -1087,6 +1116,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           onOpenChange={setWorkingHoursDialogOpen}
           workingHours={workingHours}
           onSave={handleSaveWorkingHours}
+        />
+
+        <TimezoneDialog
+          open={timezoneDialogOpen}
+          onOpenChange={setTimezoneDialogOpen}
+          currentTimezone={profile?.timezone}
+          onSave={handleSaveTimezone}
         />
 
         <CancelAppointmentDialog

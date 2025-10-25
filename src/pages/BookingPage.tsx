@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { ru } from "date-fns/locale";
 import { format } from "date-fns";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { Clock } from "lucide-react";
 import { hasEnoughContinuousTime, hasAppointmentOverlap } from "@/lib/utils";
 import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
@@ -173,18 +174,18 @@ export default function BookingPage() {
     const endHour = parseInt(workingDay.end_time.split(':')[0]);
     const endMinute = parseInt(workingDay.end_time.split(':')[1]);
 
-    // Get current time in Moscow timezone
+    // Get current time in master's timezone
+    const profileTimezone = profile?.timezone || 'Europe/Moscow';
     const now = new Date();
-    const moscowOffset = 3 * 60; // Moscow is UTC+3
-    const localOffset = now.getTimezoneOffset();
-    const moscowTime = new Date(now.getTime() + (moscowOffset + localOffset) * 60 * 1000);
+    const nowInMasterTz = toZonedTime(now, profileTimezone);
     
-    const currentHour = moscowTime.getHours();
-    const currentMinute = moscowTime.getMinutes();
+    const currentHour = nowInMasterTz.getHours();
+    const currentMinute = nowInMasterTz.getMinutes();
     const currentTimeInMinutes = currentHour * 60 + currentMinute;
     
-    // Check if selected date is today
-    const isToday = format(selectedDate, 'yyyy-MM-dd') === format(moscowTime, 'yyyy-MM-dd');
+    // Check if selected date is today in master's timezone
+    const selectedDateInMasterTz = toZonedTime(selectedDate, profileTimezone);
+    const isToday = format(selectedDateInMasterTz, 'yyyy-MM-dd') === format(nowInMasterTz, 'yyyy-MM-dd');
 
     const slots: string[] = [];
     for (let hour = startHour; hour <= endHour; hour++) {

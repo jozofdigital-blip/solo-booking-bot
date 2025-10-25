@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { toZonedTime, format as formatTz } from "https://esm.sh/date-fns-tz@3.1.3";
+import { format } from "https://esm.sh/date-fns@3.6.0";
+import { ru } from "https://esm.sh/date-fns@3.6.0/locale/ru";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,174 +21,175 @@ serve(async (req) => {
 
     console.log('Starting reminder check...');
 
-    // Get current time in Moscow timezone (UTC+3)
-    const now = new Date();
-    const moscowOffset = 3 * 60; // Moscow is UTC+3
-    const localOffset = now.getTimezoneOffset();
-    const moscowTime = new Date(now.getTime() + (moscowOffset + localOffset) * 60 * 1000);
-    
-    const currentHour = moscowTime.getHours();
-    const currentMinute = moscowTime.getMinutes();
-    
-    console.log(`Current Moscow time: ${moscowTime.toISOString()}`);
+    // Get all profiles with their timezones
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, timezone, business_name, address, notify_1h_before, notify_24h_before');
 
-    // Get today's date in YYYY-MM-DD format (Moscow timezone)
-    const todayStr = moscowTime.toISOString().split('T')[0];
-    
-    // Get tomorrow's date
-    const tomorrow = new Date(moscowTime);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    console.log(`Checking appointments for today: ${todayStr} and tomorrow: ${tomorrowStr}`);
-
-    // Get all pending appointments for today and tomorrow
-    const { data: appointments, error: appointmentsError } = await supabase
-      .from('appointments')
-      .select(`
-        *,
-        profiles!inner(
-          id,
-          business_name,
-          address,
-          notify_1h_before,
-          notify_24h_before
-        ),
-        services!inner(
-          name
-        )
-      `)
-      .in('appointment_date', [todayStr, tomorrowStr])
-      .eq('status', 'pending');
-
-    if (appointmentsError) {
-      console.error('Error fetching appointments:', appointmentsError);
-      throw appointmentsError;
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      throw profilesError;
     }
 
-    console.log(`Found ${appointments?.length || 0} appointments to check`);
-
-    // Get all unique profile_ids to fetch clients
-    const profileIds = [...new Set(appointments?.map(a => a.profile_id) || [])];
-    
-    // Get all clients with telegram_chat_id for these profiles
-    const { data: clients, error: clientsError } = await supabase
-      .from('clients')
-      .select('*')
-      .in('profile_id', profileIds)
-      .not('telegram_chat_id', 'is', null);
-
-    if (clientsError) {
-      console.error('Error fetching clients:', clientsError);
-      throw clientsError;
-    }
-
-    console.log(`Found ${clients?.length || 0} clients with Telegram`);
-
-    // Create a map of clients by profile_id and phone for quick lookup
-    const clientMap = new Map();
-    clients?.forEach(client => {
-      const key = `${client.profile_id}_${client.phone}`;
-      clientMap.set(key, client);
-    });
+    console.log(`Found ${profiles?.length || 0} profiles`);
 
     let sentCount = 0;
 
-    for (const appointment of appointments || []) {
-      const profile = appointment.profiles;
-      const service = appointment.services;
+    // Process each profile with its timezone
+    for (const profile of profiles || []) {
+      const profileTimezone = profile.timezone || 'Europe/Moscow';
       
-      // Find client by profile_id and phone
-      const clientKey = `${appointment.profile_id}_${appointment.client_phone}`;
-      const client = clientMap.get(clientKey);
+      // Get current time in profile's timezone
+      const now = new Date();
+      const nowInProfileTz = toZonedTime(now, profileTimezone);
       
-      // Skip if client doesn't have Telegram
-      if (!client || !client.telegram_chat_id) {
+      const currentHour = nowInProfileTz.getHours();
+      const currentMinute = nowInProfileTz.getMinutes();
+      
+      console.log(`Checking profile ${profile.id} (${profileTimezone}): ${nowInProfileTz.toISOString()}`);
+
+      // Get today's date in YYYY-MM-DD format (profile timezone)
+      const todayStr = format(nowInProfileTz, 'yyyy-MM-dd');
+      
+      // Get tomorrow's date
+      const tomorrow = new Date(nowInProfileTz);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
+
+      console.log(`Checking appointments for profile ${profile.id}: today=${todayStr}, tomorrow=${tomorrowStr}`);
+
+      // Get all pending appointments for this profile for today and tomorrow
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          services!inner(
+            name
+          )
+        `)
+        .eq('profile_id', profile.id)
+        .in('appointment_date', [todayStr, tomorrowStr])
+        .eq('status', 'pending');
+
+      if (appointmentsError) {
+        console.error(`Error fetching appointments for profile ${profile.id}:`, appointmentsError);
         continue;
       }
-      
-      // Parse appointment time
-      const [aptHour, aptMinute] = appointment.appointment_time.split(':').map(Number);
-      const appointmentDate = appointment.appointment_date;
 
-      // Check for 1-hour reminder
-      if (profile.notify_1h_before && 
-          !appointment.notification_sent_1h && 
-          appointmentDate === todayStr) {
-        
-        // Calculate time difference in minutes
-        const aptTimeInMinutes = aptHour * 60 + aptMinute;
-        const currentTimeInMinutes = currentHour * 60 + currentMinute;
-        const minutesUntilAppointment = aptTimeInMinutes - currentTimeInMinutes;
+      console.log(`Found ${appointments?.length || 0} appointments for profile ${profile.id}`);
 
-        // Send reminder if appointment is in 50-70 minutes (to account for cron timing)
-        if (minutesUntilAppointment >= 50 && minutesUntilAppointment <= 70) {
-          console.log(`Sending 1-hour reminder for appointment ${appointment.id}`);
-          
-          try {
-            await supabase.functions.invoke('send-client-notification', {
-              body: {
-                chatId: client.telegram_chat_id,
-                type: 'reminder_1h',
-                clientName: client.name,
-                serviceName: service.name,
-                date: formatDate(appointmentDate),
-                time: appointment.appointment_time.substring(0, 5),
-                businessName: profile.business_name,
-                address: profile.address,
-                myAppointmentsUrl: 'https://looktime.pro/my-appointments',
-              },
-            });
+      // Get all clients with telegram_chat_id for this profile
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .not('telegram_chat_id', 'is', null);
 
-            // Mark notification as sent
-            await supabase
-              .from('appointments')
-              .update({ notification_sent_1h: true })
-              .eq('id', appointment.id);
-
-            sentCount++;
-            console.log(`1-hour reminder sent for appointment ${appointment.id}`);
-          } catch (error) {
-            console.error(`Failed to send 1-hour reminder for appointment ${appointment.id}:`, error);
-          }
-        }
+      if (clientsError) {
+        console.error(`Error fetching clients for profile ${profile.id}:`, clientsError);
+        continue;
       }
 
-      // Check for 24-hour reminder
-      if (profile.notify_24h_before && 
-          !appointment.notification_sent_24h && 
-          appointmentDate === tomorrowStr) {
+      // Create a map of clients by phone for quick lookup
+      const clientMap = new Map();
+      clients?.forEach(client => {
+        clientMap.set(client.phone, client);
+      });
+
+      for (const appointment of appointments || []) {
+        const service = appointment.services;
         
-        // Send reminder if it's approximately the same time tomorrow (within 1 hour window)
-        const timeDiff = Math.abs(aptHour - currentHour);
-        if (timeDiff <= 1 || timeDiff === 23) { // Account for hour boundary
-          console.log(`Sending 24-hour reminder for appointment ${appointment.id}`);
+        // Find client by phone
+        const client = clientMap.get(appointment.client_phone);
+        
+        // Skip if client doesn't have Telegram
+        if (!client || !client.telegram_chat_id) {
+          continue;
+        }
+        
+        // Parse appointment time
+        const [aptHour, aptMinute] = appointment.appointment_time.split(':').map(Number);
+        const appointmentDate = appointment.appointment_date;
+
+        // Check for 1-hour reminder
+        if (profile.notify_1h_before && 
+            !appointment.notification_sent_1h && 
+            appointmentDate === todayStr) {
           
-          try {
-            await supabase.functions.invoke('send-client-notification', {
-              body: {
-                chatId: client.telegram_chat_id,
-                type: 'reminder_24h',
-                clientName: client.name,
-                serviceName: service.name,
-                date: formatDate(appointmentDate),
-                time: appointment.appointment_time.substring(0, 5),
-                businessName: profile.business_name,
-                address: profile.address,
-                myAppointmentsUrl: 'https://looktime.pro/my-appointments',
-              },
-            });
+          // Calculate time difference in minutes
+          const aptTimeInMinutes = aptHour * 60 + aptMinute;
+          const currentTimeInMinutes = currentHour * 60 + currentMinute;
+          const minutesUntilAppointment = aptTimeInMinutes - currentTimeInMinutes;
 
-            // Mark notification as sent
-            await supabase
-              .from('appointments')
-              .update({ notification_sent_24h: true })
-              .eq('id', appointment.id);
+          // Send reminder if appointment is in 50-70 minutes (to account for cron timing)
+          if (minutesUntilAppointment >= 50 && minutesUntilAppointment <= 70) {
+            console.log(`Sending 1-hour reminder for appointment ${appointment.id}`);
+            
+            try {
+              await supabase.functions.invoke('send-client-notification', {
+                body: {
+                  chatId: client.telegram_chat_id,
+                  type: 'reminder_1h',
+                  clientName: client.name,
+                  serviceName: service.name,
+                  date: formatDate(appointmentDate),
+                  time: appointment.appointment_time.substring(0, 5),
+                  businessName: profile.business_name,
+                  address: profile.address,
+                  myAppointmentsUrl: 'https://looktime.pro/my-appointments',
+                },
+              });
 
-            sentCount++;
-            console.log(`24-hour reminder sent for appointment ${appointment.id}`);
-          } catch (error) {
-            console.error(`Failed to send 24-hour reminder for appointment ${appointment.id}:`, error);
+              // Mark notification as sent
+              await supabase
+                .from('appointments')
+                .update({ notification_sent_1h: true })
+                .eq('id', appointment.id);
+
+              sentCount++;
+              console.log(`1-hour reminder sent for appointment ${appointment.id}`);
+            } catch (error) {
+              console.error(`Failed to send 1-hour reminder for appointment ${appointment.id}:`, error);
+            }
+          }
+        }
+
+        // Check for 24-hour reminder
+        if (profile.notify_24h_before && 
+            !appointment.notification_sent_24h && 
+            appointmentDate === tomorrowStr) {
+          
+          // Send reminder if it's approximately the same time tomorrow (within 1 hour window)
+          const timeDiff = Math.abs(aptHour - currentHour);
+          if (timeDiff <= 1 || timeDiff === 23) { // Account for hour boundary
+            console.log(`Sending 24-hour reminder for appointment ${appointment.id}`);
+            
+            try {
+              await supabase.functions.invoke('send-client-notification', {
+                body: {
+                  chatId: client.telegram_chat_id,
+                  type: 'reminder_24h',
+                  clientName: client.name,
+                  serviceName: service.name,
+                  date: formatDate(appointmentDate),
+                  time: appointment.appointment_time.substring(0, 5),
+                  businessName: profile.business_name,
+                  address: profile.address,
+                  myAppointmentsUrl: 'https://looktime.pro/my-appointments',
+                },
+              });
+
+              // Mark notification as sent
+              await supabase
+                .from('appointments')
+                .update({ notification_sent_24h: true })
+                .eq('id', appointment.id);
+
+              sentCount++;
+              console.log(`24-hour reminder sent for appointment ${appointment.id}`);
+            } catch (error) {
+              console.error(`Failed to send 24-hour reminder for appointment ${appointment.id}:`, error);
+            }
           }
         }
       }
@@ -197,7 +201,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: `Sent ${sentCount} reminders`,
-        checkedAppointments: appointments?.length || 0
+        checkedProfiles: profiles?.length || 0
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
