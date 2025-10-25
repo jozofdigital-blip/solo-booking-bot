@@ -75,7 +75,13 @@ export default function Auth() {
             throw error;
           }
 
+          console.log('Auth response received:', { 
+            success: data?.success, 
+            hasHashedToken: !!data?.hashed_token 
+          });
+
           if (data?.success && data?.hashed_token) {
+            console.log('Verifying OTP with hashed_token...');
             const { error: verifyError } = await supabase.auth.verifyOtp({
               token_hash: data.hashed_token,
               type: 'magiclink',
@@ -86,9 +92,11 @@ export default function Auth() {
               throw verifyError;
             }
             
+            console.log('Authentication successful!');
             toast.success('Добро пожаловать!');
             navigate('/dashboard');
           } else {
+            console.error('Invalid response data:', data);
             throw new Error('Invalid authentication response');
           }
         } catch (fetchError: any) {

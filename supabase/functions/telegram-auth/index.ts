@@ -240,11 +240,16 @@ serve(async (req) => {
 
     if (sessionError) throw sessionError;
 
+    console.log('Session data generated:', {
+      hasActionLink: !!sessionData.properties?.action_link,
+      hasHashedToken: !!sessionData.properties?.hashed_token,
+    });
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        action_link: sessionData.properties?.action_link,
-        hashed_token: sessionData.properties?.hashed_token,
+        action_link: sessionData.properties.action_link,
+        hashed_token: sessionData.properties.hashed_token,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
