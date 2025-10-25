@@ -398,8 +398,15 @@ export default function BookingPage() {
       setSelectedTime('');
     } catch (error: any) {
       console.error('Booking error:', error);
-      const errorMessage = error?.message || 'Ошибка при создании записи';
-      toast.error(errorMessage);
+      
+      // Handle specific overlap error from database trigger
+      if (error?.message?.includes('OVERLAP_TIME_SLOT')) {
+        toast.error('Это время уже занято. Выберите другое время.');
+        await loadAppointments(selectedDate);
+      } else {
+        const errorMessage = error?.message || 'Ошибка при создании записи';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
