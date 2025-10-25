@@ -129,16 +129,14 @@ export default function Subscription() {
     if (!plan) return;
 
     const finalPrice = calculateFinalPrice(plan.price);
-    // Для edge function отправляем 0 если 100% скидка (для бесплатной активации)
-    const paymentAmount = discount === 100 ? 0 : finalPrice;
 
     setLoading(true);
     try {
-      // Create payment via edge function (handles both 100% discount and regular payments)
+      // Create payment via edge function
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           planId: plan.id,
-          amount: paymentAmount,
+          amount: finalPrice,
           description: `Подписка LookTime - ${plan.name}`,
           profileId: profile.id,
           months: plan.months
@@ -150,14 +148,6 @@ export default function Subscription() {
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
-      }
-
-      // Check if it was a promo activation (100% discount)
-      if (data?.promoActivated) {
-        toast.success("Подписка успешно активирована!");
-        setLoading(false);
-        await loadProfile();
-        return;
       }
 
       // Check if data has confirmationUrl directly or nested

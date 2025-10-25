@@ -36,53 +36,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // If amount is 0 (100% discount), activate subscription directly
-    if (amount === 0) {
-      console.log('100% discount - activating subscription without payment gateway');
-      
-      // Calculate subscription end date
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + months);
-
-      // Update subscription
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ subscription_end_date: endDate.toISOString() })
-        .eq('id', profileId);
-
-      if (updateError) {
-        console.error('Error updating subscription:', updateError);
-        throw new Error('Failed to activate subscription');
-      }
-
-      // Create payment record
-      const paymentId = `promo-${Date.now()}`;
-      await supabase
-        .from('payments')
-        .insert({
-          payment_id: paymentId,
-          profile_id: profileId,
-          amount: 0,
-          status: 'succeeded',
-          plan_id: planId,
-          months: months
-        });
-
-      console.log('Subscription activated with promo code');
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          paymentId: paymentId,
-          promoActivated: true
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      );
-    }
-
     // Create base64 encoded credentials for YooKassa
     const credentials = btoa(`${shopId}:${secretKey}`);
     
