@@ -300,9 +300,7 @@ export const WeekCalendar = memo(({
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (apt.status !== 'blocked') {
-                                  onAppointmentClick?.(apt);
-                                }
+                                onAppointmentClick?.(apt);
                               }}
                             >
                               {apt.status === 'blocked' ? (

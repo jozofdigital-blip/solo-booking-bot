@@ -255,13 +255,11 @@ export const ThreeDayCalendar = memo(({
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (apt.status !== 'blocked') {
-                                if (isHighlighted && onClearHighlight) {
-                                  onClearHighlight();
-                                }
-                                if (onAppointmentClick) {
-                                  onAppointmentClick(apt);
-                                }
+                              if (isHighlighted && onClearHighlight) {
+                                onClearHighlight();
+                              }
+                              if (onAppointmentClick) {
+                                onAppointmentClick(apt);
                               }
                             }}
                           >
