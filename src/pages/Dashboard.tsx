@@ -894,13 +894,11 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-1">
-                <SidebarTrigger className="w-14 h-14 rounded-full bg-transparent hover:bg-muted/50 text-foreground transition-all shadow-sm hover:shadow-md hover:scale-105 flex items-center justify-center p-0">
-                  <svg className="w-14 h-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </SidebarTrigger>
-              </div>
+              <SidebarTrigger className="flex items-center justify-end hover:opacity-70 transition-opacity p-0 border-0 bg-transparent">
+                <svg className="w-8 h-11" fill="none" viewBox="0 0 32 44" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h24M4 22h24M4 38h24" />
+                </svg>
+              </SidebarTrigger>
             </div>
           </header>
 
