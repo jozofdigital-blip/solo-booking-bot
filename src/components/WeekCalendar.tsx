@@ -289,6 +289,8 @@ export const WeekCalendar = ({
                               className={`absolute inset-x-0 p-1 md:p-2 rounded cursor-pointer overflow-hidden ${
                                 isPast
                                   ? "bg-gray-200 border-l-4 border-gray-400"
+                                  : apt.status === 'blocked'
+                                  ? "bg-muted border-l-4 border-muted-foreground"
                                   : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
                               }`}
                               style={{ 
@@ -298,18 +300,28 @@ export const WeekCalendar = ({
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onAppointmentClick?.(apt);
+                                if (apt.status !== 'blocked') {
+                                  onAppointmentClick?.(apt);
+                                }
                               }}
                             >
-                              <div className={`font-medium text-[10px] md:text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
-                                {apt.client_name}
-                              </div>
-                              {apt.service_name && (
-                                <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 truncate ${
-                                  isPast ? "text-gray-400" : "text-telegram/70"
-                                }`}>
-                                  {apt.service_name}
+                              {apt.status === 'blocked' ? (
+                                <div className="flex items-center justify-center h-full">
+                                  <Lock className="w-4 h-4 text-muted-foreground" />
                                 </div>
+                              ) : (
+                                <>
+                                  <div className={`font-medium text-[10px] md:text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
+                                    {apt.client_name}
+                                  </div>
+                                  {apt.service_name && (
+                                    <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 truncate ${
+                                      isPast ? "text-gray-400" : "text-telegram/70"
+                                    }`}>
+                                      {apt.service_name}
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                           );

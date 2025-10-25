@@ -202,6 +202,69 @@ export const AppointmentDialog = ({
     }
   };
 
+  const handleBlockTime = async () => {
+    if (!profileId) {
+      toast.error("Не удалось определить профиль");
+      return;
+    }
+
+    try {
+      // Find or create a blocking service
+      let blockService = services.find(s => s.name === "Блокировка");
+      
+      if (!blockService) {
+        // Create a special blocking service
+        const { data: newService, error: serviceError } = await supabase
+          .from("services")
+          .insert({
+            profile_id: profileId,
+            name: "Блокировка",
+            description: "Служебная услуга для блокировки времени",
+            duration_minutes: 30,
+            price: 0,
+            is_active: false, // Hidden from client view
+          })
+          .select()
+          .single();
+
+        if (serviceError || !newService) {
+          toast.error("Не удалось создать услугу блокировки");
+          return;
+        }
+        
+        blockService = newService;
+      }
+
+      // Create a blocked appointment
+      const { error } = await supabase
+        .from("appointments")
+        .insert({
+          profile_id: profileId,
+          service_id: blockService.id,
+          appointment_date: formData.appointment_date,
+          appointment_time: formData.appointment_time,
+          client_name: "Заблокировано",
+          client_phone: "+70000000000",
+          status: "blocked",
+          notes: "Время заблокировано",
+        });
+
+      if (error) {
+        console.error("Error blocking time:", error);
+        toast.error("Не удалось заблокировать время");
+        return;
+      }
+
+      toast.success("Время заблокировано на 30 минут");
+      onOpenChange(false);
+      // Refresh the page to show the blocked slot
+      window.location.reload();
+    } catch (error) {
+      console.error("Error in handleBlockTime:", error);
+      toast.error("Произошла ошибка при блокировке времени");
+    }
+  };
+
   const handleClientSelect = (client: Client) => {
     setFormData({
       ...formData,
@@ -344,23 +407,19 @@ export const AppointmentDialog = ({
           </div>
 
           <DialogFooter className="flex-row gap-2">
+            <Button type="submit" className="flex-1">
+              {appointment ? "Сохранить" : "Создать"}
+            </Button>
             {!appointment && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  // TODO: Implement block time logic
-                  console.log("Block time:", formData.appointment_date, formData.appointment_time);
-                  onOpenChange(false);
-                }}
+                onClick={handleBlockTime}
                 className="flex-1"
               >
                 Заблокировать время
               </Button>
             )}
-            <Button type="submit" className="flex-1">
-              {appointment ? "Сохранить" : "Создать"}
-            </Button>
           </DialogFooter>
         </form>
 

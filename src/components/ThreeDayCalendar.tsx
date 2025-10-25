@@ -235,6 +235,8 @@ export const ThreeDayCalendar = ({
                             className={`absolute inset-x-0 p-2 rounded cursor-pointer overflow-hidden ${
                               isPast 
                                 ? "bg-gray-200 border-l-4 border-gray-400" 
+                                : apt.status === 'blocked'
+                                ? "bg-muted border-l-4 border-muted-foreground"
                                 : isHighlighted && highlightColor === 'green'
                                 ? "bg-telegram-light border-l-4 border-success hover:bg-telegram-light/80 shadow-lg animate-pulse"
                                 : isHighlighted && highlightColor === 'red'
@@ -248,24 +250,34 @@ export const ThreeDayCalendar = ({
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isHighlighted && onClearHighlight) {
-                                onClearHighlight();
-                              }
-                              if (onAppointmentClick) {
-                                onAppointmentClick(apt);
+                              if (apt.status !== 'blocked') {
+                                if (isHighlighted && onClearHighlight) {
+                                  onClearHighlight();
+                                }
+                                if (onAppointmentClick) {
+                                  onAppointmentClick(apt);
+                                }
                               }
                             }}
                           >
-                            {isHighlighted && highlightColor === 'green' && (
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse" />
-                            )}
-                            <div className={`font-medium text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
-                              {apt.client_name}
-                            </div>
-                            {apt.service_name && (
-                              <div className={`text-xs leading-tight mt-1 truncate ${isPast ? "text-gray-400" : "text-telegram/70"}`}>
-                                {apt.service_name}
+                            {apt.status === 'blocked' ? (
+                              <div className="flex items-center justify-center h-full">
+                                <Lock className="w-5 h-5 text-muted-foreground" />
                               </div>
+                            ) : (
+                              <>
+                                {isHighlighted && highlightColor === 'green' && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse" />
+                                )}
+                                <div className={`font-medium text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
+                                  {apt.client_name}
+                                </div>
+                                {apt.service_name && (
+                                  <div className={`text-xs leading-tight mt-1 truncate ${isPast ? "text-gray-400" : "text-telegram/70"}`}>
+                                    {apt.service_name}
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         );
