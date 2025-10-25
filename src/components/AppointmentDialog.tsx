@@ -89,6 +89,7 @@ export const AppointmentDialog = ({
 
   const [clients, setClients] = useState<Client[]>([]);
   const [selectClientDialogOpen, setSelectClientDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (open && profileId) {
@@ -272,7 +273,19 @@ export const AppointmentDialog = ({
       client_phone: client.phone,
     });
     setSelectClientDialogOpen(false);
+    setSearchQuery(""); // Reset search when closing
   };
+
+  // Filter and sort clients
+  const filteredClients = clients
+    .filter(client => {
+      const query = searchQuery.toLowerCase();
+      return (
+        client.name.toLowerCase().includes(query) ||
+        client.phone.toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -429,14 +442,25 @@ export const AppointmentDialog = ({
             <DialogHeader>
               <DialogTitle>Выбрать клиента</DialogTitle>
             </DialogHeader>
+            
+            {/* Search Input */}
+            <div className="space-y-2">
+              <Input
+                placeholder="Поиск по имени или номеру..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
             <div className="overflow-y-auto max-h-[50vh]">
-              {clients.length === 0 ? (
+              {filteredClients.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Нет сохраненных клиентов
+                  {searchQuery ? "Клиенты не найдены" : "Нет сохраненных клиентов"}
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {clients.map((client) => (
+                  {filteredClients.map((client) => (
                     <div
                       key={client.id}
                       className="p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
@@ -453,7 +477,10 @@ export const AppointmentDialog = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setSelectClientDialogOpen(false)}
+                onClick={() => {
+                  setSelectClientDialogOpen(false);
+                  setSearchQuery("");
+                }}
               >
                 Отмена
               </Button>

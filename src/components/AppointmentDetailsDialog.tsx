@@ -67,13 +67,13 @@ export function AppointmentDetailsDialog({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-foreground font-medium">
                     {format(new Date(appointment.appointment_date), "d MMMM yyyy", { locale: ru })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-foreground font-medium">
                     {appointment.appointment_time.substring(0, 5)}
                   </span>
                 </div>
@@ -100,7 +100,7 @@ export function AppointmentDetailsDialog({
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2">
             <Button
-              variant="outline"
+              variant="default"
               className="flex-1"
               onClick={handleCall}
             >
