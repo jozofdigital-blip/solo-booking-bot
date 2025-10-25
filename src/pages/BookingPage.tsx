@@ -298,9 +298,9 @@ export default function BookingPage() {
       // Save client data to localStorage
       saveClientDataToLocalStorage(clientName, clientPhone);
 
-      // Create client record without returning (RLS blocks public SELECT)
+      // Try to create client record (may fail if duplicate, which is fine)
       const clientId = crypto.randomUUID();
-      await supabase
+      const { error: clientError } = await supabase
         .from('clients')
         .insert({
           id: clientId,
@@ -309,6 +309,11 @@ export default function BookingPage() {
           phone: clientPhone,
           last_visit: new Date().toISOString()
         });
+
+      // Ignore duplicate errors - client may already exist
+      if (clientError && !clientError.message.includes('duplicate')) {
+        console.error('Client insert error:', clientError);
+      }
 
       // Send telegram notification to owner if chat_id is configured
       if (profile?.telegram_chat_id) {
