@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 interface Appointment {
   id: string;
@@ -39,27 +41,54 @@ export const NotificationBell = ({
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Appointment[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [locallyReadIds, setLocallyReadIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Filter for unviewed notifications (новые записи и отмены)
-    const unviewed = appointments.filter(apt => 
-      !apt.notification_viewed && 
-      (apt.status === 'pending' || apt.status === 'cancelled' || apt.status === 'confirmed')
+    const unviewed = appointments.filter(apt =>
+      !apt.notification_viewed &&
+      (apt.status === 'pending' || apt.status === 'cancelled' || apt.status === 'confirmed') &&
+      !locallyReadIds.has(apt.id)
     );
-    
-    // Sort by created_at descending
-    const sorted = [...unviewed].sort((a, b) => 
+
+    const sorted = [...unviewed].sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    
+
     setNotifications(sorted);
     setUnreadCount(sorted.length);
-  }, [appointments]);
+  }, [appointments, locallyReadIds]);
 
   const handleNotificationClick = async (appointment: Appointment) => {
+    // Optimistically mark as read locally so the red dot disappears immediately
+    setLocallyReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(appointment.id);
+      return next;
+    });
+
     // Open appointment details
     onAppointmentClick(appointment);
     setOpen(false);
+
+    // Persist to backend
+    const { error } = await supabase
+      .from("appointments")
+      .update({ notification_viewed: true })
+      .eq("id", appointment.id);
+
+    if (error) {
+      // Rollback local change on error
+      setLocallyReadIds((prev) => {
+        const next = new Set(prev);
+        next.delete(appointment.id);
+        return next;
+      });
+      toast({
+        title: "Не удалось отметить как прочитанное",
+        description: "Попробуйте ещё раз.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getServiceName = (serviceId: string) => {
