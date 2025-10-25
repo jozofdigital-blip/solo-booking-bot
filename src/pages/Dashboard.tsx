@@ -590,7 +590,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     try {
       const { error } = await supabase
         .from('appointments')
-        .update(updates)
+        .update({
+          ...updates,
+          notification_viewed: false
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
