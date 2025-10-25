@@ -148,6 +148,16 @@ export default function BookingPage() {
       }));
 
       setAppointments(appointmentsWithDuration);
+
+      // If currently selected time became unavailable, reset it
+      if (selectedTime && selectedService) {
+        const selectedServiceDataLocal = services.find(s => s.id === selectedService);
+        const dur = selectedServiceDataLocal?.duration_minutes || 60;
+        const overlaps = hasAppointmentOverlap(dateStr, selectedTime, dur, appointmentsWithDuration);
+        if (overlaps) {
+          setSelectedTime('');
+        }
+      }
     } catch (err) {
       // Повторить запрос до 3 раз на случай холодного старта/сетевых сбоев
       if (attempt < 3) {
