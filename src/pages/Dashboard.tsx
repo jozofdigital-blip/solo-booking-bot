@@ -696,7 +696,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const todayDate = new Date().toISOString().split('T')[0];
 
-  const todayAppointments = appointments.filter(a => a.appointment_date === todayDate);
+  const todayAppointments = appointments.filter(a => 
+    a.appointment_date === todayDate && a.status !== 'cancelled'
+  );
 
   // Calculate minimum service duration from active services
   const getMinServiceDuration = () => {
