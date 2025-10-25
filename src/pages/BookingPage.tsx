@@ -135,10 +135,15 @@ export default function BookingPage() {
       const { data, error } = await supabase.functions.invoke('get-busy-slots', {
         body: { profileId: profile.id, date: dateStr },
       });
+      console.log('[booking] get-busy-slots request', { profileId: profile.id, date: dateStr });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[booking] get-busy-slots error', error);
+        throw error;
+      }
 
       const raw = (data as any)?.slots ?? [];
+      console.log('[booking] get-busy-slots response count', raw.length, raw);
       const appointmentsWithDuration = raw.map((apt: any) => ({
         appointment_date: dateStr,
         appointment_time: apt.appointment_time,
@@ -149,6 +154,7 @@ export default function BookingPage() {
 
       setAppointments(appointmentsWithDuration);
       setAppointmentsLoadedDate(dateStr);
+      console.log('[booking] appointments prepared', { dateStr, count: appointmentsWithDuration.length, sample: appointmentsWithDuration.slice(0,3) });
 
       // If currently selected time became unavailable, reset it
       if (selectedTime && selectedService) {
@@ -185,12 +191,14 @@ export default function BookingPage() {
   }, [selectedService]);
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
+      console.log('[booking] skip slots: no date or service', { selectedDate: !!selectedDate, selectedService: !!selectedService });
       return [];
     }
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     // Do not show slots until appointments for this date are loaded
     if (slotsLoading || appointmentsLoadedDate !== dateStr) {
+      console.log('[booking] waiting slots load', { slotsLoading, appointmentsLoadedDate, dateStr, appointmentsCount: appointments.length });
       return [];
     }
 
@@ -255,6 +263,7 @@ export default function BookingPage() {
         }
       }
       
+      console.log('[booking] available slots computed', { dateStr: format(selectedDate, 'yyyy-MM-dd'), count: slots.length });
       return slots;
     } catch (error) {
       return [];
