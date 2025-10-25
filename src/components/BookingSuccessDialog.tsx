@@ -50,6 +50,10 @@ export const BookingSuccessDialog = ({
           {!hasTelegram && (
             <DialogDescription className="text-center text-base pt-2">
               Пожалуйста, подключите уведомления в Telegram, чтобы мы напоминали о записях 😊
+              <br />
+              <span className="text-sm text-muted-foreground mt-2 block">
+                Нажмите "Старт" в открывшемся окне Telegram
+              </span>
             </DialogDescription>
           )}
         </DialogHeader>

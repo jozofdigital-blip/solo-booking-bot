@@ -381,8 +381,21 @@ export default function BookingPage() {
         }
       }
 
-      // Public booking flow: we can't read client data due to RLS, so skip Telegram client notification
-      setClientHasTelegram(false);
+      // Check if client has existing Telegram connection by looking for existing client record
+      try {
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('telegram_chat_id')
+          .eq('phone', clientPhone)
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+        
+        const hasTelegram = !!existingClient?.telegram_chat_id;
+        setClientHasTelegram(hasTelegram);
+      } catch (clientCheckError) {
+        console.log('Could not check client Telegram status, assuming no connection');
+        setClientHasTelegram(false);
+      }
 
       // Reload appointments to update available slots
       await loadAppointments(selectedDate);

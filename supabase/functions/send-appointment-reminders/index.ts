@@ -69,7 +69,7 @@ serve(async (req) => {
         `)
         .eq('profile_id', profile.id)
         .in('appointment_date', [todayStr, tomorrowStr])
-        .eq('status', 'pending');
+        .in('status', ['pending', 'confirmed']);
 
       if (appointmentsError) {
         console.error(`Error fetching appointments for profile ${profile.id}:`, appointmentsError);
