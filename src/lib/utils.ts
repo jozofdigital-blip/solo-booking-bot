@@ -26,6 +26,7 @@ export function hasAppointmentOverlap(
     appointment_date: string;
     appointment_time: string;
     duration_minutes?: number;
+    status?: string;
   }>,
   excludeAppointmentId?: string
 ): boolean {
@@ -34,6 +35,8 @@ export function hasAppointmentOverlap(
 
   return appointments.some((apt: any) => {
     if (apt.id === excludeAppointmentId) return false;
+    // Ignore cancelled appointments
+    if (apt.status === 'cancelled') return false;
     if (apt.appointment_date !== slotDate) return false;
 
     const aptTime = apt.appointment_time.substring(0, 5);
@@ -55,6 +58,7 @@ export function hasEnoughContinuousTime(
     appointment_date: string;
     appointment_time: string;
     duration_minutes?: number;
+    status?: string;
   }>,
   workingEndTime?: string
 ): boolean {

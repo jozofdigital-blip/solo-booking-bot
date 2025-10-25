@@ -68,7 +68,10 @@ export const WeekCalendar = ({
     const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
     const totalSlots = Math.floor(totalMinutes / 30);
     
-    const dayAppointments = appointments.filter(apt => apt.appointment_date === dateStr);
+    // Only count non-cancelled appointments
+    const dayAppointments = appointments.filter(apt => 
+      apt.appointment_date === dateStr && apt.status !== 'cancelled'
+    );
     const bookedSlots = dayAppointments.length;
     
     return bookedSlots >= totalSlots;
