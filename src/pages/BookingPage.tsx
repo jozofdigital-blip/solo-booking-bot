@@ -168,8 +168,11 @@ export default function BookingPage() {
           },
           (payload) => {
             console.log('Real-time appointment change:', payload);
-            // Reload appointments when any change happens
-            loadAppointments(selectedDate);
+            // Force reload appointments immediately and recalculate slots
+            loadAppointments(selectedDate).then(() => {
+              // Force re-render of available slots by updating a state
+              setSelectedTime(''); // Reset selected time if slot becomes unavailable
+            });
           }
         )
         .subscribe();
@@ -381,23 +384,21 @@ export default function BookingPage() {
         }
       }
 
-      // Check if client has existing Telegram connection by looking for existing client record
-      try {
-        const { data: existingClient } = await supabase
-          .from('clients')
-          .select('telegram_chat_id')
-          .eq('phone', clientPhone)
-          .eq('profile_id', profile.id)
-          .maybeSingle();
-        
-        const hasTelegram = !!existingClient?.telegram_chat_id;
-        setClientHasTelegram(hasTelegram);
-      } catch (clientCheckError) {
-        console.log('Could not check client Telegram status, assuming no connection');
-        setClientHasTelegram(false);
-      }
+      // Try to find existing client by phone to check Telegram status
+      const { data: existingClients } = await supabase
+        .from('profiles')
+        .select(`
+          clients!inner(telegram_chat_id)
+        `)
+        .eq('id', profile.id)
+        .eq('clients.phone', clientPhone);
+      
+      const hasTelegram = existingClients && existingClients.length > 0 && 
+                         existingClients[0].clients?.some((c: any) => c.telegram_chat_id);
+      
+      setClientHasTelegram(hasTelegram);
 
-      // Reload appointments to update available slots
+      // Force immediate reload of appointments to update available slots for all users
       await loadAppointments(selectedDate);
       
       toast.success('Запись успешно создана!');
