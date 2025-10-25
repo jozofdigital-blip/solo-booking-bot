@@ -202,31 +202,28 @@ export const WeekCalendar = ({
             <div className="p-1 md:p-2 text-xs md:text-sm font-medium border-r bg-muted/50 min-w-[50px] flex items-center justify-center">
               Время
             </div>
-            {weekDays.map((day) => (
-              <div
-                key={day.toISOString()}
-                className={`p-1 md:p-2 text-center border-r last:border-r-0 flex-1 ${
-                  isDayFull(day) && !isBefore(day, new Date()) 
-                    ? "bg-muted/70" 
-                    : "bg-muted/50"
-                }`}
-              >
-                <div className="text-[10px] md:text-xs text-muted-foreground">
-                  {format(day, "EEE", { locale: ru })}
-                </div>
+            {weekDays.map((day) => {
+              const isCurrentDay = isSameDay(day, new Date());
+              return (
                 <div
-                  className={`text-xs md:text-sm font-medium ${
-                    isSameDay(day, new Date()) 
-                      ? "text-telegram" 
-                      : isDayFull(day) && !isBefore(day, new Date())
-                        ? "text-muted-foreground"
-                        : ""
+                  key={day.toISOString()}
+                  className={`p-1 md:p-2 text-center border-r last:border-r-0 flex-1 ${
+                    isCurrentDay 
+                      ? "bg-primary text-primary-foreground font-semibold" 
+                      : isDayFull(day) && !isBefore(day, new Date()) 
+                        ? "bg-muted/70" 
+                        : "bg-muted/50"
                   }`}
                 >
-                  {format(day, "d")}
+                  <div className={`text-[10px] md:text-xs ${isCurrentDay ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                    {format(day, "EEEEEE", { locale: ru })}
+                  </div>
+                  <div className={`text-xs md:text-sm font-medium`}>
+                    {format(day, "d")}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Time slots */}

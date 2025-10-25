@@ -174,7 +174,7 @@ export const ThreeDayCalendar = ({
                 isToday(day) ? "bg-primary text-primary-foreground font-semibold" : ""
               }`}
             >
-              <div className="text-xs">{format(day, "EEE", { locale: ru })}</div>
+              <div className="text-xs">{format(day, "EEEEEE", { locale: ru })}</div>
               <div className="text-lg">{format(day, "d")}</div>
             </div>
           ))}
