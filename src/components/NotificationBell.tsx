@@ -114,8 +114,8 @@ export const NotificationBell = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-14 w-14">
-          <Bell className="h-12 w-12" />
+        <Button variant="ghost" size="icon" className="relative h-14 w-14 p-0">
+          <Bell className="h-13 w-13" />
           {unreadCount > 0 && (
             <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-destructive ring-2 ring-background" />
           )}
