@@ -495,9 +495,40 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       if (error) throw error;
       
-      // Send Telegram notification
+      // Send Telegram notification to master
       if (newAppointment) {
         await sendTelegramNotification({...appointmentData, id: newAppointment.id}, 'new');
+      }
+
+      // Send notification to client if they have Telegram
+      if (appointmentData.client_phone) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('telegram_chat_id')
+          .eq('phone', appointmentData.client_phone)
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+
+        if (clientData?.telegram_chat_id) {
+          try {
+            const serviceData = services.find(s => s.id === appointmentData.service_id);
+            await supabase.functions.invoke('send-client-notification', {
+              body: {
+                chatId: clientData.telegram_chat_id,
+                type: 'confirmation',
+                clientName: appointmentData.client_name,
+                serviceName: serviceData?.name || '',
+                date: format(new Date(appointmentData.appointment_date), 'dd MMMM yyyy', { locale: ru }),
+                time: appointmentData.appointment_time,
+                businessName: profile.business_name,
+                address: profile.address,
+                myAppointmentsUrl: `${window.location.origin}/my-appointments?phone=${encodeURIComponent(appointmentData.client_phone)}`
+              }
+            });
+          } catch (notifError) {
+            console.error('Failed to send client notification:', notifError);
+          }
+        }
       }
       
       toast.success('Запись создана');
@@ -597,6 +628,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleUpdateAppointment = async (appointmentId: string, updates: any) => {
     try {
+      // Get original appointment data
+      const { data: originalApt } = await supabase
+        .from('appointments')
+        .select('*, services(name)')
+        .eq('id', appointmentId)
+        .single();
+
       const { error } = await supabase
         .from('appointments')
         .update({
@@ -605,6 +643,41 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .eq('id', appointmentId);
 
       if (error) throw error;
+
+      // Send notification to client if they have Telegram and appointment details changed
+      if (originalApt && (updates.appointment_date || updates.appointment_time || updates.service_id)) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('telegram_chat_id')
+          .eq('phone', originalApt.client_phone)
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+
+        if (clientData?.telegram_chat_id) {
+          try {
+            const serviceData = updates.service_id 
+              ? services.find(s => s.id === updates.service_id)
+              : { name: (originalApt.services as any)?.name };
+
+            await supabase.functions.invoke('send-client-notification', {
+              body: {
+                chatId: clientData.telegram_chat_id,
+                type: 'update',
+                clientName: originalApt.client_name,
+                serviceName: serviceData?.name || '',
+                date: format(new Date(updates.appointment_date || originalApt.appointment_date), 'dd MMMM yyyy', { locale: ru }),
+                time: updates.appointment_time || originalApt.appointment_time,
+                businessName: profile.business_name,
+                address: profile.address,
+                myAppointmentsUrl: `${window.location.origin}/my-appointments?phone=${encodeURIComponent(originalApt.client_phone)}`
+              }
+            });
+          } catch (notifError) {
+            console.error('Failed to send client notification:', notifError);
+          }
+        }
+      }
+
       toast.success('Запись обновлена');
       loadData();
     } catch (error: any) {
