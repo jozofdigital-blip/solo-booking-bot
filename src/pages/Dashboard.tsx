@@ -66,6 +66,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [isTrial, setIsTrial] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [displayName, setDisplayName] = useState("");
   const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -231,6 +232,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
       setUserId(user.id);
 
+      const first = (user.user_metadata?.first_name || user.user_metadata?.name || '').trim();
+      const last = (user.user_metadata?.last_name || '').trim();
+      const username = user.user_metadata?.username || user.user_metadata?.telegram_username || '';
+      const tgDisplayName = [first, last].filter(Boolean).join(' ') || username || '';
+      setDisplayName(tgDisplayName);
+
       // Load profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -249,7 +256,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           .from('profiles')
           .insert({
             user_id: user.id,
-            business_name: 'Мой бизнес',
+            business_name: tgDisplayName || 'Мой бизнес',
             unique_slug: slug
           })
           .select()
@@ -776,7 +783,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                       onClick={() => navigate('/dashboard')}
                       title="Перейти на дашборд"
                     >
-                      {profile?.business_name}
+                      {profile?.business_name || displayName}
                     </h1>
                     <p className="text-sm text-muted-foreground leading-tight">
                       {format(new Date(), "d MMMM", { locale: ru })}
