@@ -578,6 +578,9 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .from('appointments')
         .update({ notification_viewed: true })
         .eq('id', apt.id);
+      
+      // Reload data to update notification bell
+      loadData();
     }
     
     // Load client info

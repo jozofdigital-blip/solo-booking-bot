@@ -56,8 +56,8 @@ export const NotificationBell = ({
     setUnreadCount(sorted.length);
   }, [appointments]);
 
-  const handleNotificationClick = (appointment: Appointment) => {
-    // Open appointment details (notification_viewed will be marked in Dashboard)
+  const handleNotificationClick = async (appointment: Appointment) => {
+    // Open appointment details
     onAppointmentClick(appointment);
     setOpen(false);
   };
@@ -121,6 +121,9 @@ export const NotificationBell = ({
                         {format(new Date(notification.appointment_date), "d MMMM", { locale: ru })} 
                         {' в '}
                         {notification.appointment_time.slice(0, 5)}
+                      </p>
+                      <p className="text-xs text-muted-foreground/60">
+                        Создано: {format(new Date(notification.created_at), "d MMM, HH:mm", { locale: ru })}
                       </p>
                     </div>
                   </div>
