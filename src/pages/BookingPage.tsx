@@ -29,6 +29,8 @@ export default function BookingPage() {
   const [botUsername, setBotUsername] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
   const [clientHasTelegram, setClientHasTelegram] = useState(false);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [loadedDateKey, setLoadedDateKey] = useState<string | null>(null);
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
@@ -126,7 +128,7 @@ export default function BookingPage() {
 
   const loadAppointments = async (date: Date) => {
     if (!profile) return;
-    
+    setSlotsLoading(true);
     const dateStr = format(date, 'yyyy-MM-dd');
     
     try {
@@ -146,14 +148,21 @@ export default function BookingPage() {
       }));
 
       setAppointments(appointmentsWithDuration);
+      setLoadedDateKey(dateStr);
     } catch (err) {
       // Silent fail - slots remain empty
+    } finally {
+      setSlotsLoading(false);
     }
   };
-
   useEffect(() => {
     if (selectedDate && profile) {
-      loadAppointments(selectedDate);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      
+      // Only load if we haven't loaded this date yet
+      if (loadedDateKey !== dateStr) {
+        loadAppointments(selectedDate);
+      }
 
       // Subscribe to real-time updates for this profile's appointments
       const channel = supabase
@@ -167,7 +176,7 @@ export default function BookingPage() {
             filter: `profile_id=eq.${profile.id}`
           },
           (payload) => {
-            // Force reload appointments immediately and recalculate slots
+            // Force immediate reload on any appointment change
             loadAppointments(selectedDate).then(() => {
               setSelectedTime(''); // Reset selected time if slot becomes unavailable
             });
@@ -179,7 +188,14 @@ export default function BookingPage() {
         supabase.removeChannel(channel);
       };
     }
-  }, [selectedDate, profile]);
+  }, [selectedDate, profile, loadedDateKey]);
+
+  // Auto-reload slots when service changes (to recalculate available slots with correct duration)
+  useEffect(() => {
+    if (selectedDate && selectedService && profile && services.length > 0) {
+      loadAppointments(selectedDate);
+    }
+  }, [selectedService, services]);
 
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
@@ -505,7 +521,12 @@ export default function BookingPage() {
             </div>
             
             <Card className="p-4 border-2 shadow-sm">
-              {workingHours.length === 0 ? (
+              {slotsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                  <span className="ml-2 text-sm text-muted-foreground">Загружаем слоты...</span>
+                </div>
+              ) : workingHours.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
                   Рабочие часы не настроены
                 </p>
