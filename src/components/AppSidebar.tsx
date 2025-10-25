@@ -30,7 +30,7 @@ const navigationItems = [
   { id: "services", title: "Мои услуги", icon: Package },
   { id: "clients", title: "Мои клиенты", icon: Users },
   { id: "notifications", title: "Уведомления", icon: Bell },
-  { id: "address", title: "Мой адрес", icon: MapPin },
+  { id: "address", title: "Мои контакты", icon: MapPin },
   { id: "booking-link", title: "Ссылка для клиентов", icon: Share2 },
 ];
 
