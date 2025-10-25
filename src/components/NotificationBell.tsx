@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Calendar, X, Check } from "lucide-react";
+import { Bell, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -29,14 +29,12 @@ interface NotificationBellProps {
   profileId: string;
   appointments: Appointment[];
   services: any[];
-  onAppointmentClick: (appointment: Appointment) => void;
 }
 
 export const NotificationBell = ({
   profileId,
   appointments,
   services,
-  onAppointmentClick,
 }: NotificationBellProps) => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Appointment[]>([]);
@@ -57,39 +55,6 @@ export const NotificationBell = ({
     setNotifications(sorted);
     setUnreadCount(sorted.length);
   }, [appointments, locallyReadIds]);
-
-  const handleNotificationClick = async (appointment: Appointment) => {
-    // Optimistically mark as read locally so the red dot disappears immediately
-    setLocallyReadIds((prev) => {
-      const next = new Set(prev);
-      next.add(appointment.id);
-      return next;
-    });
-
-    // Open appointment details
-    onAppointmentClick(appointment);
-    setOpen(false);
-
-    // Persist to backend
-    const { error } = await supabase
-      .from("appointments")
-      .update({ notification_viewed: true })
-      .eq("id", appointment.id);
-
-    if (error) {
-      // Rollback local change on error
-      setLocallyReadIds((prev) => {
-        const next = new Set(prev);
-        next.delete(appointment.id);
-        return next;
-      });
-      toast({
-        title: "Не удалось отметить как прочитанное",
-        description: "Попробуйте ещё раз.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const markAsReadById = async (id: string) => {
     // Optimistically mark as read locally
@@ -158,7 +123,7 @@ export const NotificationBell = ({
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
+                  onClick={() => markAsReadById(notification.id)}
                   className="group relative p-4 hover:bg-accent/50 transition-all duration-200 cursor-pointer"
                 >
                   <div className="flex items-start gap-4">
@@ -175,26 +140,12 @@ export const NotificationBell = ({
                     </div>
                     
                     <div className="flex-1 space-y-2 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge 
-                          variant={notification.status === 'cancelled' ? 'destructive' : 'default'}
-                          className="text-xs"
-                        >
-                          {getNotificationText(notification)}
-                        </Badge>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            markAsReadById(notification.id); 
-                          }}
-                          className="h-7 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Check className="h-3 w-3 mr-1" />
-                          Прочитано
-                        </Button>
-                      </div>
+                      <Badge 
+                        variant={notification.status === 'cancelled' ? 'destructive' : 'default'}
+                        className="text-xs"
+                      >
+                        {getNotificationText(notification)}
+                      </Badge>
                       
                       <p className="font-semibold text-foreground">{notification.client_name}</p>
                       

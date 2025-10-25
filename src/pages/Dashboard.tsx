@@ -770,10 +770,6 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   profileId={profile?.id}
                   appointments={appointments}
                   services={services}
-                  onAppointmentClick={(appointment) => {
-                    setSelectedAppointment(appointment);
-                    setAppointmentDetailsOpen(true);
-                  }}
                 />
                 <SidebarTrigger />
               </div>
