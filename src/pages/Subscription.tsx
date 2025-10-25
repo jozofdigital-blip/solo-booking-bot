@@ -135,18 +135,28 @@ export default function Subscription() {
         }
       });
 
-      if (error) throw error;
+      console.log('Payment response:', { data, error });
 
-      if (data?.confirmationUrl) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      // Check if data has confirmationUrl directly or nested
+      const confirmationUrl = data?.confirmationUrl || data?.data?.confirmationUrl;
+      
+      console.log('Confirmation URL:', confirmationUrl);
+
+      if (confirmationUrl) {
         // Redirect to YooKassa payment page
-        window.location.href = data.confirmationUrl;
+        window.location.href = confirmationUrl;
       } else {
+        console.error('Full response data:', JSON.stringify(data, null, 2));
         throw new Error('No confirmation URL received');
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error('Ошибка при создании платежа');
-    } finally {
+      toast.error(`Ошибка при создании платежа: ${error.message || 'Неизвестная ошибка'}`);
       setLoading(false);
     }
   };
