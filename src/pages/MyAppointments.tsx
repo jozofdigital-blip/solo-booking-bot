@@ -186,45 +186,53 @@ export default function MyAppointments() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-telegram-light to-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="p-8 mb-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Мои записи</h1>
-            <p className="text-muted-foreground">
-              Введите номер телефона, чтобы посмотреть ваши записи
-            </p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+      <div className="container mx-auto px-4 py-6 sm:py-12 max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-8 animate-fade-in">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Мои записи
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Управляйте своими записями в одном месте
+          </p>
+        </div>
 
-          <div className="flex gap-3 max-w-md mx-auto">
+        {/* Search Form */}
+        <Card className="p-6 sm:p-8 mb-6 border-2 shadow-lg animate-fade-in">
+          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <Input
-              placeholder="Номер телефона"
+              placeholder="+7 (___) ___-__-__"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && searchAppointments()}
+              className="h-12 text-base"
             />
             <Button
               onClick={searchAppointments}
               disabled={loading}
-              className="bg-telegram hover:bg-telegram/90"
+              className="h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all shadow-md"
             >
-              {loading ? "Поиск..." : "Найти"}
+              {loading ? "Поиск..." : "Найти записи"}
             </Button>
           </div>
         </Card>
 
+        {/* Telegram Connection Banner */}
         {searched && appointments.length > 0 && !hasTelegram && clientId && botUsername && (
-          <Card className="p-6 mb-6 bg-telegram/5 border-telegram/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold mb-1">Подключите уведомления в Telegram</h3>
+          <Card className="p-5 sm:p-6 mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-primary/30 shadow-lg animate-fade-in">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 text-base sm:text-lg">
+                  📱 Подключите Telegram уведомления
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   Получайте напоминания о записях и уведомления об изменениях
                 </p>
               </div>
               <Button
                 onClick={handleConnectTelegram}
-                className="bg-telegram hover:bg-telegram/90"
+                className="bg-gradient-to-r from-telegram to-telegram/80 hover:from-telegram/90 hover:to-telegram/70 transition-all shadow-md w-full sm:w-auto"
               >
                 Подключить
               </Button>
@@ -232,74 +240,104 @@ export default function MyAppointments() {
           </Card>
         )}
 
+        {/* Appointments List */}
         {searched && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
             {appointments.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">
-                <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>У вас нет активных записей</p>
+              <Card className="p-12 text-center border-2 shadow-lg">
+                <div className="max-w-sm mx-auto">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-semibold mb-2">Нет активных записей</h3>
+                  <p className="text-sm text-muted-foreground">
+                    У вас пока нет предстоящих записей
+                  </p>
+                </div>
               </Card>
             ) : (
-              appointments.map((appointment) => (
-                <Card key={appointment.id} className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-1">
+              appointments.map((appointment, index) => (
+                <Card 
+                  key={appointment.id} 
+                  className="p-6 border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-xl group"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-5">
+                    <div className="flex-1">
+                      <h3 className="text-xl sm:text-2xl font-bold mb-1 group-hover:text-primary transition-colors">
                         {appointment.profiles.business_name}
                       </h3>
-                      <p className="text-lg text-telegram font-medium">
-                        {appointment.services.name}
-                      </p>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full">
+                        <span className="text-base sm:text-lg font-semibold text-primary">
+                          {appointment.services.name}
+                        </span>
+                      </div>
                     </div>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       onClick={() => setCancellingId(appointment.id)}
+                      className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all"
                     >
                       Отменить
                     </Button>
                   </div>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        {format(parseISO(appointment.appointment_date), "d MMMM yyyy", {
-                          locale: ru,
-                        })}
-                      </span>
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Дата</p>
+                        <p className="font-semibold">
+                          {format(parseISO(appointment.appointment_date), "d MMMM yyyy", {
+                            locale: ru,
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        {appointment.appointment_time} ({appointment.services.duration_minutes}{" "}
-                        мин)
-                      </span>
+                    
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Clock className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Время</p>
+                        <p className="font-semibold">
+                          {appointment.appointment_time} ({appointment.services.duration_minutes} мин)
+                        </p>
+                      </div>
                     </div>
+
                     {appointment.profiles.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span>{appointment.profiles.address}</span>
+                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg sm:col-span-2">
+                        <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Адрес</p>
+                          <p className="font-medium">{appointment.profiles.address}</p>
+                        </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span>{appointment.client_phone}</span>
+
+                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg sm:col-span-2">
+                      <Phone className="w-5 h-5 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Контакт</p>
+                        <p className="font-medium">{appointment.client_phone}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Стоимость:</span>
-                      <span className="text-lg font-semibold">
-                        {appointment.services.price} ₽
-                      </span>
-                    </div>
+                  {/* Price */}
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                    <span className="font-medium text-muted-foreground">Стоимость услуги</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {appointment.services.price} ₽
+                    </span>
                   </div>
 
+                  {/* Notes */}
                   {appointment.notes && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg text-sm">
-                      <strong>Примечания:</strong> {appointment.notes}
+                    <div className="mt-4 p-4 bg-muted/80 rounded-lg border-l-4 border-primary">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">ПРИМЕЧАНИЯ</p>
+                      <p className="text-sm">{appointment.notes}</p>
                     </div>
                   )}
                 </Card>
@@ -309,17 +347,21 @@ export default function MyAppointments() {
         )}
 
         <AlertDialog open={!!cancellingId} onOpenChange={() => setCancellingId(null)}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle>Отменить запись?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Вы уверены, что хотите отменить эту запись? Владелец получит уведомление об
-                отмене.
+              <AlertDialogTitle className="text-xl">Отменить запись?</AlertDialogTitle>
+              <AlertDialogDescription className="text-base">
+                Вы уверены, что хотите отменить эту запись? Владелец получит уведомление об отмене.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Нет</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCancelAppointment}>Да, отменить</AlertDialogAction>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="m-0">Отменить действие</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleCancelAppointment}
+                className="bg-destructive hover:bg-destructive/90 m-0"
+              >
+                Да, отменить запись
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
