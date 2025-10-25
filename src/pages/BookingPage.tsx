@@ -559,7 +559,7 @@ export default function BookingPage() {
                   <label className="text-sm font-medium text-muted-foreground">Телефон</label>
                   <Input
                     type="tel"
-                    placeholder="+7"
+                    placeholder="+79998887766"
                     value={clientPhone}
                     onChange={(e) => {
                       let value = e.target.value;

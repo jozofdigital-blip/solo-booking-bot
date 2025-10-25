@@ -324,7 +324,7 @@ export const AppointmentDialog = ({
                 setFormData({ ...formData, client_phone: value });
               }}
               required
-              placeholder="+7 (999) 123-45-67"
+              placeholder="+79998887766"
             />
           </div>
 

@@ -304,7 +304,7 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
                     }
                     setFormData({ ...formData, phone: value });
                   }}
-                  placeholder="+7 (XXX) XXX-XX-XX"
+                  placeholder="+79998887766"
                 />
               </div>
               <div className="flex gap-2 justify-end">

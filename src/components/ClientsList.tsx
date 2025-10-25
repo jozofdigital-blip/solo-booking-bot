@@ -45,7 +45,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientWithAppointment | null>(null);
-  const [formData, setFormData] = useState({ name: "", phone: "", notes: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "+7", notes: "" });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const { toast } = useToast();
@@ -167,7 +167,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
 
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "", notes: "" });
+    setFormData({ name: "", phone: "+7", notes: "" });
     loadClients();
   };
 
@@ -209,7 +209,7 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditingClient(null);
-    setFormData({ name: "", phone: "", notes: "" });
+    setFormData({ name: "", phone: "+7", notes: "" });
   };
 
   return (
@@ -302,9 +302,26 @@ export const ClientsList = ({ profileId }: ClientsListProps) => {
                 <Label htmlFor="phone">Телефон</Label>
                 <Input
                   id="phone"
+                  type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+7 (XXX) XXX-XX-XX"
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Remove all non-digits
+                    value = value.replace(/\D/g, '');
+                    // Add +7 prefix if not present
+                    if (!value.startsWith('7') && value.length > 0) {
+                      value = '7' + value;
+                    }
+                    if (value.length > 0) {
+                      value = '+' + value;
+                    }
+                    // Limit to +7 + 10 digits
+                    if (value.length > 12) {
+                      value = value.substring(0, 12);
+                    }
+                    setFormData({ ...formData, phone: value });
+                  }}
+                  placeholder="+79998887766"
                 />
               </div>
               <div className="space-y-2">
