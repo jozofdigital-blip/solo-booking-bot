@@ -47,6 +47,12 @@ export default function Subscription() {
     }
   }, [selectedPlan]);
 
+  useEffect(() => {
+    if (discount > 0 && paymentButtonRef.current) {
+      paymentButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [discount]);
+
   const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
