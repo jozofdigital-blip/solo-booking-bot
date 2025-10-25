@@ -10,9 +10,8 @@ import { ru } from "date-fns/locale";
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { hasAppointmentOverlap } from "@/lib/utils";
 import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
+import { bookingCache } from "@/lib/booking-cache";
 
-// Cache for booking data
-const bookingCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 seconds
 
 export default function BookingPage() {
@@ -452,7 +451,7 @@ export default function BookingPage() {
               <div className="w-1 h-6 bg-primary rounded-full"></div>
               <h2 className="text-xl font-bold">Выберите дату</h2>
             </div>
-            <Card className="p-4">
+            <div className="w-full">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -460,30 +459,30 @@ export default function BookingPage() {
                 locale={ru}
                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || isDayBlocked(date) || isDayFull(date)}
                 onMonthChange={setCurrentMonth}
-                className="rounded-md"
+                className="w-full rounded-md border bg-card"
                 classNames={{
-                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                  month: "space-y-4",
+                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                  month: "space-y-4 w-full",
                   caption: "flex justify-center pt-1 relative items-center",
-                  caption_label: "text-sm font-medium",
+                  caption_label: "text-base font-medium",
                   nav: "space-x-1 flex items-center",
-                  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-                  nav_button_previous: "absolute left-1",
-                  nav_button_next: "absolute right-1",
-                  table: "w-full border-collapse space-y-1",
-                  head_row: "flex",
-                  head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                  nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100",
+                  nav_button_previous: "absolute left-2",
+                  nav_button_next: "absolute right-2",
+                  table: "w-full border-collapse",
+                  head_row: "flex w-full",
+                  head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-sm",
                   row: "flex w-full mt-2",
-                  cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                  day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md",
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                  day_today: "bg-accent text-accent-foreground",
+                  cell: "flex-1 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                  day: "h-12 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md text-base",
+                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full",
+                  day_today: "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary",
                   day_outside: "text-muted-foreground opacity-50",
                   day_disabled: "text-muted-foreground opacity-50 line-through",
                   day_hidden: "invisible",
                 }}
               />
-            </Card>
+            </div>
           </div>
         )}
 

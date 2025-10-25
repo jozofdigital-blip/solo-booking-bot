@@ -16,6 +16,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { CancelAppointmentDialog } from "@/components/CancelAppointmentDialog";
 import { AppointmentDetailsDialog } from "@/components/AppointmentDetailsDialog";
 import { TimezoneDialog } from "@/components/TimezoneDialog";
+import { clearBookingCache } from "@/lib/booking-cache";
 import {
   DEFAULT_WORKING_HOURS,
   WorkingHour,
@@ -178,6 +179,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
           filter: `profile_id=eq.${profile.id}`
         },
         async (payload) => {
+          console.log('Appointment realtime event:', payload.eventType);
           // Оптимизированное обновление без полной перезагрузки
           if (payload.eventType === 'INSERT') {
             // Добавляем новую запись
@@ -558,6 +560,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         .insert(hours.map(h => ({ ...h, profile_id: profile.id })));
 
       if (error) throw error;
+      
+      // Clear booking cache so clients see updated available slots
+      clearBookingCache(profile.id);
+      
       toast.success('График работы сохранен');
       setWorkingHours(mergeWithDefaultWorkingHours(hours));
       loadData();
