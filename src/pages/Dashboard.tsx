@@ -49,7 +49,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const [editingService, setEditingService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | undefined>();
-  const [calendarView, setCalendarView] = useState<"3days" | "week" | "month">(
+  const [calendarView, setCalendarView] = useState<"3days" | "week">(
     mode === "calendar" ? "week" : "3days"
   );
   const [todayAppointmentsOpen, setTodayAppointmentsOpen] = useState(false);
@@ -935,7 +935,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </div>
 
                   {/* Calendar view switcher */}
-                  <div className="grid grid-cols-3 gap-2 mb-6">
+                  <div className="grid grid-cols-2 gap-2 mb-6">
                     <Button
                       variant={calendarView === "3days" && !isCalendarPage ? "default" : "outline"}
                       size="sm"
@@ -958,58 +958,30 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                     >
                       Неделя
                     </Button>
-                    <Button
-                      variant={calendarView === "month" && isCalendarPage ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setCalendarView("month");
-                        navigate("/dashboard/calendar");
-                      }}
-                      className="w-full"
-                    >
-                      Месяц
-                    </Button>
                   </div>
 
                   <div className="space-y-4">
                     {isCalendarPage ? (
-                      <>
-                        {calendarView === "week" ? (
-                          <WeekCalendar
-                            appointments={appointments.map(a => {
-                              const service = services.find(s => s.id === a.service_id);
-                              return {
-                                ...a,
-                                service_name: a.services?.name || service?.name,
-                                duration_minutes: a.services?.duration_minutes || service?.duration_minutes
-                              };
-                            })}
-                            workingHours={workingHours}
-                            minServiceDuration={minServiceDuration}
-                            initialDate={initialCalendarDate}
-                            onCreateAppointment={(date, time) => {
-                              setSelectedDate(new Date(date));
-                              setSelectedTime(time);
-                              setEditingAppointment(null);
-                              setAppointmentDialogOpen(true);
-                            }}
-                            onAppointmentClick={handleAppointmentClick}
-                          />
-                         ) : (
-                          <BookingCalendar
-                            appointments={appointments.map(a => ({
-                              ...a,
-                              service_name: a.services?.name
-                            }))}
-                            workingHours={workingHours}
-                            onDateSelect={(date) => {
-                              setSelectedDate(date);
-                              setSelectedTime(undefined);
-                              setEditingAppointment(null);
-                            }}
-                          />
-                        )}
-                      </>
+                      <WeekCalendar
+                        appointments={appointments.map(a => {
+                          const service = services.find(s => s.id === a.service_id);
+                          return {
+                            ...a,
+                            service_name: a.services?.name || service?.name,
+                            duration_minutes: a.services?.duration_minutes || service?.duration_minutes
+                          };
+                        })}
+                        workingHours={workingHours}
+                        minServiceDuration={minServiceDuration}
+                        initialDate={initialCalendarDate}
+                        onCreateAppointment={(date, time) => {
+                          setSelectedDate(new Date(date));
+                          setSelectedTime(time);
+                          setEditingAppointment(null);
+                          setAppointmentDialogOpen(true);
+                        }}
+                        onAppointmentClick={handleAppointmentClick}
+                      />
                     ) : (
                       <ThreeDayCalendar
                         appointments={appointments.map(a => {
