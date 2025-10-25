@@ -29,7 +29,7 @@ export const TelegramSettingsDialog = ({
   profileId,
 }: TelegramSettingsDialogProps) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [notify24h, setNotify24h] = useState(true);
+  const [notify24h, setNotify24h] = useState(false);
   const [notify1h, setNotify1h] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export const TelegramSettingsDialog = ({
       if (error) throw error;
       
       if (data) {
-        setNotify24h(data.notify_24h_before ?? true);
+        setNotify24h(data.notify_24h_before ?? false);
         setNotify1h(data.notify_1h_before ?? false);
       }
     } catch (error) {
