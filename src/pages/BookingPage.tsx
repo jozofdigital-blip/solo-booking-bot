@@ -30,8 +30,8 @@ export default function BookingPage() {
   const [clientId, setClientId] = useState<string>("");
   const [clientHasTelegram, setClientHasTelegram] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [appointmentsLoadedDate, setAppointmentsLoadedDate] = useState<string | null>(null);
   
-
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -148,6 +148,7 @@ export default function BookingPage() {
       }));
 
       setAppointments(appointmentsWithDuration);
+      setAppointmentsLoadedDate(dateStr);
 
       // If currently selected time became unavailable, reset it
       if (selectedTime && selectedService) {
@@ -184,6 +185,12 @@ export default function BookingPage() {
   }, [selectedService]);
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !selectedService) {
+      return [];
+    }
+
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    // Do not show slots until appointments for this date are loaded
+    if (slotsLoading || appointmentsLoadedDate !== dateStr) {
       return [];
     }
 
