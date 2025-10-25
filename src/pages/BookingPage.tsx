@@ -126,7 +126,7 @@ export default function BookingPage() {
     }
   };
 
-  const loadAppointments = async (date: Date) => {
+  const loadAppointments = async (date: Date, attempt: number = 1) => {
     if (!profile) return;
     setSlotsLoading(true);
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -136,7 +136,7 @@ export default function BookingPage() {
         body: { profileId: profile.id, date: dateStr },
       });
 
-      if (error) return;
+      if (error) throw error;
 
       const raw = (data as any)?.slots ?? [];
       const appointmentsWithDuration = raw.map((apt: any) => ({
@@ -149,7 +149,12 @@ export default function BookingPage() {
 
       setAppointments(appointmentsWithDuration);
     } catch (err) {
-      // Silent fail - slots remain empty
+      // Повторить запрос до 3 раз на случай холодного старта/сетевых сбоев
+      if (attempt < 3) {
+        setTimeout(() => {
+          loadAppointments(date, attempt + 1);
+        }, attempt * 600);
+      }
     } finally {
       setSlotsLoading(false);
     }
