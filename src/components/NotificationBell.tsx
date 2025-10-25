@@ -77,14 +77,10 @@ export const NotificationBell = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative h-8 w-8">
+          <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive flex items-center justify-center">
-              <span className="text-[10px] text-white font-bold">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            </span>
+            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-destructive" />
           )}
         </Button>
       </PopoverTrigger>

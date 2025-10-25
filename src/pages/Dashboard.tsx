@@ -759,7 +759,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                   </p>
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <NotificationBell
                   profileId={profile?.id}
                   appointments={appointments}
