@@ -357,7 +357,7 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
+      <div className="bg-background border-b">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           <div className="flex items-center gap-4">
             {profile.avatar_url ? (
