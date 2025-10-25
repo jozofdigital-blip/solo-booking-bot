@@ -218,50 +218,60 @@ export const ThreeDayCalendar = ({
                       </div>
                     )}
                     
-                    {dayAppointments.length > 0 && dayAppointments.map((apt) => {
-                      if (!isFirstSlotOfAppointment(day, time, apt)) return null;
+                    {dayAppointments.length > 0 && (() => {
+                      const firstSlotAppointments = dayAppointments.filter(apt => isFirstSlotOfAppointment(day, time, apt));
                       
-                      const durationSlots = getAppointmentDurationSlots(apt);
-                      const height = durationSlots * 60;
-                      const isHighlighted = apt.id === highlightedAppointmentId;
-                      
-                      return (
-                        <div
-                          key={apt.id}
-                          className={`absolute inset-0 p-2 rounded cursor-pointer z-10 overflow-hidden ${
-                            isPast 
-                              ? "bg-gray-200 border-l-4 border-gray-400" 
-                              : isHighlighted && highlightColor === 'green'
-                              ? "bg-telegram-light border-l-4 border-success hover:bg-telegram-light/80 shadow-lg animate-pulse"
-                              : isHighlighted && highlightColor === 'red'
-                              ? "bg-telegram-light border-l-4 border-destructive hover:bg-telegram-light/80 shadow-lg animate-pulse"
-                              : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
-                          }`}
-                          style={{ height: `${height}px` }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isHighlighted && onClearHighlight) {
-                              onClearHighlight();
-                            }
-                            if (onAppointmentClick) {
-                              onAppointmentClick(apt);
-                            }
-                          }}
-                        >
-                          {isHighlighted && highlightColor === 'green' && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse" />
-                          )}
-                          <div className={`font-medium text-xs leading-tight ${isPast ? "text-gray-500" : "text-telegram"}`}>
-                            {apt.client_name}
-                          </div>
-                          {apt.service_name && (
-                            <div className={`text-xs leading-tight mt-1 ${isPast ? "text-gray-400" : "text-telegram/70"}`}>
-                              {apt.service_name}
+                      return firstSlotAppointments.map((apt, index) => {
+                        const durationSlots = getAppointmentDurationSlots(apt);
+                        const height = durationSlots * 60;
+                        const isHighlighted = apt.id === highlightedAppointmentId;
+                        const leftOffset = index * 4;
+                        const widthReduction = firstSlotAppointments.length > 1 ? (firstSlotAppointments.length - 1) * 4 : 0;
+                        
+                        return (
+                          <div
+                            key={apt.id}
+                            className={`absolute p-2 rounded cursor-pointer overflow-hidden ${
+                              isPast 
+                                ? "bg-gray-200 border-l-4 border-gray-400" 
+                                : isHighlighted && highlightColor === 'green'
+                                ? "bg-telegram-light border-l-4 border-success hover:bg-telegram-light/80 shadow-lg animate-pulse"
+                                : isHighlighted && highlightColor === 'red'
+                                ? "bg-telegram-light border-l-4 border-destructive hover:bg-telegram-light/80 shadow-lg animate-pulse"
+                                : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
+                            }`}
+                            style={{ 
+                              height: `${height}px`,
+                              left: `${leftOffset}px`,
+                              right: `${widthReduction - leftOffset}px`,
+                              top: 0,
+                              zIndex: 10 + index
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isHighlighted && onClearHighlight) {
+                                onClearHighlight();
+                              }
+                              if (onAppointmentClick) {
+                                onAppointmentClick(apt);
+                              }
+                            }}
+                          >
+                            {isHighlighted && highlightColor === 'green' && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse" />
+                            )}
+                            <div className={`font-medium text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
+                              {apt.client_name}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {apt.service_name && (
+                              <div className={`text-xs leading-tight mt-1 truncate ${isPast ? "text-gray-400" : "text-telegram/70"}`}>
+                                {apt.service_name}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                     
                     {isWorking && !isPast && !isOccupied && hasEnoughTime && (
                       <div className="absolute inset-0 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity">

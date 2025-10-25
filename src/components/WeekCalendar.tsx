@@ -274,39 +274,49 @@ export const WeekCalendar = ({
                         </div>
                       )}
 
-                      {slotAppointments.length > 0 && slotAppointments.map((apt) => {
-                        if (!isFirstSlotOfAppointment(day, hour, minute, apt)) return null;
+                      {slotAppointments.length > 0 && (() => {
+                        const firstSlotAppointments = slotAppointments.filter(apt => isFirstSlotOfAppointment(day, hour, minute, apt));
                         
-                        const durationSlots = getAppointmentDurationSlots(apt);
-                        const height = durationSlots * 50;
-                        
-                        return (
-                          <div
-                            key={apt.id}
-                            className={`absolute inset-0 p-1 md:p-2 rounded cursor-pointer z-10 overflow-hidden ${
-                              isPast
-                                ? "bg-gray-200 border-l-4 border-gray-400"
-                                : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
-                            }`}
-                            style={{ height: `${height}px` }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAppointmentClick?.(apt);
-                            }}
-                          >
-                            <div className={`font-medium text-[10px] md:text-xs leading-tight ${isPast ? "text-gray-500" : "text-telegram"}`}>
-                              {apt.client_name}
-                            </div>
-                            {apt.service_name && (
-                              <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 ${
-                                isPast ? "text-gray-400" : "text-telegram/70"
-                              }`}>
-                                {apt.service_name}
+                        return firstSlotAppointments.map((apt, index) => {
+                          const durationSlots = getAppointmentDurationSlots(apt);
+                          const height = durationSlots * 50;
+                          const leftOffset = index * 3;
+                          const widthReduction = firstSlotAppointments.length > 1 ? (firstSlotAppointments.length - 1) * 3 : 0;
+                          
+                          return (
+                            <div
+                              key={apt.id}
+                              className={`absolute p-1 md:p-2 rounded cursor-pointer overflow-hidden ${
+                                isPast
+                                  ? "bg-gray-200 border-l-4 border-gray-400"
+                                  : "bg-telegram-light border-l-4 border-telegram hover:bg-telegram-light/80"
+                              }`}
+                              style={{ 
+                                height: `${height}px`,
+                                left: `${leftOffset}px`,
+                                right: `${widthReduction - leftOffset}px`,
+                                top: 0,
+                                zIndex: 10 + index
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAppointmentClick?.(apt);
+                              }}
+                            >
+                              <div className={`font-medium text-[10px] md:text-xs leading-tight truncate ${isPast ? "text-gray-500" : "text-telegram"}`}>
+                                {apt.client_name}
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {apt.service_name && (
+                                <div className={`text-[9px] md:text-[10px] leading-tight mt-0.5 truncate ${
+                                  isPast ? "text-gray-400" : "text-telegram/70"
+                                }`}>
+                                  {apt.service_name}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
 
                       {inWorkingHours && !isPast && !isOccupied && hasEnoughTime && (
                         <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity absolute inset-0 flex items-center justify-center">
