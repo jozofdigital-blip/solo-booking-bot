@@ -1,40 +1,79 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 export default function PaymentResult() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'pending' | 'failed' | null>(null);
   const [telegramBotLink, setTelegramBotLink] = useState<string>("");
-  const paymentStatus = searchParams.get('payment');
 
   useEffect(() => {
-    loadBotInfo();
-  }, []);
+    const checkPaymentStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate("/auth");
+          return;
+        }
 
-  const loadBotInfo = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
+        // Load bot info
+        const { data: botInfo } = await supabase.functions.invoke('get-bot-info');
+        if (botInfo?.username) {
+          setTelegramBotLink(`https://t.me/${botInfo.username}`);
+        }
 
-      const { data: botInfo } = await supabase.functions.invoke('get-bot-info');
-      
-      if (botInfo?.username) {
-        setTelegramBotLink(`https://t.me/${botInfo.username}`);
+        // Get user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!profile) {
+          setPaymentStatus('failed');
+          setLoading(false);
+          return;
+        }
+
+        // Get most recent payment for this user
+        const { data: payment, error } = await supabase
+          .from('payments')
+          .select('status, created_at')
+          .eq('profile_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching payment:', error);
+          setPaymentStatus('failed');
+        } else if (payment) {
+          // Map YooKassa statuses to our statuses
+          if (payment.status === 'succeeded') {
+            setPaymentStatus('success');
+          } else if (payment.status === 'pending' || payment.status === 'waiting_for_capture') {
+            setPaymentStatus('pending');
+          } else {
+            setPaymentStatus('failed');
+          }
+        } else {
+          // No payments found - user likely cancelled before payment was created
+          setPaymentStatus('failed');
+        }
+      } catch (error) {
+        console.error("Error checking payment:", error);
+        setPaymentStatus('failed');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading bot info:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    checkPaymentStatus();
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -45,6 +84,7 @@ export default function PaymentResult() {
   }
 
   const isSuccess = paymentStatus === 'success';
+  const isPending = paymentStatus === 'pending';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -61,6 +101,18 @@ export default function PaymentResult() {
               Ваша подписка активирована. Спасибо за покупку!
             </p>
           </>
+        ) : isPending ? (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-yellow-600 dark:text-yellow-400 animate-spin" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold mb-4">Обработка платежа</h1>
+            <p className="text-muted-foreground mb-8">
+              Ваш платеж обрабатывается. Это может занять несколько минут.
+            </p>
+          </>
         ) : (
           <>
             <div className="flex justify-center mb-6">
@@ -70,7 +122,7 @@ export default function PaymentResult() {
             </div>
             <h1 className="text-2xl font-bold mb-4">Оплата не прошла</h1>
             <p className="text-muted-foreground mb-8">
-              Что-то пошло не так. Попробуйте ещё раз или свяжитесь с поддержкой.
+              Платеж был отменен или не завершен. Попробуйте ещё раз или свяжитесь с поддержкой.
             </p>
           </>
         )}
@@ -95,7 +147,7 @@ export default function PaymentResult() {
             Перейти в личный кабинет
           </Button>
 
-          {!isSuccess && (
+          {!isSuccess && !isPending && (
             <Button
               onClick={() => navigate('/subscription')}
               variant="ghost"

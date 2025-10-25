@@ -52,7 +52,7 @@ serve(async (req) => {
         },
         confirmation: {
           type: 'redirect',
-          return_url: 'https://looktime.pro/payment-result?payment=success'
+          return_url: `https://looktime.pro/payment-result?key=${idempotencyKey}`
         },
         capture: true,
         description: description,
