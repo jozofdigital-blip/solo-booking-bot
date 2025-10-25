@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { ru } from "date-fns/locale";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { hasEnoughContinuousTime, hasAppointmentOverlap } from "@/lib/utils";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
+import { hasAppointmentOverlap } from "@/lib/utils";
 import { BookingSuccessDialog } from "@/components/BookingSuccessDialog";
+
+// Cache for booking data
+const bookingCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds
 
 export default function BookingPage() {
   const { slug } = useParams();
@@ -22,28 +25,125 @@ export default function BookingPage() {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('+7');
   const [loading, setLoading] = useState(false);
-  const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<any[]>([]);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [botUsername, setBotUsername] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
   const [clientHasTelegram, setClientHasTelegram] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [appointmentsLoadedDate, setAppointmentsLoadedDate] = useState<string | null>(null);
   const [busyCounts, setBusyCounts] = useState<Record<string, number>>({});
+  const [slotsByDate, setSlotsByDate] = useState<Record<string, any[]>>({});
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   
   const calendarRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
 
+  // Load client data from localStorage
   useEffect(() => {
-    loadProfile();
-    loadBotUsername();
-    loadClientDataFromLocalStorage();
+    const savedData = localStorage.getItem('client_booking_data');
+    if (savedData) {
+      try {
+        const { name, phone } = JSON.parse(savedData);
+        setClientName(name || '');
+        setClientPhone(phone || '+7');
+      } catch (error) {
+        // Ignore
+      }
+    }
+  }, []);
+
+  // Load profile and initial data
+  useEffect(() => {
+    if (!slug) return;
+    
+    const loadInitialData = async () => {
+      try {
+        // Load profile
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('unique_slug', slug)
+          .single();
+
+        if (error) throw error;
+        setProfile(profileData);
+
+        // Load services and working hours in parallel
+        const [servicesResult, workingHoursResult, botResult] = await Promise.all([
+          supabase
+            .from('services')
+            .select('*')
+            .eq('profile_id', profileData.id)
+            .eq('is_active', true),
+          supabase
+            .from('working_hours')
+            .select('*')
+            .eq('profile_id', profileData.id),
+          supabase.functions.invoke('get-bot-info').catch(() => ({ data: null }))
+        ]);
+
+        setServices(servicesResult.data || []);
+        setWorkingHours(workingHoursResult.data || []);
+        if (botResult.data?.username) {
+          setBotUsername(botResult.data.username);
+        }
+
+        // Prefetch booking data for current and next month
+        const today = new Date();
+        const startDate = format(startOfMonth(today), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(addMonths(today, 1)), 'yyyy-MM-dd');
+        
+        await fetchBookingData(profileData.id, startDate, endDate);
+      } catch (error) {
+        toast.error('Профиль не найден');
+      }
+    };
+
+    loadInitialData();
   }, [slug]);
 
+  // Fetch booking data with caching
+  const fetchBookingData = useCallback(async (profileId: string, startDate: string, endDate: string) => {
+    const cacheKey = `${profileId}-${startDate}-${endDate}`;
+    const cached = bookingCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setBusyCounts(cached.data.busyCounts);
+      setSlotsByDate(cached.data.slotsByDate);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('get-booking-data', {
+        body: { profileId, startDate, endDate },
+      });
+
+      if (error) throw error;
+
+      const bookingData = {
+        busyCounts: data.busyCounts || {},
+        slotsByDate: data.slotsByDate || {}
+      };
+
+      bookingCache.set(cacheKey, { data: bookingData, timestamp: Date.now() });
+      setBusyCounts(bookingData.busyCounts);
+      setSlotsByDate(bookingData.slotsByDate);
+    } catch (err) {
+      console.error('Error fetching booking data:', err);
+    }
+  }, []);
+
+  // Update booking data when month changes
+  useEffect(() => {
+    if (!profile) return;
+    
+    const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+    const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+    fetchBookingData(profile.id, startDate, endDate);
+  }, [profile, currentMonth, fetchBookingData]);
+
+  // Scroll to sections
   useEffect(() => {
     if (selectedService && calendarRef.current) {
       calendarRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -62,93 +162,18 @@ export default function BookingPage() {
     }
   }, [selectedTime]);
 
-  const loadClientDataFromLocalStorage = () => {
-    const savedData = localStorage.getItem('client_booking_data');
-    if (savedData) {
-      try {
-        const { name, phone } = JSON.parse(savedData);
-        setClientName(name || '');
-        setClientPhone(phone || '+7');
-      } catch (error) {
-        // Ignore parsing errors
-      }
-    }
-  };
-
-  const saveClientDataToLocalStorage = (name: string, phone: string) => {
-    localStorage.setItem('client_booking_data', JSON.stringify({ name, phone }));
-  };
-
-  const loadBotUsername = async () => {
-    try {
-      const { data } = await supabase.functions.invoke('get-bot-info');
-      if (data?.username) {
-        setBotUsername(data.username);
-      }
-    } catch (error) {
-      // Silent fail - bot username is optional
-    }
-  };
-
-  const loadProfile = async () => {
-    try {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('unique_slug', slug)
-        .single();
-
-      if (error) throw error;
-      setProfile(profileData);
-
-      // Параллельная загрузка услуг и рабочих часов
-      const [servicesResult, workingHoursResult] = await Promise.all([
-        supabase
-          .from('services')
-          .select('*')
-          .eq('profile_id', profileData.id)
-          .eq('is_active', true),
-        supabase
-          .from('working_hours')
-          .select('*')
-          .eq('profile_id', profileData.id)
-      ]);
-
-      setServices(servicesResult.data || []);
-      setWorkingHours(workingHoursResult.data || []);
-    } catch (error) {
-      toast.error('Профиль не найден');
-    }
-  };
-  
-  const fetchBusyDays = async (monthDate: Date) => {
-    if (!profile) return;
-    try {
-      const startDate = format(startOfMonth(monthDate), 'yyyy-MM-dd');
-      const endDate = format(endOfMonth(monthDate), 'yyyy-MM-dd');
-      const { data, error } = await supabase.functions.invoke('get-busy-days', {
-        body: { profileId: profile.id, startDate, endDate },
-      });
-      if (error) throw error;
-      const counts = (data as any)?.counts || {};
-      setBusyCounts(counts);
-      console.log('[booking] busy days loaded', { month: monthDate.getMonth() + 1, countDays: Object.keys(counts).length });
-    } catch (err) {
-      console.error('[booking] busy days load error', err);
-    }
-  };
-
-  const isDayBlocked = (date: Date) => {
+  const isDayBlocked = useCallback((date: Date) => {
     const dayOfWeek = date.getDay();
     const workingDay = workingHours?.find((wh: any) => wh.day_of_week === dayOfWeek);
     return !workingDay?.is_working;
-  };
+  }, [workingHours]);
 
-  const isDayFull = (date: Date) => {
+  const isDayFull = useCallback((date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayOfWeek = date.getDay();
     const workingDay = workingHours?.find((wh: any) => wh.day_of_week === dayOfWeek && wh.is_working);
     if (!workingDay) return false;
+    
     const startHour = parseInt(workingDay.start_time.split(':')[0]);
     const startMinute = parseInt(workingDay.start_time.split(':')[1]);
     const endHour = parseInt(workingDay.end_time.split(':')[0]);
@@ -157,107 +182,52 @@ export default function BookingPage() {
     const totalSlots = Math.floor(totalMinutes / 30);
     const bookedSlots = busyCounts[dateStr] || 0;
     return bookedSlots >= totalSlots && totalSlots > 0;
-  };
+  }, [workingHours, busyCounts]);
 
-  const loadAppointments = async (date: Date, attempt: number = 1) => {
-    if (!profile) return;
-    setSlotsLoading(true);
-    const dateStr = format(date, 'yyyy-MM-dd');
+  // Calculate available time slots
+  const availableTimeSlots = useMemo(() => {
+    if (!selectedDate || !selectedService || !profile) return [];
+
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayOfWeek = selectedDate.getDay();
+    const workingDay = workingHours?.find((wh: any) => wh.day_of_week === dayOfWeek && wh.is_working);
     
-    try {
-      const { data, error } = await supabase.functions.invoke('get-busy-slots', {
-        body: { profileId: profile.id, date: dateStr },
-      });
-      console.log('[booking] get-busy-slots request', { profileId: profile.id, date: dateStr });
+    if (!workingDay) return [];
 
-      if (error) {
-        console.error('[booking] get-busy-slots error', error);
-        throw error;
+    const selectedServiceData = services.find(s => s.id === selectedService);
+    if (!selectedServiceData) return [];
+
+    const serviceDuration = selectedServiceData.duration_minutes || 60;
+    const startHour = parseInt(workingDay.start_time.split(':')[0]);
+    const startMinute = parseInt(workingDay.start_time.split(':')[1]);
+    const endHour = parseInt(workingDay.end_time.split(':')[0]);
+    const endMinute = parseInt(workingDay.end_time.split(':')[1]);
+    
+    const startMins = startHour * 60 + startMinute;
+    const endMins = endHour * 60 + endMinute;
+
+    const appointments = slotsByDate[dateStr] || [];
+    const busy = appointments.map((a: any) => {
+      const [h, m] = a.appointment_time.split(':').map(Number);
+      const start = h * 60 + m;
+      const end = start + (a.duration_minutes || 60);
+      return { start, end };
+    });
+
+    const slots: string[] = [];
+    for (let t = startMins; t + serviceDuration <= endMins; t += 30) {
+      const slotEnd = t + serviceDuration;
+      const overlap = busy.some(b => t < b.end && b.start < slotEnd);
+      
+      if (!overlap) {
+        const hh = String(Math.floor(t / 60)).padStart(2, '0');
+        const mm = String(t % 60).padStart(2, '0');
+        slots.push(`${hh}:${mm}`);
       }
-
-      const raw = (data as any)?.slots ?? [];
-      console.log('[booking] get-busy-slots response count', raw.length, raw);
-      const appointmentsWithDuration = raw.map((apt: any) => ({
-        appointment_date: dateStr,
-        appointment_time: apt.appointment_time,
-        service_id: apt.service_id,
-        status: apt.status,
-        duration_minutes: apt.services?.duration_minutes || (services.find(s => s.id === apt.service_id)?.duration_minutes) || 60,
-      }));
-
-      setAppointments(appointmentsWithDuration);
-      setAppointmentsLoadedDate(dateStr);
-      console.log('[booking] appointments prepared', { dateStr, count: appointmentsWithDuration.length, sample: appointmentsWithDuration.slice(0,3) });
-
-      // If currently selected time became unavailable, reset it
-      if (selectedTime && selectedService) {
-        const selectedServiceDataLocal = services.find(s => s.id === selectedService);
-        const dur = selectedServiceDataLocal?.duration_minutes || 60;
-        const overlaps = hasAppointmentOverlap(dateStr, selectedTime, dur, appointmentsWithDuration);
-        if (overlaps) {
-          setSelectedTime('');
-        }
-      }
-    } catch (err) {
-      // Повторить запрос до 3 раз на случай холодного старта/сетевых сбоев
-      if (attempt < 3) {
-        setTimeout(() => {
-          loadAppointments(date, attempt + 1);
-        }, attempt * 600);
-      }
-    } finally {
-      setSlotsLoading(false);
     }
-  };
-  // Load appointments only when date changes
-  useEffect(() => {
-    if (selectedDate && profile) {
-      loadAppointments(selectedDate);
-    }
-  }, [selectedDate, profile]);
 
-  // Reload slots when service changes (to recalculate available slots with correct duration)
-  useEffect(() => {
-    if (selectedDate && selectedService && profile && services.length > 0) {
-      loadAppointments(selectedDate);
-    }
-  }, [selectedService]);
-
-  // Fetch busy days when month or profile changes
-  useEffect(() => {
-    if (profile) {
-      fetchBusyDays(currentMonth);
-    }
-  }, [profile, currentMonth]);
-
-  // Load available slots from backend to ensure parity with master calendar
-  useEffect(() => {
-    const loadSlots = async () => {
-      if (!selectedDate || !selectedService || !profile) return;
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      try {
-        setSlotsLoading(true);
-        const { data, error } = await supabase.functions.invoke('get-available-slots', {
-          body: { profileId: profile.id, date: dateStr, serviceId: selectedService },
-        });
-        if (error) throw error;
-        const slots = (data as any)?.slots || [];
-        setAvailableSlots(slots);
-      } catch (e) {
-        console.error('[booking] load available slots error', e);
-        setAvailableSlots([]);
-      } finally {
-        setSlotsLoading(false);
-      }
-    };
-    loadSlots();
-  }, [selectedDate, selectedService, profile]);
-
-  const getAvailableTimeSlots = () => {
-    return availableSlots;
-  };
-
-  const availableTimeSlots = getAvailableTimeSlots();
+    return slots;
+  }, [selectedDate, selectedService, profile, workingHours, services, slotsByDate]);
 
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !clientName || !clientPhone) {
@@ -265,13 +235,11 @@ export default function BookingPage() {
       return;
     }
 
-    // Validate phone format
     if (clientPhone.length < 12) {
       toast.error('Введите корректный номер телефона');
       return;
     }
 
-    // Validate name
     if (clientName.trim().length < 2) {
       toast.error('Введите корректное имя');
       return;
@@ -280,7 +248,6 @@ export default function BookingPage() {
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
-
       const appointmentId = crypto.randomUUID();
 
       const { error: insertError } = await supabase
@@ -298,29 +265,28 @@ export default function BookingPage() {
 
       if (insertError) throw insertError;
 
-      // Save client data to localStorage
-      saveClientDataToLocalStorage(clientName, clientPhone);
+      localStorage.setItem('client_booking_data', JSON.stringify({ name: clientName, phone: clientPhone }));
 
-      // Try to create client record (may fail if duplicate, which is fine)
+      // Try to create client record
       const clientId = crypto.randomUUID();
-      const { error: clientError } = await supabase
-        .from('clients')
-        .insert({
-          id: clientId,
-          profile_id: profile.id,
-          name: clientName,
-          phone: clientPhone,
-          last_visit: new Date().toISOString()
-        });
+      try {
+        await supabase
+          .from('clients')
+          .insert({
+            id: clientId,
+            profile_id: profile.id,
+            name: clientName,
+            phone: clientPhone,
+            last_visit: new Date().toISOString()
+          });
+      } catch (e) {
+        // Client may already exist - ignore error
+      }
 
-      // Ignore errors - client may already exist or be created by another session
-
-      // Send telegram notification to owner if chat_id is configured
+      // Send telegram notification
       if (profile?.telegram_chat_id) {
         try {
           const serviceData = services.find(s => s.id === selectedService);
-          const dashboardUrl = 'https://looktime.pro/dashboard';
-          
           await supabase.functions.invoke('send-telegram-notification', {
             body: {
               chatId: profile.telegram_chat_id,
@@ -330,17 +296,17 @@ export default function BookingPage() {
               time: selectedTime,
               phone: clientPhone,
               appointmentId: appointmentId,
-              appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
+              appointmentDate: dateStr,
               type: 'new',
-              bookingUrl: dashboardUrl,
+              bookingUrl: 'https://looktime.pro/dashboard',
             },
           });
-        } catch (notificationError) {
-          // Silent fail - notification is not critical
+        } catch (e) {
+          // Silent fail
         }
       }
 
-      // Check if client has Telegram by querying clients table directly
+      // Check if client has Telegram
       const { data: clientWithTelegram } = await supabase
         .from('clients')
         .select('telegram_chat_id')
@@ -351,23 +317,25 @@ export default function BookingPage() {
       
       setClientHasTelegram(!!clientWithTelegram?.telegram_chat_id);
 
-      // Force immediate reload of appointments to update available slots for all users
-      await loadAppointments(selectedDate);
+      // Invalidate cache and reload data
+      bookingCache.clear();
+      const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+      await fetchBookingData(profile.id, startDate, endDate);
       
       toast.success('Запись успешно создана!');
-      
-      // Open success dialog with client ID
       setClientId(clientId);
       setSuccessDialogOpen(true);
       
-      // Reset form but keep date to show updated slots
       setSelectedService(null);
       setSelectedTime('');
     } catch (error: any) {
-      // Handle specific overlap error from database trigger
       if (error?.message?.includes('OVERLAP_TIME_SLOT')) {
         toast.error('Это время уже занято. Выберите другое время.');
-        await loadAppointments(selectedDate);
+        bookingCache.clear();
+        const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+        await fetchBookingData(profile.id, startDate, endDate);
       } else {
         toast.error(error?.message || 'Ошибка при создании записи');
       }
@@ -388,7 +356,7 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Modern Compact Header */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           <div className="flex items-center gap-4">
@@ -426,7 +394,7 @@ export default function BookingPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-        {/* Services Selection */}
+        {/* Services */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-6 bg-primary rounded-full"></div>
@@ -446,37 +414,30 @@ export default function BookingPage() {
                       : 'bg-card border-2 border-border hover:border-primary/30 hover:shadow-md hover:scale-[1.01]'
                   }`}
                 >
-                  {/* Animated background effect on selection */}
                   <div className={`absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 transition-opacity duration-500 ${isSelected ? 'opacity-100' : ''}`}></div>
                   
-                  {/* Decorative corner accent when selected */}
                   {isSelected && (
                     <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full"></div>
                   )}
                   
-                  <div className="relative flex justify-between items-center gap-3">
-                    <div className="flex-1">
-                      <h3 className={`font-bold text-base mb-1 transition-colors ${
-                        isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary'
-                      }`}>
-                        {service.name}
-                      </h3>
-                      
-                      {service.description && (
-                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
+                  <div className="relative z-10">
+                    <h3 className={`font-bold text-lg mb-2 transition-colors ${isSelected ? 'text-primary' : ''}`}>
+                      {service.name}
+                    </h3>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {service.duration_minutes} мин
+                      </span>
+                      <span className={`font-bold text-lg ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                        {service.price.toLocaleString('ru-RU')} ₽
+                      </span>
                     </div>
-                    
-                    {/* Price section */}
-                    <div className={`text-2xl font-bold transition-all duration-300 ${
-                      isSelected 
-                        ? 'bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent scale-105' 
-                        : 'text-primary'
-                    }`}>
-                      {service.price} ₽
-                    </div>
+                    {service.description && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{service.description}</p>
+                    )}
                   </div>
                 </button>
               );
@@ -484,206 +445,129 @@ export default function BookingPage() {
           </div>
         </div>
 
-        {/* Date Selection */}
+        {/* Calendar */}
         {selectedService && (
-          <div className="space-y-3 animate-fade-in" ref={calendarRef}>
-            <div className="flex items-center gap-2">
+          <div ref={calendarRef} className="space-y-3">
+            <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
               <h2 className="text-xl font-bold">Выберите дату</h2>
             </div>
-            
-            <Card className="p-4 border-2 shadow-sm hover:shadow-md transition-shadow">
+            <Card className="p-4">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 locale={ru}
-                month={currentMonth}
-                onMonthChange={(month) => {
-                  setCurrentMonth(month);
-                  fetchBusyDays(month);
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0)) || isDayBlocked(date) || isDayFull(date)}
+                onMonthChange={setCurrentMonth}
+                className="rounded-md"
+                classNames={{
+                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                  month: "space-y-4",
+                  caption: "flex justify-center pt-1 relative items-center",
+                  caption_label: "text-sm font-medium",
+                  nav: "space-x-1 flex items-center",
+                  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                  nav_button_previous: "absolute left-1",
+                  nav_button_next: "absolute right-1",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex",
+                  head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                  row: "flex w-full mt-2",
+                  cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                  day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md",
+                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  day_today: "bg-accent text-accent-foreground",
+                  day_outside: "text-muted-foreground opacity-50",
+                  day_disabled: "text-muted-foreground opacity-50 line-through",
+                  day_hidden: "invisible",
                 }}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const isPast = date < today;
-                  return isPast || isDayBlocked(date) || isDayFull(date);
-                }}
-                modifiers={{
-                  blocked: (date) => isDayBlocked(date),
-                  full: (date) => isDayFull(date)
-                }}
-                modifiersClassNames={{
-                  blocked: "bg-muted text-muted-foreground opacity-50",
-                  full: "bg-muted text-muted-foreground opacity-50"
-                }}
-                className="rounded-lg w-full pointer-events-auto"
               />
             </Card>
           </div>
         )}
 
-        {/* Time Selection */}
+        {/* Time Slots */}
         {selectedDate && selectedService && (
-          <div className="space-y-3 animate-fade-in" ref={timeRef}>
-            <div className="flex items-center gap-2">
+          <div ref={timeRef} className="space-y-3">
+            <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-xl font-bold">Время</h2>
+              <h2 className="text-xl font-bold">Выберите время</h2>
             </div>
             
-            <Card className="p-4 border-2 shadow-sm">
-              {slotsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                  <span className="ml-2 text-sm text-muted-foreground">Загружаем слоты...</span>
-                </div>
-              ) : workingHours.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Рабочие часы не настроены
-                </p>
-              ) : availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                  {availableTimeSlots.map((time) => {
-                    const isSelected = selectedTime === time;
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className={`relative py-2.5 px-3 rounded-xl font-medium text-sm transition-all duration-200 ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
-                            : 'bg-muted hover:bg-muted/80 hover:scale-105'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  На выбранную дату нет доступных слотов
-                </p>
-              )}
-            </Card>
+            {slotsLoading ? (
+              <Card className="p-6">
+                <div className="text-center text-muted-foreground">Загрузка слотов...</div>
+              </Card>
+            ) : availableTimeSlots.length === 0 ? (
+              <Card className="p-6">
+                <div className="text-center text-muted-foreground">Нет доступных слотов на эту дату</div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                {availableTimeSlots.map((time) => (
+                  <Button
+                    key={time}
+                    onClick={() => setSelectedTime(time)}
+                    variant={selectedTime === time ? "default" : "outline"}
+                    className="h-12 text-base font-medium"
+                  >
+                    {time}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Client Info */}
-        {selectedService && selectedDate && selectedTime && (
-          <div className="space-y-3 animate-fade-in" ref={contactRef}>
-            <div className="flex items-center gap-2">
+        {/* Contact Form */}
+        {selectedTime && (
+          <div ref={contactRef} className="space-y-3">
+            <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-xl font-bold">Контакты</h2>
+              <h2 className="text-xl font-bold">Ваши данные</h2>
             </div>
             
-            <Card className="p-5 border-2 shadow-sm">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Ваше имя</label>
-                  <Input
-                    placeholder="Введите имя"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    className="h-11"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Телефон</label>
-                  <Input
-                    type="tel"
-                    placeholder="+79998887766"
-                    value={clientPhone}
-                    onChange={(e) => {
-                      let value = e.target.value;
-                      value = value.replace(/\D/g, '');
-                      if (!value.startsWith('7') && value.length > 0) {
-                        value = '7' + value;
-                      }
-                      if (value.length > 0) {
-                        value = '+' + value;
-                      }
-                      if (value.length > 12) {
-                        value = value.substring(0, 12);
-                      }
-                      setClientPhone(value);
-                    }}
-                    className="h-11"
-                    required
-                  />
-                </div>
-
-                <div className="border-t pt-4 mt-4">
-                  {/* Modern booking summary card */}
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-6 mb-4 border-2 border-primary/30 shadow-xl">
-                    <div className="relative space-y-4">
-                      {/* Service */}
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="font-semibold">{selectedServiceData?.name}</div>
-                        </div>
-                      </div>
-
-                      {/* Date & Time */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm">{format(selectedDate, 'd MMMM', { locale: ru })}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm">{selectedTime}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Price */}
-                      <div className="pt-4 border-t-2 border-primary/30">
-                        <div className="flex items-center justify-between">
-                          <span className="text-base font-medium text-muted-foreground">Итого</span>
-                          <span className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                            {selectedServiceData?.price} ₽
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleBooking}
-                    disabled={loading}
-                    className="w-full h-14 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary/90 hover:to-primary/80 font-bold text-lg shadow-2xl shadow-primary/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-primary/50 rounded-xl"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Создание записи...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>Записаться</span>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </div>
-                    )}
-                  </Button>
-                </div>
+            <Card className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Имя</label>
+                <Input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Введите ваше имя"
+                />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Телефон</label>
+                <Input
+                  type="tel"
+                  value={clientPhone}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    value = value.replace(/\D/g, '');
+                    if (!value.startsWith('7') && value.length > 0) {
+                      value = '7' + value;
+                    }
+                    if (value.length > 0) {
+                      value = '+' + value;
+                    }
+                    if (value.length > 12) {
+                      value = value.substring(0, 12);
+                    }
+                    setClientPhone(value);
+                  }}
+                  placeholder="+79998887766"
+                />
+              </div>
+
+              <Button
+                onClick={handleBooking}
+                disabled={loading}
+                className="w-full h-12 text-lg font-semibold"
+              >
+                {loading ? 'Создание записи...' : 'Записаться'}
+              </Button>
             </Card>
           </div>
         )}

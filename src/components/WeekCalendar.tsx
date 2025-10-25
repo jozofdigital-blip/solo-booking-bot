@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useMemo, useCallback, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Lock } from "lucide-react";
@@ -33,7 +33,7 @@ interface WeekCalendarProps {
   initialDate?: Date;
 }
 
-export const WeekCalendar = ({
+export const WeekCalendar = memo(({
   appointments,
   workingHours,
   onDateClick,
@@ -49,11 +49,12 @@ export const WeekCalendar = ({
     return startOfWeek(new Date(), { weekStartsOn: 1 });
   });
 
-  const weekDays = Array.from({ length: 7 }, (_, i) =>
-    addDays(currentWeekStart, i)
+  const weekDays = useMemo(() =>
+    Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i)),
+    [currentWeekStart]
   );
 
-  const isDayFull = (date: Date) => {
+  const isDayFull = useCallback((date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayOfWeek = date.getDay();
     const workingDay = workingHours?.find(wh => wh.day_of_week === dayOfWeek && wh.is_working);
@@ -68,14 +69,13 @@ export const WeekCalendar = ({
     const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
     const totalSlots = Math.floor(totalMinutes / 30);
     
-    // Only count non-cancelled appointments
     const dayAppointments = appointments.filter(apt => 
       apt.appointment_date === dateStr && apt.status !== 'cancelled'
     );
     const bookedSlots = dayAppointments.length;
     
     return bookedSlots >= totalSlots;
-  };
+  }, [workingHours, appointments]);
 
   // Get working hours range
   const getWorkingHoursForDay = (dayOfWeek: number) => {
@@ -351,4 +351,6 @@ export const WeekCalendar = ({
       </Card>
     </div>
   );
-};
+});
+
+WeekCalendar.displayName = 'WeekCalendar';

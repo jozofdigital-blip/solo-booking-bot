@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useMemo, useCallback, memo } from "react";
 import { format, addDays, startOfDay, isBefore, isToday, isSameDay, parse } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ interface ThreeDayCalendarProps {
   initialDate?: Date;
 }
 
-export const ThreeDayCalendar = ({
+export const ThreeDayCalendar = memo(({
   appointments,
   workingHours,
   onAppointmentClick,
@@ -53,14 +53,17 @@ export const ThreeDayCalendar = ({
     return startOfDay(new Date());
   });
 
-  const threeDays = [0, 1, 2].map((i) => addDays(currentDayStart, i));
+  const threeDays = useMemo(() => 
+    [0, 1, 2].map((i) => addDays(currentDayStart, i)),
+    [currentDayStart]
+  );
 
-  const getWorkingHoursForDay = (date: Date): WorkingHour | null => {
+  const getWorkingHoursForDay = useCallback((date: Date): WorkingHour | null => {
     const dayOfWeek = date.getDay();
     return workingHours.find((wh) => wh.day_of_week === dayOfWeek) || null;
-  };
+  }, [workingHours]);
 
-  const getTimeRange = () => {
+  const getTimeRange = useMemo(() => {
     const times: string[] = [];
     threeDays.forEach((day) => {
       const wh = getWorkingHoursForDay(day);
@@ -73,34 +76,36 @@ export const ThreeDayCalendar = ({
 
     const sortedTimes = times.sort();
     return { start: sortedTimes[0], end: sortedTimes[sortedTimes.length - 1] };
-  };
+  }, [threeDays, getWorkingHoursForDay]);
 
-  const timeRange = getTimeRange();
+  const timeRange = getTimeRange;
   const startHour = parseInt(timeRange.start.split(":")[0]);
   const endHour = parseInt(timeRange.end.split(":")[0]);
   
-  const timeSlots: string[] = [];
-  for (let hour = startHour; hour <= endHour; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, "0")}:00`);
-    if (hour < endHour) {
-      timeSlots.push(`${hour.toString().padStart(2, "0")}:30`);
+  const timeSlots = useMemo((): string[] => {
+    const slots: string[] = [];
+    for (let hour = startHour; hour <= endHour; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`);
+      if (hour < endHour) {
+        slots.push(`${hour.toString().padStart(2, "0")}:30`);
+      }
     }
-  }
+    return slots;
+  }, [startHour, endHour]);
 
-  const isFirstSlotOfAppointment = (date: Date, time: string, appointment: any) => {
+  const isFirstSlotOfAppointment = useCallback((date: Date, time: string, appointment: any) => {
     const aptTime = appointment.appointment_time.substring(0, 5);
     return aptTime === time;
-  };
+  }, []);
 
-  const getAppointmentDurationSlots = (appointment: any) => {
+  const getAppointmentDurationSlots = useCallback((appointment: any) => {
     const duration = appointment.duration_minutes || 60;
     return Math.ceil(duration / 30);
-  };
+  }, []);
 
-  const getAppointmentsForTimeSlot = (date: Date, time: string) => {
+  const getAppointmentsForTimeSlot = useCallback((date: Date, time: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return appointments.filter((apt) => {
-      // Exclude cancelled appointments
       if (apt.status === 'cancelled') return false;
       if (apt.appointment_date !== dateStr) return false;
       
@@ -119,9 +124,9 @@ export const ThreeDayCalendar = ({
       
       return false;
     });
-  };
+  }, [appointments]);
 
-  const isSlotInWorkingHours = (date: Date, time: string) => {
+  const isSlotInWorkingHours = useCallback((date: Date, time: string) => {
     const wh = getWorkingHoursForDay(date);
     if (!wh || !wh.is_working) return false;
 
@@ -129,25 +134,25 @@ export const ThreeDayCalendar = ({
     const endTime = wh.end_time.substring(0, 5);
 
     return time >= startTime && time < endTime;
-  };
+  }, [getWorkingHoursForDay]);
 
-  const isSlotPast = (date: Date, time: string) => {
+  const isSlotPast = useCallback((date: Date, time: string) => {
     const now = new Date();
     const slotDateTime = parse(time, "HH:mm", date);
     return isBefore(slotDateTime, now);
-  };
+  }, []);
 
-  const handlePrevDay = () => {
-    setCurrentDayStart(addDays(currentDayStart, -3));
-  };
+  const handlePrevDay = useCallback(() => {
+    setCurrentDayStart(prev => addDays(prev, -3));
+  }, []);
 
-  const handleNextDay = () => {
-    setCurrentDayStart(addDays(currentDayStart, 3));
-  };
+  const handleNextDay = useCallback(() => {
+    setCurrentDayStart(prev => addDays(prev, 3));
+  }, []);
 
-  const handleToday = () => {
+  const handleToday = useCallback(() => {
     setCurrentDayStart(startOfDay(new Date()));
-  };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -298,4 +303,6 @@ export const ThreeDayCalendar = ({
       </div>
     </div>
   );
-};
+});
+
+ThreeDayCalendar.displayName = 'ThreeDayCalendar';
