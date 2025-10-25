@@ -28,6 +28,8 @@ serve(async (req) => {
       );
     }
 
+    console.log('Fetching appointments for:', { profileId, startDate, endDate });
+
     // Fetch all appointments for the date range in one query
     const { data: appointments, error } = await supabase
       .from('appointments')
@@ -37,7 +39,15 @@ serve(async (req) => {
       .lte('appointment_date', endDate)
       .neq('status', 'cancelled');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching appointments:', error);
+      throw error;
+    }
+
+    console.log(`Found ${appointments?.length || 0} appointments`);
+    if (appointments && appointments.length > 0) {
+      console.log('Sample appointment:', appointments[0]);
+    }
 
     // Calculate busy counts per day
     const busyCounts: Record<string, number> = {};
@@ -57,6 +67,9 @@ serve(async (req) => {
         duration_minutes: (apt.services as any)?.duration_minutes || 60
       });
     }
+
+    console.log('Busy counts:', busyCounts);
+    console.log('Days with slots:', Object.keys(slotsByDate));
 
     return new Response(
       JSON.stringify({ busyCounts, slotsByDate }),
