@@ -70,20 +70,43 @@ export default function Auth() {
 
           clearTimeout(timeoutId);
 
-          if (error) {
-            console.error('Edge function error:', error);
-            throw error;
+          let respData = data;
+
+          if (error || !respData) {
+            console.warn('invoke failed, trying direct fetch fallback...', error);
+            // Fallback: direct HTTP call to the Edge Function (in case some ISPs block invoke)
+            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            const fallbackUrl = `https://${projectId}.functions.supabase.co/telegram-auth`;
+
+            const fallbackController = new AbortController();
+            const fallbackTimeout = setTimeout(() => fallbackController.abort(), 30000);
+
+            const resp = await fetch(fallbackUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ initData }),
+              signal: fallbackController.signal,
+            });
+
+            clearTimeout(fallbackTimeout);
+            if (!resp.ok) {
+              throw new Error(`Fallback request failed: ${resp.status}`);
+            }
+            respData = await resp.json();
           }
 
           console.log('Auth response received:', { 
-            success: data?.success, 
-            hasHashedToken: !!data?.hashed_token 
+            success: respData?.success, 
+            hasHashedToken: !!respData?.hashed_token 
           });
 
-          if (data?.success && data?.hashed_token) {
+          if (respData?.success && respData?.hashed_token) {
             console.log('Verifying OTP with hashed_token...');
             const { error: verifyError } = await supabase.auth.verifyOtp({
-              token_hash: data.hashed_token,
+              token_hash: respData.hashed_token,
               type: 'magiclink',
             });
 
@@ -96,7 +119,7 @@ export default function Auth() {
             toast.success('Добро пожаловать!');
             navigate('/dashboard');
           } else {
-            console.error('Invalid response data:', data);
+            console.error('Invalid response data:', respData);
             throw new Error('Invalid authentication response');
           }
         } catch (fetchError: any) {
@@ -104,7 +127,7 @@ export default function Auth() {
           
           // Обработка сетевых ошибок
           if (fetchError.name === 'AbortError' || 
-              fetchError.message?.includes('Failed to fetch') ||
+              fetchError.message?.includes('Failed') ||
               fetchError.message?.includes('network') ||
               fetchError.message?.includes('Load failed')) {
             
