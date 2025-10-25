@@ -221,7 +221,7 @@ export default function BookingPage() {
     if (!selectedDate || !profile) return;
     const interval = setInterval(() => {
       loadAppointments(selectedDate);
-    }, 10000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [selectedDate, profile]);
   const getAvailableTimeSlots = () => {

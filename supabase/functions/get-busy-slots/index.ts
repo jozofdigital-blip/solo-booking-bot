@@ -34,7 +34,7 @@ serve(async (req) => {
       .select('appointment_time, service_id, status')
       .eq('profile_id', profileId)
       .eq('appointment_date', date)
-      .neq('status', 'cancelled');
+      .in('status', ['pending', 'confirmed']);
 
     if (error) throw error;
 
