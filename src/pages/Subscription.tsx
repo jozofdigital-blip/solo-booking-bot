@@ -114,7 +114,9 @@ export default function Subscription() {
   };
 
   const calculateFinalPrice = (basePrice: number) => {
-    return Math.round(basePrice * (1 - discount / 100));
+    const discountedPrice = Math.round(basePrice * (1 - discount / 100));
+    // Для 100% скидки показываем минимум 1 рубль
+    return discount === 100 ? 1 : discountedPrice;
   };
 
   const handlePayment = async () => {
@@ -127,6 +129,8 @@ export default function Subscription() {
     if (!plan) return;
 
     const finalPrice = calculateFinalPrice(plan.price);
+    // Для edge function отправляем 0 если 100% скидка (для бесплатной активации)
+    const paymentAmount = discount === 100 ? 0 : finalPrice;
 
     setLoading(true);
     try {
@@ -134,7 +138,7 @@ export default function Subscription() {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           planId: plan.id,
-          amount: finalPrice,
+          amount: paymentAmount,
           description: `Подписка LookTime - ${plan.name}`,
           profileId: profile.id,
           months: plan.months

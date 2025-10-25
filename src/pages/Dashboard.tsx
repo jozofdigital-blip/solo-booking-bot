@@ -257,7 +257,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       const tgDisplayName = [first, last].filter(Boolean).join(' ') || username || '';
       setDisplayName(tgDisplayName);
 
-      // Load profile
+      // Load profile - ВСЕГДА загружаем свежие данные с сервера, без кеша
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -790,7 +790,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
+                  <Avatar key={profile?.avatar_url || 'no-avatar'} className="h-10 w-10">
                     <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.business_name} />
                     <AvatarFallback className="bg-primary/10">
                       <User className="h-5 w-5 text-primary" />
