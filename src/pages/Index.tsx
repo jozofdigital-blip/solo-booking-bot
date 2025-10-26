@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send } from "lucide-react";
 import logo from "@/assets/logo.png";
-import dashboardMockup from "@/assets/dashboard-mockup.png";
+import dashboardMockup from "@/assets/owner-dashboard.jpg";
 import bookingMockup from "@/assets/booking-mockup.png";
 
 const Index = () => {
