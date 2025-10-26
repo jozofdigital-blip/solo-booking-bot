@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send } from "lucide-react";
+import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send, Pause, Play } from "lucide-react";
 import logo from "@/assets/logo.png";
 import ownerDashboard3Day from "@/assets/owner-dashboard-3day.jpg";
 import ownerDashboardWeek from "@/assets/owner-dashboard-week.jpg";
 import ownerAddService from "@/assets/owner-add-service.jpg";
 import ownerCreateAppointment from "@/assets/owner-create-appointment.jpg";
 import ownerClientsList from "@/assets/owner-clients-list.jpg";
-import bookingMockup from "@/assets/booking-mockup.png";
-import dashboardMockup from "@/assets/dashboard-mockup.png";
+import clientSelectService from "@/assets/client-select-service.jpg";
+import clientSelectDate from "@/assets/client-select-date.jpg";
+import clientSelectTime from "@/assets/client-select-time.jpg";
 
 const Index = () => {
   const [activeScreen, setActiveScreen] = useState<'owner' | 'client'>('owner');
   const [ownerSlide, setOwnerSlide] = useState(0);
   const [clientSlide, setClientSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const TELEGRAM_CHANNEL = "https://t.me/looktime_online";
 
   const ownerSlides = [
@@ -25,8 +27,9 @@ const Index = () => {
   ];
 
   const clientSlides = [
-    { src: bookingMockup, alt: "Выбор услуги" },
-    { src: dashboardMockup, alt: "Выбор времени" },
+    { src: clientSelectService, alt: "Выбор услуги" },
+    { src: clientSelectDate, alt: "Выбор даты" },
+    { src: clientSelectTime, alt: "Выбор времени и контакты" },
   ];
 
   useEffect(() => {
@@ -34,6 +37,8 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    if (isPaused) return;
+
     const screenInterval = setInterval(() => {
       setActiveScreen(prev => prev === 'owner' ? 'client' : 'owner');
     }, 8000);
@@ -51,7 +56,7 @@ const Index = () => {
       clearInterval(ownerInterval);
       clearInterval(clientInterval);
     };
-  }, []);
+  }, [isPaused]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -176,8 +181,8 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Labels */}
-            <div className="absolute -bottom-16 left-0 right-0 flex justify-center gap-4">
+            {/* Controls */}
+            <div className="absolute -bottom-16 left-0 right-0 flex justify-center items-center gap-4">
               <button
                 onClick={() => setActiveScreen('owner')}
                 className={`px-4 py-2 rounded-full transition-all ${
@@ -187,6 +192,13 @@ const Index = () => {
                 }`}
               >
                 Владелец
+              </button>
+              <button
+                onClick={() => setIsPaused(!isPaused)}
+                className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-all"
+                title={isPaused ? 'Воспроизвести' : 'Пауза'}
+              >
+                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setActiveScreen('client')}
