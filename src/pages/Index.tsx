@@ -108,7 +108,7 @@ const Index = () => {
                   <img 
                     src={dashboardMockup} 
                     alt="Личный кабинет владельца" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-top"
                     loading="eager"
                     decoding="async"
                   />
