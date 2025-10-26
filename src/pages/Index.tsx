@@ -95,8 +95,8 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <div className="relative mx-auto" style={{ width: '280px', height: '580px' }}>
             {/* Phone Frame */}
-            <div className="absolute inset-0 bg-gradient-to-br from-foreground/10 to-foreground/5 rounded-[3rem] border-8 border-foreground/20 shadow-2xl p-4">
-              <div className="relative w-full h-full bg-background rounded-[2rem] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black rounded-[3rem] shadow-2xl p-2">
+              <div className="relative w-full h-full bg-background rounded-[2.5rem] overflow-hidden">
                 {/* Owner Screen */}
                 <div 
                   className={`absolute inset-0 transition-all duration-700 ${
