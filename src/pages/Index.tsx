@@ -2,22 +2,55 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send } from "lucide-react";
 import logo from "@/assets/logo.png";
-import dashboardMockup from "@/assets/owner-dashboard.jpg";
+import ownerDashboard3Day from "@/assets/owner-dashboard-3day.jpg";
+import ownerDashboardWeek from "@/assets/owner-dashboard-week.jpg";
+import ownerAddService from "@/assets/owner-add-service.jpg";
+import ownerCreateAppointment from "@/assets/owner-create-appointment.jpg";
+import ownerClientsList from "@/assets/owner-clients-list.jpg";
 import bookingMockup from "@/assets/booking-mockup.png";
+import dashboardMockup from "@/assets/dashboard-mockup.png";
 
 const Index = () => {
   const [activeScreen, setActiveScreen] = useState<'owner' | 'client'>('owner');
+  const [ownerSlide, setOwnerSlide] = useState(0);
+  const [clientSlide, setClientSlide] = useState(0);
   const TELEGRAM_CHANNEL = "https://t.me/looktime_online";
+
+  const ownerSlides = [
+    { src: ownerDashboard3Day, alt: "Dashboard 3 дня" },
+    { src: ownerDashboardWeek, alt: "Dashboard неделя" },
+    { src: ownerAddService, alt: "Добавить услугу" },
+    { src: ownerCreateAppointment, alt: "Создать запись" },
+    { src: ownerClientsList, alt: "Список клиентов" },
+  ];
+
+  const clientSlides = [
+    { src: bookingMockup, alt: "Выбор услуги" },
+    { src: dashboardMockup, alt: "Выбор времени" },
+  ];
 
   useEffect(() => {
     document.title = "LookTime - Сервис онлайн-записи в Telegram";
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const screenInterval = setInterval(() => {
       setActiveScreen(prev => prev === 'owner' ? 'client' : 'owner');
-    }, 3000);
-    return () => clearInterval(interval);
+    }, 8000);
+
+    const ownerInterval = setInterval(() => {
+      setOwnerSlide(prev => (prev + 1) % ownerSlides.length);
+    }, 2000);
+
+    const clientInterval = setInterval(() => {
+      setClientSlide(prev => (prev + 1) % clientSlides.length);
+    }, 2000);
+
+    return () => {
+      clearInterval(screenInterval);
+      clearInterval(ownerInterval);
+      clearInterval(clientInterval);
+    };
   }, []);
 
   const scrollToSection = (id: string) => {
@@ -105,13 +138,18 @@ const Index = () => {
                       : 'opacity-0 -translate-x-full'
                   }`}
                 >
-                  <img 
-                    src={dashboardMockup} 
-                    alt="Личный кабинет владельца" 
-                    className="w-full h-full object-cover object-top"
-                    loading="eager"
-                    decoding="async"
-                  />
+                  {ownerSlides.map((slide, index) => (
+                    <img 
+                      key={index}
+                      src={slide.src} 
+                      alt={slide.alt}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                        ownerSlide === index ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ))}
                 </div>
 
                 {/* Client Screen */}
@@ -122,13 +160,18 @@ const Index = () => {
                       : 'opacity-0 translate-x-full'
                   }`}
                 >
-                  <img 
-                    src={bookingMockup} 
-                    alt="Страница записи для клиента" 
-                    className="w-full h-full object-cover"
-                    loading="eager"
-                    decoding="async"
-                  />
+                  {clientSlides.map((slide, index) => (
+                    <img 
+                      key={index}
+                      src={slide.src} 
+                      alt={slide.alt}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                        clientSlide === index ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ))}
                 </div>
               </div>
             </div>
