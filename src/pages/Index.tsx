@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send, Pause, Play } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Calendar, Clock, Share2, Zap, Bell, Users, Check, X, Sparkles, Send, Pause, Play, Menu } from "lucide-react";
 import logo from "@/assets/logo.png";
 import ownerDashboard3Day from "@/assets/owner-dashboard-3day.jpg";
 import ownerDashboardWeek from "@/assets/owner-dashboard-week.jpg";
@@ -16,6 +17,7 @@ const Index = () => {
   const [ownerSlide, setOwnerSlide] = useState(0);
   const [clientSlide, setClientSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const TELEGRAM_CHANNEL = "https://t.me/looktime_online";
 
   const ownerSlides = [
@@ -61,19 +63,20 @@ const Index = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6 sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
-        <div className="flex justify-between items-center">
+      <header className="container mx-auto px-4 py-4 sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
+        <div className="flex justify-between items-center max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <img src={logo} alt="LookTime" className="w-10 h-10" loading="eager" decoding="async" />
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-telegram to-telegram/70 bg-clip-text text-transparent">LookTime</h2>
+            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-telegram to-telegram/70 bg-clip-text text-transparent">LookTime</h2>
           </div>
           
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-10">
             <button onClick={() => scrollToSection('features')} className="text-foreground hover:text-telegram transition-colors font-medium">
               Преимущества
             </button>
@@ -83,20 +86,60 @@ const Index = () => {
             <button onClick={() => scrollToSection('pricing')} className="text-foreground hover:text-telegram transition-colors font-medium">
               Цены
             </button>
+            <Button
+              onClick={() => window.open(TELEGRAM_CHANNEL, '_blank')}
+              className="bg-telegram hover:bg-telegram/90 gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Telegram
+            </Button>
           </nav>
 
-          <Button
-            onClick={() => window.open(TELEGRAM_CHANNEL, '_blank')}
-            className="bg-telegram hover:bg-telegram/90 gap-2"
-          >
-            <Send className="w-4 h-4" />
-            Telegram
-          </Button>
+          {/* Mobile Menu */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild className="lg:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px]">
+              <nav className="flex flex-col gap-6 mt-8">
+                <button 
+                  onClick={() => scrollToSection('features')} 
+                  className="text-lg text-left text-foreground hover:text-telegram transition-colors font-medium"
+                >
+                  Преимущества
+                </button>
+                <button 
+                  onClick={() => scrollToSection('for-whom')} 
+                  className="text-lg text-left text-foreground hover:text-telegram transition-colors font-medium"
+                >
+                  Для кого
+                </button>
+                <button 
+                  onClick={() => scrollToSection('pricing')} 
+                  className="text-lg text-left text-foreground hover:text-telegram transition-colors font-medium"
+                >
+                  Цены
+                </button>
+                <Button
+                  onClick={() => {
+                    window.open(TELEGRAM_CHANNEL, '_blank');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="bg-telegram hover:bg-telegram/90 gap-2 w-full"
+                >
+                  <Send className="w-4 h-4" />
+                  Telegram
+                </Button>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 py-8 md:py-16">
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-telegram/10 border border-telegram/20 mb-6 animate-fade-in">
             <Sparkles className="w-4 h-4 text-telegram" />
@@ -129,7 +172,7 @@ const Index = () => {
       </section>
 
       {/* Demo Screenshots Section with Animation */}
-      <section className="container mx-auto px-4 py-12 md:py-20">
+      <section className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-4xl mx-auto">
           <div className="relative mx-auto" style={{ width: '280px', height: '580px' }}>
             {/* Phone Frame */}
@@ -216,7 +259,7 @@ const Index = () => {
       </section>
 
       {/* Problems Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Если вы искали сервис для ведения <br className="hidden md:block" />
@@ -274,7 +317,7 @@ const Index = () => {
       </section>
 
       {/* Telegram Channel CTA */}
-      <section className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="bg-gradient-to-br from-telegram/10 to-telegram/5 rounded-3xl p-8 md:p-12 border border-telegram/20 text-center">
             <Send className="w-16 h-16 text-telegram mx-auto mb-6" />
@@ -297,7 +340,7 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="container mx-auto px-4 py-16 scroll-mt-20">
+      <section id="features" className="container mx-auto px-4 py-8 md:py-12 scroll-mt-20">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
           Преимущества
         </h2>
@@ -342,7 +385,7 @@ const Index = () => {
       </section>
 
       {/* For Whom Section */}
-      <section id="for-whom" className="container mx-auto px-4 py-16 md:py-24 scroll-mt-20">
+      <section id="for-whom" className="container mx-auto px-4 py-8 md:py-12 scroll-mt-20">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Для кого
@@ -370,16 +413,16 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 py-16 md:py-24 scroll-mt-20">
+      <section id="pricing" className="container mx-auto px-4 py-8 md:py-12 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Цены
           </h2>
-          <p className="text-lg text-center text-muted-foreground mb-12">
+          <p className="text-lg text-center text-muted-foreground mb-8">
             Честные тарифы без скрытых платежей
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
             {[
               { period: '3 месяца', price: 750, perMonth: 250 },
               { period: '6 месяцев', price: 1300, perMonth: 217, popular: true },
@@ -387,30 +430,30 @@ const Index = () => {
             ].map((plan, index) => (
               <div 
                 key={index}
-                className={`relative p-8 rounded-3xl border-2 transition-all hover:scale-105 ${
+                className={`relative p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 transition-all md:hover:scale-105 ${
                   plan.popular 
                     ? 'bg-gradient-to-br from-telegram/10 to-telegram/5 border-telegram shadow-lg' 
                     : 'bg-card border-border'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-telegram text-white text-sm font-semibold rounded-full">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-telegram text-white text-xs md:text-sm font-semibold rounded-full whitespace-nowrap">
                     Популярный
                   </div>
                 )}
                 {plan.savings && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-success text-white text-sm font-semibold rounded-full">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-success text-white text-xs md:text-sm font-semibold rounded-full">
                     {plan.savings}
                   </div>
                 )}
                 
-                <h3 className="text-2xl font-bold mb-2 text-center">{plan.period}</h3>
-                <div className="text-center mb-6">
-                  <p className="text-4xl font-bold text-telegram mb-1">{plan.price} ₽</p>
-                  <p className="text-sm text-muted-foreground">≈ {plan.perMonth} ₽/месяц</p>
+                <h3 className="text-xl md:text-2xl font-bold mb-2 text-center">{plan.period}</h3>
+                <div className="text-center mb-4 md:mb-6">
+                  <p className="text-3xl md:text-4xl font-bold text-telegram mb-1">{plan.price} ₽</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">≈ {plan.perMonth} ₽/месяц</p>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
                   {[
                     'Онлайн-запись 24/7',
                     'Календарь записей',
@@ -419,15 +462,15 @@ const Index = () => {
                     'База клиентов'
                   ].map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <Check className="w-5 h-5 text-telegram flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
+                      <Check className="w-4 h-4 md:w-5 md:h-5 text-telegram flex-shrink-0" />
+                      <span className="text-xs md:text-sm">{feature}</span>
                     </div>
                   ))}
                 </div>
 
                 <Button
                   onClick={() => window.open(TELEGRAM_CHANNEL, '_blank')}
-                  className={plan.popular ? 'w-full bg-telegram hover:bg-telegram/90' : 'w-full'}
+                  className={plan.popular ? 'w-full bg-telegram hover:bg-telegram/90 h-10 md:h-11' : 'w-full h-10 md:h-11'}
                   variant={plan.popular ? 'default' : 'outline'}
                 >
                   Выбрать
@@ -436,12 +479,12 @@ const Index = () => {
             ))}
           </div>
 
-          <div className="text-center bg-gradient-to-br from-warning/10 to-warning/5 p-8 rounded-3xl border border-warning/20">
-            <Sparkles className="w-12 h-12 text-warning mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-3">
+          <div className="text-center bg-gradient-to-br from-warning/10 to-warning/5 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-warning/20">
+            <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-warning mx-auto mb-3 md:mb-4" />
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3">
               Получите промокод на дополнительную скидку
             </h3>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6">
               В нашем телеграм-канале
             </p>
             <Button
@@ -449,7 +492,7 @@ const Index = () => {
               onClick={() => window.open(TELEGRAM_CHANNEL, '_blank')}
               className="bg-telegram hover:bg-telegram/90 gap-2"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 md:w-5 md:h-5" />
               Получить промокод
             </Button>
           </div>
@@ -457,33 +500,33 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-3xl mx-auto text-center bg-gradient-to-br from-telegram to-telegram/80 rounded-3xl p-12 md:p-16 border border-telegram/20 shadow-2xl text-white">
-          <Calendar className="w-20 h-20 mx-auto mb-6 opacity-90" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      <section className="container mx-auto px-4 py-8 md:py-12">
+        <div className="max-w-3xl mx-auto text-center bg-gradient-to-br from-telegram to-telegram/80 rounded-2xl md:rounded-3xl p-8 md:p-16 border border-telegram/20 shadow-2xl text-white">
+          <Calendar className="w-12 h-12 md:w-20 md:h-20 mx-auto mb-4 md:mb-6 opacity-90" />
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
             Готовы начать?
           </h2>
-          <p className="text-lg mb-8 text-white/90">
+          <p className="text-base md:text-lg mb-6 md:mb-8 text-white/90">
             Присоединяйтесь к специалистам, которые уже используют LookTime
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
             <Button
               size="lg"
               onClick={() => window.open(TELEGRAM_CHANNEL, '_blank')}
-              className="bg-white text-telegram hover:bg-white/90 text-lg h-14 px-8 gap-2 shadow-lg"
+              className="bg-white text-telegram hover:bg-white/90 text-base md:text-lg h-12 md:h-14 px-6 md:px-8 gap-2 shadow-lg"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4 md:w-5 md:h-5" />
               Перейти в канал
             </Button>
           </div>
-          <p className="mt-6 text-sm text-white/80">
+          <p className="mt-4 md:mt-6 text-xs md:text-sm text-white/80">
             Бесплатный пробный период 10 дней
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 border-t">
+      <footer className="container mx-auto px-4 py-6 md:py-8 border-t">
         <div className="text-center text-muted-foreground">
           <p>© 2025 LookTime. Сервис онлайн-записи в Telegram</p>
         </div>
