@@ -1,0 +1,30 @@
+[
+  {
+    "id": "7d8bf7ab-338a-423b-9dc9-aefd7297bcd7",
+    "code": "Промо10",
+    "discount_percent": 10,
+    "is_active": true,
+    "created_at": "2025-10-24T23:28:49.328313Z"
+  },
+  {
+    "id": "0945ce83-4fe9-44d3-b2f8-d5b16334330b",
+    "code": "Лук20",
+    "discount_percent": 20,
+    "is_active": true,
+    "created_at": "2025-10-24T23:28:49.328313Z"
+  },
+  {
+    "id": "e2e591c9-51e6-4f28-b470-32c3efb83689",
+    "code": "Макси50",
+    "discount_percent": 50,
+    "is_active": true,
+    "created_at": "2025-10-24T23:28:49.328313Z"
+  },
+  {
+    "id": "b9d1e06a-fafb-4209-a5f7-f7c2fec01092",
+    "code": "Отдуши100",
+    "discount_percent": 100,
+    "is_active": true,
+    "created_at": "2025-10-24T23:28:49.328313Z"
+  }
+]

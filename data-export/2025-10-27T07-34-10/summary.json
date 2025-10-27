@@ -1,0 +1,53 @@
+{
+  "projectRef": "umluahqqpoimkbidndll",
+  "supabaseUrl": "https://umluahqqpoimkbidndll.supabase.co",
+  "generatedAt": "2025-10-27T07:34:10.000Z",
+  "exportMethod": "direct_query",
+  "tables": [
+    {
+      "schema": "public",
+      "name": "profiles",
+      "rowCount": 4,
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.profiles.json"
+    },
+    {
+      "schema": "public",
+      "name": "clients",
+      "rowCount": 4,
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.clients.json"
+    },
+    {
+      "schema": "public",
+      "name": "appointments",
+      "rowCount": 10,
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.appointments.json"
+    },
+    {
+      "schema": "public",
+      "name": "services",
+      "rowCount": "multiple",
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.services.json",
+      "note": "Service data truncated due to size - use export script for complete data"
+    },
+    {
+      "schema": "public",
+      "name": "working_hours",
+      "rowCount": "multiple",
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.working_hours.json",
+      "note": "Working hours data truncated due to size - use export script for complete data"
+    },
+    {
+      "schema": "public",
+      "name": "payments",
+      "rowCount": 3,
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.payments.json"
+    },
+    {
+      "schema": "public",
+      "name": "promo_codes",
+      "rowCount": 4,
+      "jsonFile": "data-export/2025-10-27T07-34-10/public.promo_codes.json"
+    }
+  ],
+  "note": "Export completed via direct database queries. For complete data including services and working_hours tables, use the npm run export:supabase script with SERVICE_ROLE_KEY."
+}
