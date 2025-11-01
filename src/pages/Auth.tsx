@@ -1,201 +1,102 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: any;
-    };
-  }
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [telegramUser, setTelegramUser] = useState<any>(null);
+  const { signIn, signUp, user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    authenticateWithTelegram();
-  }, []);
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
-  const authenticateWithTelegram = async () => {
-    let retryCount = 0;
-    const maxRetries = 3;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-    const attemptAuth = async (): Promise<void> => {
-      try {
-        // Быстрая проверка авторизации
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate('/dashboard');
-          return;
-        }
-
-        // Проверка Telegram Web App
-        if (!window.Telegram?.WebApp) {
-          toast.error('Это приложение работает только в Telegram');
-          setLoading(false);
-          return;
-        }
-
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        const initData = tg.initData;
-        if (!initData) {
-          toast.error('Не удалось получить данные Telegram');
-          setLoading(false);
-          return;
-        }
-
-        const user = tg.initDataUnsafe?.user;
-        setTelegramUser(user);
-
-        // Авторизация через backend с таймаутом 15 секунд
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        try {
-          const { data, error } = await supabase.functions.invoke('telegram-auth', {
-            body: { initData },
-          });
-
-          clearTimeout(timeoutId);
-
-          let respData = data;
-
-          if (error || !respData) {
-            console.warn('invoke failed, trying direct fetch fallback...', error);
-            // Fallback: direct HTTP call
-            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-            const fallbackUrl = `https://${projectId}.functions.supabase.co/telegram-auth`;
-
-            const fallbackController = new AbortController();
-            const fallbackTimeout = setTimeout(() => fallbackController.abort(), 15000);
-
-            const resp = await fetch(fallbackUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-              body: JSON.stringify({ initData }),
-              signal: fallbackController.signal,
-            });
-
-            clearTimeout(fallbackTimeout);
-            if (!resp.ok) {
-              throw new Error(`Fallback request failed: ${resp.status}`);
-            }
-            respData = await resp.json();
-          }
-
-          console.log('Auth response received:', { 
-            success: respData?.success, 
-            hasHashedToken: !!respData?.hashed_token 
-          });
-
-          if (respData?.success && respData?.hashed_token) {
-            console.log('Verifying OTP with hashed_token...');
-            const { error: verifyError } = await supabase.auth.verifyOtp({
-              token_hash: respData.hashed_token,
-              type: 'magiclink',
-            });
-
-            if (verifyError) {
-              console.error('Verify OTP error:', verifyError);
-              throw verifyError;
-            }
-            
-            console.log('Authentication successful!');
-            toast.success('Добро пожаловать!');
-            navigate('/dashboard');
-          } else {
-            console.error('Invalid response data:', respData);
-            throw new Error('Invalid authentication response');
-          }
-        } catch (fetchError: any) {
-          clearTimeout(timeoutId);
-          
-          // Обработка сетевых ошибок
-          if (fetchError.name === 'AbortError' || 
-              fetchError.message?.includes('Failed') ||
-              fetchError.message?.includes('network') ||
-              fetchError.message?.includes('Load failed')) {
-            
-            if (retryCount < maxRetries) {
-              retryCount++;
-              console.log(`Retrying authentication (${retryCount}/${maxRetries})...`);
-              toast.info(`Повторная попытка ${retryCount}/${maxRetries}...`);
-              await new Promise(resolve => setTimeout(resolve, 2000)); // Пауза 2 секунды
-              return attemptAuth();
-            }
-          }
-          
-          throw fetchError;
-        }
-      } catch (error: any) {
-        console.error('Auth error details:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        });
-        
-        if (retryCount >= maxRetries) {
-          toast.error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
-        } else {
-          toast.error(error.message || 'Ошибка авторизации');
-        }
-        setLoading(false);
+    try {
+      if (isSignUp) {
+        await signUp(email, password);
+        toast.success('Регистрация успешна!');
+      } else {
+        await signIn(email, password);
+        toast.success('Добро пожаловать!');
       }
-    };
-
-    await attemptAuth();
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      toast.error(error.message || 'Ошибка авторизации');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-telegram-light to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-telegram/10 mb-4">
-            <Send className="w-8 h-8 text-telegram" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+            <Send className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold mb-2">LookTime</h1>
-          
-          {loading ? (
-            <div className="space-y-4">
-              <p className="text-muted-foreground">Авторизация через Telegram...</p>
-              <div className="animate-pulse">
-                <div className="h-12 bg-muted rounded-lg"></div>
-              </div>
-            </div>
-          ) : telegramUser ? (
-            <div className="space-y-4">
-              <Avatar className="w-20 h-20 mx-auto">
-                <AvatarImage src={telegramUser.photo_url} alt={telegramUser.first_name} />
-                <AvatarFallback>
-                  {telegramUser.first_name?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-lg font-medium">
-                {telegramUser.first_name} {telegramUser.last_name}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Ошибка авторизации. Попробуйте перезапустить приложение.
-              </p>
-            </div>
-          ) : (
-            <p className="text-muted-foreground">
-              Откройте приложение через Telegram
-            </p>
-          )}
+          <p className="text-muted-foreground">
+            {isSignUp ? 'Создайте аккаунт' : 'Войдите в систему'}
+          </p>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Пароль</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Загрузка...' : isSignUp ? 'Зарегистрироваться' : 'Войти'}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => setIsSignUp(!isSignUp)}
+            disabled={loading}
+          >
+            {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+          </Button>
+        </form>
       </Card>
     </div>
   );

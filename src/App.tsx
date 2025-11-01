@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
@@ -37,7 +38,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Suspense fallback={<LoadingFallback />}>
+        <AuthProvider>
+          <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/1" element={<Index />} />
@@ -52,6 +54,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
