@@ -31,11 +31,9 @@ const Index = () => {
         const data = await r.json();
         if (data?.ok) {
           localStorage.setItem("solo_user", JSON.stringify(data.user || {}));
-          console.log("✅ Telegram login OK", data.user);
           setTgStatus("✅ Telegram login OK");
         } else {
-          console.warn("❌ Telegram login fail", data);
-          setTgStatus("❌ Telegram login fail");
+          setTgStatus(`❌ Telegram login fail: ${data?.error || "unknown"}`);
         }
       } catch (e) {
         console.error("TG login error", e);
