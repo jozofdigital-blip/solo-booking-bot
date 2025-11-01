@@ -1,4 +1,4 @@
-const API_URL = 'https://api.looktime.pro';
+import { API_CONFIG } from './config';
 
 class ApiClient {
   private token: string | null = null;
@@ -17,17 +17,41 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    // Добавляем таймаут
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || 'Request failed');
+    try {
+      const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ 
+          message: `HTTP ${response.status}: ${response.statusText}` 
+        }));
+        throw new Error(error.message || 'Request failed');
+      }
+
+      return response.json();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      // Улучшенные сообщения об ошибках
+      if (error.name === 'AbortError') {
+        throw new Error('Превышено время ожидания. Проверьте соединение с сервером.');
+      }
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Не удалось подключиться к серверу. Проверьте, что API доступен на ' + API_CONFIG.baseUrl);
+      }
+      
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth

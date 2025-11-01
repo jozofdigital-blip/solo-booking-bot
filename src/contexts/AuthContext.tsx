@@ -51,13 +51,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const data = await apiClient.signIn(email, password);
-    setUser(data.user);
+    try {
+      const data = await apiClient.signIn(email, password);
+      setUser(data.user);
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      throw new Error(error.message || 'Ошибка входа в систему');
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const data = await apiClient.signUp(email, password);
-    setUser(data.user);
+    try {
+      const data = await apiClient.signUp(email, password);
+      setUser(data.user);
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      throw new Error(error.message || 'Ошибка регистрации');
+    }
   };
 
   const signOut = async () => {
