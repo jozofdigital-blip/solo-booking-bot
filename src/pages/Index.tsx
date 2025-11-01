@@ -32,8 +32,10 @@ const Index = () => {
         if (data?.ok) {
           localStorage.setItem("solo_user", JSON.stringify(data.user || {}));
           console.log("✅ Telegram login OK", data.user);
+          setTgStatus("✅ Telegram login OK");
         } else {
           console.warn("❌ Telegram login fail", data);
+          setTgStatus("❌ Telegram login fail");
         }
       } catch (e) {
         console.error("TG login error", e);
@@ -49,6 +51,7 @@ const Index = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const TELEGRAM_CHANNEL = "https://t.me/looktime_online";
+  const [tgStatus, setTgStatus] = useState<string>("⏳ Проверка Telegram...");
 
   const ownerSlides = [
     { src: ownerDashboard3Day, alt: "Dashboard 3 дня" },
@@ -99,6 +102,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
+      <div className="text-center text-sm text-muted-foreground py-2">{tgStatus}</div>
+
       <header className="container mx-auto px-4 py-4 sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
         <div className="flex justify-between items-center max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
