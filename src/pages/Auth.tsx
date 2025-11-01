@@ -9,6 +9,40 @@ import { Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Auth() {
+  // Показ статуса на экране
+  const [tgStatus, setTgStatus] = useState("⏳ Проверка Telegram...");
+
+  // Автовход через Telegram WebApp
+  useEffect(() => {
+    async function loginByTelegram() {
+      try {
+        const initData = (window as any)?.Telegram?.WebApp?.initData || "";
+        const api = import.meta.env.VITE_API_URL || "https://api.looktime.pro";
+        const url = `${api}/tg/login`;
+
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData }),
+        });
+        const data = await r.json();
+
+        if (data?.ok) {
+          localStorage.setItem("solo_user", JSON.stringify(data.user || {}));
+          setTgStatus("✅ Telegram login OK");
+          // если хочешь — сразу уводим на дашборд:
+          // navigate('/dashboard');
+        } else {
+          setTgStatus("❌ Telegram login fail");
+        }
+      } catch (e) {
+        setTgStatus("⚠️ Ошибка подключения");
+      }
+    }
+
+    loginByTelegram();
+  }, []);
+
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -18,7 +52,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -29,15 +63,15 @@ export default function Auth() {
     try {
       if (isSignUp) {
         await signUp(email, password);
-        toast.success('Регистрация успешна!');
+        toast.success("Регистрация успешна!");
       } else {
         await signIn(email, password);
-        toast.success('Добро пожаловать!');
+        toast.success("Добро пожаловать!");
       }
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error: any) {
-      console.error('Auth error:', error);
-      toast.error(error.message || 'Ошибка авторизации');
+      console.error("Auth error:", error);
+      toast.error(error.message || "Ошибка авторизации");
     } finally {
       setLoading(false);
     }
@@ -45,15 +79,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-background p-4">
+      <p style={{ textAlign: "center", color: "#777", marginBottom: "10px" }}>{tgStatus}</p>
+
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Send className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold mb-2">LookTime</h1>
-          <p className="text-muted-foreground">
-            {isSignUp ? 'Создайте аккаунт' : 'Войдите в систему'}
-          </p>
+          <p className="text-muted-foreground">{isSignUp ? "Создайте аккаунт" : "Войдите в систему"}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,7 +118,7 @@ export default function Auth() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Загрузка...' : isSignUp ? 'Зарегистрироваться' : 'Войти'}
+            {loading ? "Загрузка..." : isSignUp ? "Зарегистрироваться" : "Войти"}
           </Button>
 
           <Button
@@ -94,7 +128,7 @@ export default function Auth() {
             onClick={() => setIsSignUp(!isSignUp)}
             disabled={loading}
           >
-            {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+            {isSignUp ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}
           </Button>
         </form>
       </Card>
