@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,23 +54,42 @@ export default function Subscription() {
   }, [discount]);
 
   const loadProfile = async () => {
+    setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
+      let subscriptionInfo: any = null;
+      try {
+        subscriptionInfo = await apiClient.getSubscriptionInfo();
+      } catch (error) {
+        console.warn('Subscription info not available:', error);
+      }
+
+      if (subscriptionInfo?.profile) {
+        setProfile(subscriptionInfo.profile);
+        if (typeof subscriptionInfo.daysLeft === 'number') {
+          setDaysLeft(subscriptionInfo.daysLeft);
+        } else {
+          calculateDaysLeft(subscriptionInfo.profile);
+        }
         return;
       }
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+      const user = await apiClient.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      const profileResponse = await apiClient.getProfile(user.id);
+      const profileData = profileResponse?.profile ?? profileResponse ?? null;
+
+      if (!profileData) {
+        throw new Error('Не удалось загрузить профиль');
+      }
 
       setProfile(profileData);
       calculateDaysLeft(profileData);
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -96,21 +115,21 @@ export default function Subscription() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("promo_codes")
-      .select("discount_percent")
-      .eq("code", promoCode)
-      .eq("is_active", true)
-      .maybeSingle();
+    try {
+      const result = await apiClient.validatePromoCode(promoCode.trim());
 
-    if (error || !data) {
+      if (!result || typeof result.discount_percent !== 'number') {
+        toast.error("Промокод не найден");
+        setDiscount(0);
+        return;
+      }
+
+      setDiscount(result.discount_percent);
+      toast.success(`Применена скидка ${result.discount_percent}%`);
+    } catch (error) {
       toast.error("Промокод не найден");
       setDiscount(0);
-      return;
     }
-
-    setDiscount(data.discount_percent);
-    toast.success(`Применена скидка ${data.discount_percent}%`);
   };
 
   const calculateFinalPrice = (basePrice: number) => {
@@ -132,65 +151,33 @@ export default function Subscription() {
 
     setLoading(true);
     try {
-      // Create payment via edge function
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          planId: plan.id,
-          amount: finalPrice,
-          description: `Подписка LookTime - ${plan.name}`,
-          profileId: profile.id,
-          months: plan.months
-        }
+      const response = await apiClient.createPayment({
+        planId: plan.id,
+        amount: finalPrice,
+        description: `Подписка LookTime - ${plan.name}`,
+        profile_id: profile.id,
+        months: plan.months,
+        promoCode: promoCode.trim() || undefined,
       });
 
-      console.log('Payment response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      // Check if data has confirmationUrl directly or nested
-      const confirmationUrl = data?.confirmationUrl || data?.data?.confirmationUrl;
-      
-      console.log('Confirmation URL:', confirmationUrl);
+      const confirmationUrl = response?.confirmationUrl || response?.confirmation_url;
 
       if (confirmationUrl) {
-        // Open YooKassa in a new tab to avoid iframe/navigation blocking
         const win = window.open(confirmationUrl, '_blank', 'noopener,noreferrer');
         if (!win) {
-          // Fallback: same-tab navigation
           window.location.href = confirmationUrl;
         } else {
           toast.success('Окно оплаты ЮКассы открыто в новой вкладке');
         }
       } else {
-        console.error('Full response data:', JSON.stringify(data, null, 2));
         throw new Error('No confirmation URL received');
       }
     } catch (error: any) {
       console.error('Payment error:', error);
       toast.error(`Ошибка при создании платежа: ${error.message || 'Неизвестная ошибка'}`);
+    } finally {
       setLoading(false);
     }
-  };
-
-  const updateSubscription = async (months: number) => {
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + months);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ subscription_end_date: endDate.toISOString() })
-      .eq("id", profile.id);
-
-    if (error) {
-      toast.error("Ошибка обновления подписки");
-      return;
-    }
-
-    toast.success("Подписка успешно оформлена!");
-    loadProfile();
   };
 
   if (loading) {

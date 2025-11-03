@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -66,43 +66,16 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
   }, [searchQuery, clients]);
 
   const loadClients = async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("profile_id", profileId)
-      .order("name");
-
-    if (error) {
+    try {
+      const data = await apiClient.getClients(profileId);
+      setClients(data || []);
+    } catch (error) {
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить клиентов",
         variant: "destructive",
       });
-      return;
     }
-
-    // Load appointments for each client
-    const { data: appointmentsData } = await supabase
-      .from("appointments")
-      .select("client_phone, appointment_date, appointment_time, status")
-      .eq("profile_id", profileId)
-      .in("status", ["pending", "confirmed"])
-      .gte("appointment_date", new Date().toISOString().split("T")[0])
-      .order("appointment_date", { ascending: true })
-      .order("appointment_time", { ascending: true });
-
-    // Merge clients with their next appointments
-    const clientsWithAppointments: ClientWithAppointment[] = (data || []).map((client) => {
-      const nextAppointment = appointmentsData?.find((apt) => apt.client_phone === client.phone);
-      return {
-        ...client,
-        next_appointment: nextAppointment
-          ? { date: nextAppointment.appointment_date, time: nextAppointment.appointment_time }
-          : null,
-      };
-    });
-
-    setClients(clientsWithAppointments);
   };
 
   const handleSave = async () => {
@@ -115,35 +88,26 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
       return;
     }
 
-    if (editingClient) {
-      const { error } = await supabase
-        .from("clients")
-        .update({ name: formData.name, phone: formData.phone })
-        .eq("id", editingClient.id);
-
-      if (error) {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось обновить клиента",
-          variant: "destructive",
+    try {
+      if (editingClient) {
+        await apiClient.updateClient(editingClient.id, {
+          name: formData.name,
+          phone: formData.phone,
         });
-        return;
+      } else {
+        await apiClient.createClient({
+          profile_id: profileId,
+          name: formData.name,
+          phone: formData.phone,
+        });
       }
-    } else {
-      const { error } = await supabase.from("clients").insert({
-        profile_id: profileId,
-        name: formData.name,
-        phone: formData.phone,
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: editingClient ? "Не удалось обновить клиента" : "Не удалось добавить клиента",
+        variant: "destructive",
       });
-
-      if (error) {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось добавить клиента",
-          variant: "destructive",
-        });
-        return;
-      }
+      return;
     }
 
     toast({
@@ -171,9 +135,9 @@ export const ClientsDialog = ({ open, onOpenChange, profileId }: ClientsDialogPr
   const handleDeleteConfirm = async () => {
     if (!clientToDelete) return;
 
-    const { error } = await supabase.from("clients").delete().eq("id", clientToDelete);
-
-    if (error) {
+    try {
+      await apiClient.deleteClient(clientToDelete);
+    } catch (error) {
       toast({
         title: "Ошибка",
         description: "Не удалось удалить клиента",

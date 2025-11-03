@@ -58,43 +58,34 @@ export default function BookingPage() {
     
     const loadInitialData = async () => {
       try {
-        // Load profile
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('unique_slug', slug)
-          .single();
+        const data = await apiClient.getBookingData(slug);
 
-        if (error) throw error;
-        setProfile(profileData);
-
-        // Load services and working hours in parallel
-        const [servicesResult, workingHoursResult, botResult] = await Promise.all([
-          supabase
-            .from('services')
-            .select('*')
-            .eq('profile_id', profileData.id)
-            .eq('is_active', true),
-          supabase
-            .from('working_hours')
-            .select('*')
-            .eq('profile_id', profileData.id),
-          supabase.functions.invoke('get-bot-info').catch(() => ({ data: null }))
-        ]);
-
-        setServices(servicesResult.data || []);
-        setWorkingHours(workingHoursResult.data || []);
-        if (botResult.data?.username) {
-          setBotUsername(botResult.data.username);
+        if (!data?.profile) {
+          throw new Error('Profile not found');
         }
 
-        // Prefetch booking data for current and next month
+        setProfile(data.profile);
+        setServices(data.services || []);
+        setWorkingHours(data.workingHours || []);
+        setBusyCounts(data.busyCounts || {});
+        setSlotsByDate(data.slotsByDate || {});
+
+        if (data.botUsername) {
+          setBotUsername(data.botUsername);
+        }
+
+        if (data.client) {
+          setClientId(data.client.id ?? '');
+          setClientHasTelegram(Boolean(data.client.has_telegram ?? data.client.telegram_chat_id));
+        }
+
         const today = new Date();
         const startDate = format(startOfMonth(today), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(addMonths(today, 1)), 'yyyy-MM-dd');
-        
-        await fetchBookingData(profileData.id, startDate, endDate);
+
+        await fetchBookingData(data.profile.id, startDate, endDate);
       } catch (error) {
+        console.error('Failed to load booking data:', error);
         toast.error('Профиль не найден');
       }
     };
@@ -114,15 +105,11 @@ export default function BookingPage() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('get-booking-data', {
-        body: { profileId, startDate, endDate },
-      });
-
-      if (error) throw error;
+      const data = await apiClient.getBookingData(slug, { startDate, endDate });
 
       const bookingData = {
-        busyCounts: data.busyCounts || {},
-        slotsByDate: data.slotsByDate || {}
+        busyCounts: data?.busyCounts || {},
+        slotsByDate: data?.slotsByDate || {}
       };
 
       bookingCache.set(cacheKey, { data: bookingData, timestamp: Date.now() });
@@ -131,7 +118,7 @@ export default function BookingPage() {
     } catch (err) {
       console.error('Error fetching booking data:', err);
     }
-  }, []);
+  }, [slug]);
 
   // Update booking data when month changes
   useEffect(() => {
@@ -257,85 +244,34 @@ export default function BookingPage() {
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const appointmentId = crypto.randomUUID();
 
-      const { error: insertError } = await supabase
-        .from('appointments')
-        .insert({
-          id: appointmentId,
-          service_id: selectedService,
-          profile_id: profile.id,
-          client_name: clientName,
-          client_phone: clientPhone,
-          appointment_date: dateStr,
-          appointment_time: selectedTime,
-          status: 'pending'
-        });
-
-      if (insertError) throw insertError;
+      const result = await apiClient.createBooking({
+        profile_id: profile.id,
+        service_id: selectedService,
+        client_name: clientName,
+        client_phone: clientPhone,
+        appointment_date: dateStr,
+        appointment_time: selectedTime,
+      });
 
       localStorage.setItem('client_booking_data', JSON.stringify({ name: clientName, phone: clientPhone }));
 
-      // Try to create client record
-      const clientId = crypto.randomUUID();
-      try {
-        await supabase
-          .from('clients')
-          .insert({
-            id: clientId,
-            profile_id: profile.id,
-            name: clientName,
-            phone: clientPhone,
-            last_visit: new Date().toISOString()
-          });
-      } catch (e) {
-        // Client may already exist - ignore error
+      if (result?.client) {
+        setClientId(result.client.id ?? '');
+        setClientHasTelegram(Boolean(result.client.has_telegram ?? result.client.telegram_chat_id));
+      } else if (result?.client_id) {
+        setClientId(result.client_id);
+        setClientHasTelegram(Boolean(result.client_has_telegram));
       }
 
-      // Send telegram notification
-      if (profile?.telegram_chat_id) {
-        try {
-          const serviceData = services.find(s => s.id === selectedService);
-          await supabase.functions.invoke('send-telegram-notification', {
-            body: {
-              chatId: profile.telegram_chat_id,
-              clientName: clientName,
-              serviceName: serviceData?.name || '',
-              date: format(selectedDate, 'dd.MM.yyyy', { locale: ru }),
-              time: selectedTime,
-              phone: clientPhone,
-              appointmentId: appointmentId,
-              appointmentDate: dateStr,
-              type: 'new',
-              bookingUrl: 'https://looktime.pro/dashboard',
-            },
-          });
-        } catch (e) {
-          // Silent fail
-        }
-      }
-
-      // Check if client has Telegram
-      const { data: clientWithTelegram } = await supabase
-        .from('clients')
-        .select('telegram_chat_id')
-        .eq('phone', clientPhone)
-        .eq('profile_id', profile.id)
-        .not('telegram_chat_id', 'is', null)
-        .maybeSingle();
-      
-      setClientHasTelegram(!!clientWithTelegram?.telegram_chat_id);
-
-      // Invalidate cache and reload data
       bookingCache.clear();
       const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
       const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
       await fetchBookingData(profile.id, startDate, endDate);
-      
+
       toast.success('Запись успешно создана!');
-      setClientId(clientId);
       setSuccessDialogOpen(true);
-      
+
       setSelectedService(null);
       setSelectedTime('');
     } catch (error: any) {

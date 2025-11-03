@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { hasAppointmentOverlap } from "@/lib/utils";
@@ -124,15 +124,12 @@ export const AppointmentDialog = ({
 
   const loadClients = async () => {
     if (!profileId) return;
-    
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("profile_id", profileId)
-      .order("name");
 
-    if (!error && data) {
-      setClients(data);
+    try {
+      const data = await apiClient.getClients(profileId);
+      setClients(data || []);
+    } catch (error) {
+      console.warn('Failed to load clients:', error);
     }
   };
 
@@ -153,25 +150,25 @@ export const AppointmentDialog = ({
       const selectedService = services.find(s => s.id === formData.service_id);
       const serviceDuration = selectedService?.duration_minutes || 60;
 
-      // Fetch all appointments for the selected date
-      const { data: existingAppointments, error } = await supabase
-        .from("appointments")
-        .select("id, appointment_date, appointment_time, service_id, services(duration_minutes)")
-        .eq("profile_id", profileId)
-        .eq("appointment_date", formData.appointment_date)
-        .neq("status", "cancelled");
-
-      if (error) {
+      let existingAppointments: any[] = [];
+      try {
+        const response = await apiClient.getAppointments(
+          profileId,
+          formData.appointment_date,
+          formData.appointment_date
+        );
+        existingAppointments = response?.appointments ?? response ?? [];
+      } catch (error) {
         toast.error("Ошибка проверки доступности времени");
         return;
       }
 
-      const appointmentsWithDuration = existingAppointments?.map(apt => ({
+      const appointmentsWithDuration = existingAppointments.map(apt => ({
         id: apt.id,
         appointment_date: apt.appointment_date,
         appointment_time: apt.appointment_time,
-        duration_minutes: (apt.services as any)?.duration_minutes || 60
-      })) || [];
+        duration_minutes: apt.duration_minutes || (apt.services?.duration_minutes) || 60
+      }));
 
       const hasOverlap = hasAppointmentOverlap(
         formData.appointment_date,
@@ -210,55 +207,14 @@ export const AppointmentDialog = ({
     }
 
     try {
-      // Find or create a blocking service
-      let blockService = services.find(s => s.name === "Блокировка");
-      
-      if (!blockService) {
-        // Create a special blocking service
-        const { data: newService, error: serviceError } = await supabase
-          .from("services")
-          .insert({
-            profile_id: profileId,
-            name: "Блокировка",
-            description: "Служебная услуга для блокировки времени",
-            duration_minutes: 30,
-            price: 0,
-            is_active: false, // Hidden from client view
-          })
-          .select()
-          .single();
+      await apiClient.blockTime({
+        profile_id: profileId,
+        appointment_date: formData.appointment_date,
+        appointment_time: formData.appointment_time,
+      });
 
-        if (serviceError || !newService) {
-          toast.error("Не удалось создать услугу блокировки");
-          return;
-        }
-        
-        blockService = newService;
-      }
-
-      // Create a blocked appointment
-      const { error } = await supabase
-        .from("appointments")
-        .insert({
-          profile_id: profileId,
-          service_id: blockService.id,
-          appointment_date: formData.appointment_date,
-          appointment_time: formData.appointment_time,
-          client_name: "Заблокировано",
-          client_phone: "+70000000000",
-          status: "blocked",
-          notes: "Время заблокировано",
-        });
-
-      if (error) {
-        console.error("Error blocking time:", error);
-        toast.error("Не удалось заблокировать время");
-        return;
-      }
-
-      toast.success("Время заблокировано на 30 минут");
+      toast.success("Время заблокировано");
       onOpenChange(false);
-      // Refresh the page to show the blocked slot
       window.location.reload();
     } catch (error) {
       console.error("Error in handleBlockTime:", error);
