@@ -145,100 +145,20 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     loadData();
   }, []);
 
-  // Separate effect for realtime subscriptions (only when profile exists)
-  useEffect(() => {
-    if (!profile?.id) return;
-
-    // Real-time subscription для обновления профиля (аватарка, уведомления и т.д.)
-    const profileChannel = supabase
-      .channel('profile-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${profile.id}`
-        },
-        (payload) => {
-          console.log('Profile updated in realtime:', payload);
-          setProfile((prev: any) => ({ ...prev, ...payload.new }));
-        }
-      )
-      .subscribe();
-
-    // Real-time subscription для обновления appointments
-    const appointmentsChannel = supabase
-      .channel('appointments-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
-          filter: `profile_id=eq.${profile.id}`
-        },
-        async (payload) => {
-          console.log('Appointment realtime event:', payload.eventType);
-          // Оптимизированное обновление без полной перезагрузки
-          if (payload.eventType === 'INSERT') {
-            // Добавляем новую запись
-            const { data } = await supabase
-              .from('appointments')
-              .select(`
-                *,
-                services (name, duration_minutes)
-              `)
-              .eq('id', payload.new.id)
-              .single();
-            
-            if (data) {
-              setAppointments(prev => [...prev, data].sort((a, b) => 
-                new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime()
-              ));
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            // Обновляем существующую запись
-            const { data } = await supabase
-              .from('appointments')
-              .select(`
-                *,
-                services (name, duration_minutes)
-              `)
-              .eq('id', payload.new.id)
-              .single();
-            
-            if (data) {
-              setAppointments(prev => 
-                prev.map(apt => apt.id === data.id ? data : apt)
-              );
-            }
-          } else if (payload.eventType === 'DELETE') {
-            // Удаляем запись
-            setAppointments(prev => 
-              prev.filter(apt => apt.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(profileChannel);
-      supabase.removeChannel(appointmentsChannel);
-    };
-  }, [profile?.id]);
+  // TODO: Implement realtime updates via WebSockets or polling
+  // Separate effect for realtime subscriptions removed - not available in Timeweb API yet
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      await apiClient.getUser();
+    } catch (error) {
       navigate('/auth');
     }
   };
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await apiClient.getUser();
       
       if (!user) {
         navigate('/auth');
@@ -346,11 +266,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
   };
 
-  const generateSlug = async () => {
-    const { data, error } = await supabase.rpc('generate_unique_slug');
-    if (error) throw error;
-    return data;
-  };
+  // Slug generation moved to server side
 
   const checkSubscriptionStatus = (profileData: any) => {
     const now = new Date();
@@ -382,7 +298,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await apiClient.signOut();
     navigate('/auth');
   };
 
@@ -395,19 +311,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const handleSaveService = async (serviceData: any) => {
     try {
       if (editingService) {
-        const { error } = await supabase
-          .from('services')
-          .update(serviceData)
-          .eq('id', editingService.id);
-
-        if (error) throw error;
+        await apiClient.updateService(editingService.id, serviceData);
         toast.success('Услуга обновлена');
       } else {
-        const { error } = await supabase
-          .from('services')
-          .insert({ ...serviceData, profile_id: profile.id });
-
-        if (error) throw error;
+        await apiClient.createService({ ...serviceData, profile_id: profile.id });
         toast.success('Услуга добавлена');
       }
       
@@ -421,12 +328,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
 
   const handleDeleteService = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('services')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await apiClient.deleteService(id);
       toast.success('Услуга удалена');
       loadData();
     } catch (error: any) {
@@ -439,29 +341,8 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     appointmentData: any,
     type: 'new' | 'cancelled'
   ) => {
-    if (!profile?.telegram_chat_id) return;
-
-    try {
-      const service = services.find(s => s.id === appointmentData.service_id);
-      const bookingUrl = 'https://looktime.pro/dashboard';
-      
-      await supabase.functions.invoke('send-telegram-notification', {
-        body: {
-          chatId: profile.telegram_chat_id,
-          clientName: appointmentData.client_name,
-          serviceName: service?.name || 'Услуга',
-          date: format(new Date(appointmentData.appointment_date), 'd MMMM yyyy', { locale: ru }),
-          time: appointmentData.appointment_time.substring(0, 5),
-          phone: appointmentData.client_phone,
-          appointmentId: appointmentData.id,
-          appointmentDate: appointmentData.appointment_date,
-          type,
-          bookingUrl,
-        },
-      });
-    } catch (error) {
-      console.error('Error sending notification:', error);
-    }
+    // TODO: Implement Telegram notifications via Timeweb API
+    console.log('Telegram notification would be sent:', { appointmentData, type });
   };
 
   const handleSaveAppointment = async (appointmentData: any) => {
