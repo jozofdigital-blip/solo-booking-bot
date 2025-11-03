@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,26 +39,21 @@ export const TelegramSettingsDialog = ({
       loadNotificationSettings();
       // Ensure Telegram webhooks are configured (owner and client) before connecting
       if (!currentChatId) {
-        supabase.functions
-          .invoke('setup-telegram-webhook')
-          .catch((e) => console.warn('Webhook setup skipped/failed:', e?.message || e));
+        apiClient.setupTelegramWebhook().catch((e) =>
+          console.warn('Webhook setup skipped/failed:', (e as Error)?.message || e)
+        );
       }
     }
   }, [currentChatId, open]);
 
   const loadNotificationSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('notify_24h_before, notify_1h_before')
-        .eq('id', profileId)
-        .single();
+      const profile = await apiClient.getProfileById(profileId);
+      const profileData = profile?.profile ?? profile ?? null;
 
-      if (error) throw error;
-      
-      if (data) {
-        setNotify24h(data.notify_24h_before ?? false);
-        setNotify1h(data.notify_1h_before ?? false);
+      if (profileData) {
+        setNotify24h(profileData.notify_24h_before ?? false);
+        setNotify1h(profileData.notify_1h_before ?? false);
       }
     } catch (error) {
       // Silent fail - use defaults
@@ -68,16 +63,11 @@ export const TelegramSettingsDialog = ({
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          notify_24h_before: notify24h,
-          notify_1h_before: notify1h,
-        })
-        .eq('id', profileId);
+      await apiClient.updateNotificationSettings(profileId, {
+        notify_24h_before: notify24h,
+        notify_1h_before: notify1h,
+      });
 
-      if (error) throw error;
-      
       toast.success('Настройки сохранены');
       onOpenChange(false);
     } catch (error) {
@@ -90,15 +80,8 @@ export const TelegramSettingsDialog = ({
   const handleDisconnect = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          telegram_chat_id: null,
-        })
-        .eq('id', profileId);
+      await apiClient.disconnectTelegram(profileId);
 
-      if (error) throw error;
-      
       toast.success('Уведомления отключены');
       onOpenChange(false);
       window.location.reload();

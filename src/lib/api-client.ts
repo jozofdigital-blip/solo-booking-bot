@@ -31,10 +31,19 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ 
-          message: `HTTP ${response.status}: ${response.statusText}` 
-        }));
-        throw new Error(error.message || 'Request failed');
+        const errorBody = await response
+          .json()
+          .catch(() => ({ message: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(errorBody.message || 'Request failed');
+      }
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return response.text();
       }
 
       return response.json();
@@ -85,15 +94,34 @@ class ApiClient {
   }
 
   // Profiles
+  async createProfile(data: any) {
+    return this.request('/profiles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getProfile(userId: string) {
     return this.request(`/profiles/${userId}`);
   }
 
-  async updateProfile(userId: string, data: any) {
-    return this.request(`/profiles/${userId}`, {
+  async updateProfile(profileId: string, data: any) {
+    return this.request(`/profiles/${profileId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  }
+
+  async getProfileBySlug(slug: string) {
+    return this.request(`/profiles/slug/${slug}`);
+  }
+
+  async getProfileById(profileId: string) {
+    return this.request(`/profiles/id/${profileId}`);
+  }
+
+  async getDashboardData(profileId: string) {
+    return this.request(`/dashboard/${profileId}`);
   }
 
   // Services
@@ -149,6 +177,17 @@ class ApiClient {
     });
   }
 
+  async getAppointment(id: string) {
+    return this.request(`/appointments/${id}`);
+  }
+
+  async blockTime(data: any) {
+    return this.request('/appointments/block', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Clients
   async getClients(profileId: string) {
     return this.request(`/clients?profile_id=${profileId}`);
@@ -175,8 +214,17 @@ class ApiClient {
   }
 
   // Booking
-  async getBookingData(slug: string) {
-    return this.request(`/booking/${slug}`);
+  async getBookingData(slug: string, params?: { startDate?: string; endDate?: string }) {
+    const query = new URLSearchParams();
+    if (params?.startDate) {
+      query.set('start_date', params.startDate);
+    }
+    if (params?.endDate) {
+      query.set('end_date', params.endDate);
+    }
+
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.request(`/booking/${slug}${suffix}`);
   }
 
   async getAvailableSlots(profileId: string, date: string, serviceId: string) {
@@ -199,10 +247,23 @@ class ApiClient {
     return this.request(`/working-hours?profile_id=${profileId}`);
   }
 
-  async updateWorkingHours(data: any) {
+  async updateWorkingHours(profileId: string, hours: any[]) {
     return this.request('/working-hours', {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ profile_id: profileId, hours }),
+    });
+  }
+
+  async markAppointmentViewed(id: string) {
+    return this.request(`/appointments/${id}/viewed`, {
+      method: 'POST',
+    });
+  }
+
+  async cancelAppointment(id: string, reason?: string) {
+    return this.request(`/appointments/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   }
 
@@ -216,6 +277,60 @@ class ApiClient {
 
   async getPayments(profileId: string) {
     return this.request(`/payments?profile_id=${profileId}`);
+  }
+
+  // Clients
+  async findClientByPhone(profileId: string, phone: string) {
+    return this.request(`/clients/search?profile_id=${profileId}&phone=${encodeURIComponent(phone)}`);
+  }
+
+  async getClientAppointments(phone: string) {
+    return this.request(`/clients/${encodeURIComponent(phone)}/appointments`);
+  }
+
+  async sendOwnerNotification(payload: any) {
+    return this.request('/notifications/owner', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async sendClientNotification(payload: any) {
+    return this.request('/notifications/client', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getBotInfo() {
+    return this.request('/integrations/telegram/bot-info');
+  }
+
+  async validatePromoCode(code: string) {
+    return this.request(`/promo-codes/validate?code=${encodeURIComponent(code)}`);
+  }
+
+  async getSubscriptionInfo() {
+    return this.request('/subscription');
+  }
+
+  async updateNotificationSettings(profileId: string, settings: { notify_24h_before?: boolean; notify_1h_before?: boolean }) {
+    return this.request(`/profiles/${profileId}/notifications`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  async disconnectTelegram(profileId: string) {
+    return this.request(`/profiles/${profileId}/telegram`, {
+      method: 'DELETE',
+    });
+  }
+
+  async setupTelegramWebhook() {
+    return this.request('/integrations/telegram/setup', {
+      method: 'POST',
+    });
   }
 }
 

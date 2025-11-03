@@ -159,7 +159,7 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   const loadData = async () => {
     try {
       const user = await apiClient.getUser();
-      
+
       if (!user) {
         navigate('/auth');
         return;
@@ -173,89 +173,43 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       const tgDisplayName = [first, last].filter(Boolean).join(' ') || username || '';
       setDisplayName(tgDisplayName);
 
-      // Load profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-
-      let currentProfile = profileData;
-      
-      if (!profileData) {
-        // Create profile if doesn't exist
-        const slug = await generateSlug();
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            business_name: tgDisplayName || 'Мой бизнес',
-            unique_slug: slug
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        
-        // Создать рабочие часы по умолчанию
-        const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
-          ...hour,
-          profile_id: newProfile.id
-        }));
-        
-        await supabase
-          .from('working_hours')
-          .insert(defaultHours);
-        
-        currentProfile = newProfile;
+      let profileResponse: any = null;
+      try {
+        profileResponse = await apiClient.getProfile(user.id);
+      } catch (profileError) {
+        console.error('Failed to load profile, will try to create a new one:', profileError);
       }
-      
+
+      let currentProfile = profileResponse?.profile ?? profileResponse ?? null;
+
+      if (!currentProfile) {
+        const created = await apiClient.createProfile({
+          user_id: user.id,
+          business_name: tgDisplayName || 'Мой бизнес',
+        });
+        currentProfile = created?.profile ?? created ?? null;
+      }
+
+      if (!currentProfile) {
+        throw new Error('Не удалось загрузить профиль пользователя');
+      }
+
       setProfile(currentProfile);
       setBusinessName(currentProfile.business_name);
-      
+
       // Check subscription status
       checkSubscriptionStatus(currentProfile);
 
-      // Parallel loading - fast!
       if (currentProfile?.id) {
-        const [servicesResult, appointmentsResult, workingHoursResult] = await Promise.all([
-          supabase
-            .from('services')
-            .select('id, name, duration_minutes, price, is_active, description')
-            .eq('profile_id', currentProfile.id)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('appointments')
-            .select('*, services!inner(name, duration_minutes)')
-            .eq('profile_id', currentProfile.id)
-            .gte('appointment_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-            .order('appointment_date', { ascending: true }),
-          supabase
-            .from('working_hours')
-            .select('day_of_week, start_time, end_time, is_working')
-            .eq('profile_id', currentProfile.id)
-            .order('day_of_week', { ascending: true })
-        ]);
+        const dashboardData = await apiClient.getDashboardData(currentProfile.id);
+        setServices(dashboardData?.services ?? []);
+        setAppointments(dashboardData?.appointments ?? []);
 
-        setServices(servicesResult.data || []);
-        setAppointments(appointmentsResult.data || []);
-
-        // Create default working hours if none exist
-        if (!workingHoursResult.data || workingHoursResult.data.length === 0) {
-          const defaultHours = DEFAULT_WORKING_HOURS.map(hour => ({
-            ...hour,
-            profile_id: currentProfile.id
-          }));
-          
-          await supabase
-            .from('working_hours')
-            .insert(defaultHours);
-          
-          setWorkingHours(DEFAULT_WORKING_HOURS);
+        const hours = dashboardData?.workingHours ?? dashboardData?.working_hours ?? [];
+        if (hours && hours.length > 0) {
+          setWorkingHours(mergeWithDefaultWorkingHours(hours));
         } else {
-          setWorkingHours(mergeWithDefaultWorkingHours(workingHoursResult.data));
+          setWorkingHours(DEFAULT_WORKING_HOURS.map(hour => ({ ...hour })));
         }
       }
     } catch (error: any) {
@@ -337,26 +291,18 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
   };
 
-  const sendTelegramNotification = async (
-    appointmentData: any,
-    type: 'new' | 'cancelled'
-  ) => {
-    // TODO: Implement Telegram notifications via Timeweb API
-    console.log('Telegram notification would be sent:', { appointmentData, type });
-  };
-
   const handleSaveAppointment = async (appointmentData: any) => {
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
+
     try {
-      // Save client if new
       if (appointmentData.client_name && appointmentData.client_phone) {
-        const { data: existingClients } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("profile_id", profile.id)
-          .eq("phone", appointmentData.client_phone);
-        
-        if (!existingClients || existingClients.length === 0) {
-          await supabase.from("clients").insert({
+        const existingClient = await apiClient.findClientByPhone(profile.id, appointmentData.client_phone);
+
+        if (!existingClient) {
+          await apiClient.createClient({
             profile_id: profile.id,
             name: appointmentData.client_name,
             phone: appointmentData.client_phone,
@@ -364,54 +310,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
         }
       }
 
-      const { data: newAppointment, error } = await supabase
-        .from('appointments')
-        .insert({
-          ...appointmentData,
-          profile_id: profile.id,
-          status: 'confirmed'
-        })
-        .select()
-        .single();
+      await apiClient.createAppointment({
+        ...appointmentData,
+        profile_id: profile.id,
+      });
 
-      if (error) throw error;
-      
-      // Send Telegram notification to master
-      if (newAppointment) {
-        await sendTelegramNotification({...appointmentData, id: newAppointment.id}, 'new');
-      }
-
-      // Send notification to client if they have Telegram
-      if (appointmentData.client_phone) {
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('telegram_chat_id')
-          .eq('phone', appointmentData.client_phone)
-          .eq('profile_id', profile.id)
-          .maybeSingle();
-
-        if (clientData?.telegram_chat_id) {
-          try {
-            const serviceData = services.find(s => s.id === appointmentData.service_id);
-            await supabase.functions.invoke('send-client-notification', {
-              body: {
-                chatId: clientData.telegram_chat_id,
-                type: 'confirmation',
-                clientName: appointmentData.client_name,
-                serviceName: serviceData?.name || '',
-                date: format(new Date(appointmentData.appointment_date), 'dd MMMM yyyy', { locale: ru }),
-                time: appointmentData.appointment_time,
-                businessName: profile.business_name,
-                address: profile.address,
-                myAppointmentsUrl: `${window.location.origin}/my-appointments?phone=${encodeURIComponent(appointmentData.client_phone)}`
-              }
-            });
-          } catch (notifError) {
-            console.error('Failed to send client notification:', notifError);
-          }
-        }
-      }
-      
+      clearBookingCache(profile.id);
       toast.success('Запись создана');
       loadData();
     } catch (error: any) {
@@ -427,22 +331,10 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
     }
 
     try {
-      // Delete existing working hours
-      await supabase
-        .from('working_hours')
-        .delete()
-        .eq('profile_id', profile.id);
+      await apiClient.updateWorkingHours(profile.id, hours);
 
-      // Insert new working hours
-      const { error } = await supabase
-        .from('working_hours')
-        .insert(hours.map(h => ({ ...h, profile_id: profile.id })));
-
-      if (error) throw error;
-      
-      // Clear booking cache so clients see updated available slots
       clearBookingCache(profile.id);
-      
+
       toast.success('График работы сохранен');
       setWorkingHours(mergeWithDefaultWorkingHours(hours));
       loadData();
@@ -453,13 +345,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleSaveAddress = async (address: string, phone: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ address, phone })
-        .eq('id', profile.id);
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
 
-      if (error) throw error;
+    try {
+      await apiClient.updateProfile(profile.id, { address, phone });
       toast.success('Контактная информация сохранена');
       loadData();
     } catch (error: any) {
@@ -474,13 +366,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ business_name: businessName })
-        .eq('id', profile.id);
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
 
-      if (error) throw error;
+    try {
+      await apiClient.updateProfile(profile.id, { business_name: businessName });
       toast.success('Название обновлено');
       setBusinessNameDialogOpen(false);
       loadData();
@@ -496,13 +388,13 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleSaveTimezone = async (timezone: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ timezone })
-        .eq('id', profile.id);
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
 
-      if (error) throw error;
+    try {
+      await apiClient.updateProfile(profile.id, { timezone });
       toast.success('Часовой пояс обновлён');
       loadData();
     } catch (error: any) {
@@ -512,57 +404,14 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleUpdateAppointment = async (appointmentId: string, updates: any) => {
+    if (!profile?.id) {
+      toast.error('Профиль не найден');
+      return;
+    }
+
     try {
-      // Get original appointment data
-      const { data: originalApt } = await supabase
-        .from('appointments')
-        .select('*, services(name)')
-        .eq('id', appointmentId)
-        .single();
-
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          ...updates
-        })
-        .eq('id', appointmentId);
-
-      if (error) throw error;
-
-      // Send notification to client if they have Telegram and appointment details changed
-      if (originalApt && (updates.appointment_date || updates.appointment_time || updates.service_id)) {
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('telegram_chat_id')
-          .eq('phone', originalApt.client_phone)
-          .eq('profile_id', profile.id)
-          .maybeSingle();
-
-        if (clientData?.telegram_chat_id) {
-          try {
-            const serviceData = updates.service_id 
-              ? services.find(s => s.id === updates.service_id)
-              : { name: (originalApt.services as any)?.name };
-
-            await supabase.functions.invoke('send-client-notification', {
-              body: {
-                chatId: clientData.telegram_chat_id,
-                type: 'update',
-                clientName: originalApt.client_name,
-                serviceName: serviceData?.name || '',
-                date: format(new Date(updates.appointment_date || originalApt.appointment_date), 'dd MMMM yyyy', { locale: ru }),
-                time: updates.appointment_time || originalApt.appointment_time,
-                businessName: profile.business_name,
-                address: profile.address,
-                myAppointmentsUrl: `${window.location.origin}/my-appointments?phone=${encodeURIComponent(originalApt.client_phone)}`
-              }
-            });
-          } catch (notifError) {
-            console.error('Failed to send client notification:', notifError);
-          }
-        }
-      }
-
+      await apiClient.updateAppointment(appointmentId, updates);
+      clearBookingCache(profile.id);
       toast.success('Запись обновлена');
       loadData();
     } catch (error: any) {
@@ -577,16 +426,16 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleAppointmentClick = async (apt: any) => {
-    // If this is a blocked slot, delete it immediately
+    if (!profile?.id) {
+      setSelectedClient(null);
+      setSelectedAppointment(apt);
+      setAppointmentDetailsOpen(true);
+      return;
+    }
+
     if (apt.status === 'blocked') {
       try {
-        const { error } = await supabase
-          .from('appointments')
-          .delete()
-          .eq('id', apt.id);
-
-        if (error) throw error;
-        
+        await apiClient.deleteAppointment(apt.id);
         toast.success('Время разблокировано');
         loadData();
       } catch (error) {
@@ -595,34 +444,30 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
       }
       return;
     }
-    
+
     setSelectedAppointment(apt);
-    
-    // Mark notification as viewed
+
     if (!apt.notification_viewed) {
-      await supabase
-        .from('appointments')
-        .update({ notification_viewed: true })
-        .eq('id', apt.id);
-      
-      // Reload data to update notification bell
+      try {
+        await apiClient.markAppointmentViewed(apt.id);
+      } catch (error) {
+        console.warn('Failed to mark appointment as viewed:', error);
+      }
       loadData();
     }
-    
-    // Load client info
+
     if (apt.client_phone) {
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('phone', apt.client_phone)
-        .eq('profile_id', profile.id)
-        .maybeSingle();
-      
-      setSelectedClient(clientData);
+      try {
+        const clientData = await apiClient.findClientByPhone(profile.id, apt.client_phone);
+        setSelectedClient(clientData?.client ?? clientData ?? null);
+      } catch (error) {
+        console.warn('Failed to load client info:', error);
+        setSelectedClient(null);
+      }
     } else {
       setSelectedClient(null);
     }
-    
+
     setAppointmentDetailsOpen(true);
   };
 
@@ -640,66 +485,12 @@ export default function Dashboard({ mode = "main" }: DashboardProps) {
   };
 
   const handleConfirmCancel = async (reason?: string) => {
-    if (!cancellingAppointmentId) return;
+    if (!cancellingAppointmentId || !profile?.id) return;
 
     setCancelLoading(true);
     try {
-      // Get appointment and service data before cancellation
-      const { data: appointment } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          services (name)
-        `)
-        .eq('id', cancellingAppointmentId)
-        .single();
-
-      // Update status to cancelled instead of deleting
-      const { error } = await supabase
-        .from('appointments')
-        .update({ 
-          status: 'cancelled',
-          cancellation_reason: reason
-        })
-        .eq('id', cancellingAppointmentId);
-
-      if (error) throw error;
-      
-      // Send cancellation notification to client if they have telegram
-      if (appointment?.client_phone) {
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('telegram_chat_id')
-          .eq('phone', appointment.client_phone)
-          .eq('profile_id', profile.id)
-          .maybeSingle();
-
-        if (clientData?.telegram_chat_id) {
-          try {
-            const response = await supabase.functions.invoke('send-client-notification', {
-              body: {
-                chatId: clientData.telegram_chat_id,
-                type: 'cancellation',
-                clientName: appointment.client_name,
-                serviceName: (appointment.services as any)?.name || '',
-                date: format(new Date(appointment.appointment_date), 'dd MMMM yyyy', { locale: ru }),
-                time: appointment.appointment_time,
-                businessName: profile.business_name,
-                address: profile.address,
-                cancellationReason: reason,
-              },
-            });
-          } catch (notificationError) {
-            console.error('Failed to send cancellation notification:', notificationError);
-          }
-        }
-      }
-
-      // Send cancellation notification to owner (existing notification)
-      if (appointment) {
-        await sendTelegramNotification(appointment, 'cancelled');
-      }
-      
+      await apiClient.cancelAppointment(cancellingAppointmentId, reason);
+      clearBookingCache(profile.id);
       toast.success('Запись отменена');
       loadData();
     } catch (error: any) {

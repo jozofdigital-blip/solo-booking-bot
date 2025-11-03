@@ -62,9 +62,9 @@ export default function MyAppointments() {
 
   const loadBotUsername = async () => {
     try {
-      const { data } = await supabase.functions.invoke('get-bot-info');
-      if (data?.username) {
-        setBotUsername(data.username);
+      const botInfo = await apiClient.getBotInfo();
+      if (botInfo?.username) {
+        setBotUsername(botInfo.username);
       }
     } catch (error) {
       console.error('Error loading bot info:', error);
@@ -81,22 +81,11 @@ export default function MyAppointments() {
     try {
       await loadBotUsername();
 
-      const { data, error } = await supabase
-        .from("appointments")
-        .select(`
-          *,
-          services (name, duration_minutes, price),
-          profiles (business_name, address, phone)
-        `)
-        .eq("client_phone", phone.trim())
-        .order("appointment_date", { ascending: true })
-        .order("appointment_time", { ascending: true });
+      const appointmentsResponse = await apiClient.getClientAppointments(phone.trim());
+      const allAppointments: Appointment[] = appointmentsResponse?.appointments ?? appointmentsResponse ?? [];
 
-      if (error) throw error;
-
-      // Filter only upcoming and pending appointments
       const now = new Date();
-      const upcomingAppointments = (data || []).filter((apt) => {
+      const upcomingAppointments = allAppointments.filter((apt) => {
         const aptDateTime = parseISO(`${apt.appointment_date}T${apt.appointment_time}`);
         return !isPast(aptDateTime) && apt.status === "pending";
       });
@@ -104,18 +93,13 @@ export default function MyAppointments() {
       setAppointments(upcomingAppointments);
       setSearched(true);
 
-      // Check if client has telegram connected
-      if (upcomingAppointments.length > 0) {
-        const { data: clientData } = await supabase
-          .from("clients")
-          .select("id, telegram_chat_id")
-          .eq("phone", phone.trim())
-          .maybeSingle();
-
-        if (clientData) {
-          setClientId(clientData.id);
-          setHasTelegram(!!clientData.telegram_chat_id);
-        }
+      const clientData = appointmentsResponse?.client ?? null;
+      if (clientData) {
+        setClientId(clientData.id ?? "");
+        setHasTelegram(Boolean(clientData.has_telegram ?? clientData.telegram_chat_id));
+      } else {
+        setClientId("");
+        setHasTelegram(false);
       }
 
       if (upcomingAppointments.length === 0) {
@@ -133,41 +117,7 @@ export default function MyAppointments() {
     if (!cancellingId) return;
 
     try {
-      const appointment = appointments.find((apt) => apt.id === cancellingId);
-      if (!appointment) return;
-
-      const { error } = await supabase
-        .from("appointments")
-        .update({ 
-          status: "cancelled"
-        })
-        .eq("id", cancellingId);
-
-      if (error) throw error;
-
-      // Send notification to owner
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("telegram_chat_id")
-        .eq("id", appointment.profile_id)
-        .maybeSingle();
-
-      if (profileData?.telegram_chat_id) {
-        await supabase.functions.invoke("send-telegram-notification", {
-          body: {
-            chatId: profileData.telegram_chat_id,
-            clientName: appointment.client_name,
-            serviceName: appointment.services.name,
-            date: format(parseISO(appointment.appointment_date), "dd.MM.yyyy", { locale: ru }),
-            time: appointment.appointment_time,
-            phone: appointment.client_phone,
-            appointmentId: appointment.id,
-            appointmentDate: appointment.appointment_date,
-            type: "cancelled",
-            bookingUrl: `${window.location.origin}/dashboard`,
-          },
-        });
-      }
+      await apiClient.cancelAppointment(cancellingId, 'client_cancelled');
 
       toast.success("Запись отменена");
       setAppointments((prev) => prev.filter((apt) => apt.id !== cancellingId));
